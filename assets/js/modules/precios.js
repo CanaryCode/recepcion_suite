@@ -125,7 +125,7 @@ function renderPrecios(filtro = "") {
     });
 
     // Renderizar Grid
-    container.className = 'row g-3';
+    container.className = 'row g-3 no-print';
     container.innerHTML = '';
 
     if (precios.length === 0) {

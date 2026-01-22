@@ -155,9 +155,27 @@
 
     /* 9. INPUTS CLAROS */
     input,
-    select {
-        border: none !important;
-        background: transparent !important;
-        padding: 0 !important;
+    select,
+    .input-group,
+    [id*="search"] {
+        display: none !important;
+    }
+
+    /* 10. ESTILOS ESPECÍFICOS DE MÓDULOS */
+    .table-precios-print td {
+        vertical-align: middle !important;
+    }
+
+    .fs-4 {
+        font-size: 1.5rem !important;
+    }
+
+    .text-primary {
+        color: #000 !important;
+        font-weight: bold !important;
+    }
+
+    .done .bi-check-circle-fill {
+        color: #28a745 !important;
     }
 }

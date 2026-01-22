@@ -22,7 +22,7 @@
 <div class="container-fluid p-3">
     <div class="card shadow-sm border-0">
         <!-- Controles de Filtro y Edición -->
-        <div class="card-header bg-white py-3 border-bottom">
+        <div class="card-header bg-white py-3 border-bottom no-print">
             <div class="d-flex justify-content-between align-items-center gap-3">
                 <h5 class="mb-0 fw-bold text-success"><i class="bi bi-tags-fill me-2"></i>Lista de Precios</h5>
                 <div class="d-flex align-items-center gap-2">
@@ -42,7 +42,7 @@
         </div>
 
         <!-- Formulario de añadir (Solo visible en edición) -->
-        <div id="form-add-precio-container" class="card-body bg-light border-bottom p-3 d-none">
+        <div id="form-add-precio-container" class="card-body bg-light border-bottom p-3 d-none no-print">
             <form onsubmit="agregarPrecio(event)" class="row g-2 align-items-center">
                 <div class="col-auto"><input type="text" id="new-precio-icon" class="form-control text-center"
                         placeholder="Icono" style="width: 60px;" value="📦"
@@ -62,7 +62,25 @@
         </div>
 
         <div class="card-body p-0" style="max-height: calc(100vh - 220px); overflow-y: auto;">
-            <div id="lista-precios-container" class="list-group list-group-flush"></div>
+            <!-- Vista de Pantalla (Cards) -->
+            <div id="lista-precios-container" class="list-group list-group-flush no-print"></div>
+            
+            <!-- Vista de Impresión (Tabla limpia) -->
+            <div class="d-none d-print-block p-2">
+                <table class="table table-bordered align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 60px;"></th>
+                            <th>Producto / Artículo</th>
+                            <th>Descripción / Comentario</th>
+                            <th class="text-end" style="width: 100px;">Precio</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-precios-print">
+                        <!-- Se llena vía JS -->
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>

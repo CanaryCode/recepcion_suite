@@ -436,6 +436,10 @@ function imprimirGuia() {
     const user = Utils.validateUser();
     if (!user) return;
 
+    // Poblar campos de firma también
+    const footerName = document.getElementById('print-repc-nombre-ayuda-footer');
+    if (footerName) footerName.innerText = user;
+
     Utils.printSection('print-date-ayuda', 'print-repc-nombre-ayuda', user);
 }
 

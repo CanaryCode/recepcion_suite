@@ -165,6 +165,25 @@ function renderPrecios(filtro = "") {
             </div>`;
     });
 
+    // Renderizar Impresión (Tabla limpia)
+    const tablaPrint = document.getElementById('tabla-precios-print');
+    if (tablaPrint) {
+        tablaPrint.innerHTML = precios.map(p => {
+            const esImg = p.icono && (p.icono.includes('/') || p.icono.includes('.') || p.icono.startsWith('data:image'));
+            const iconHtml = esImg
+                ? `<img src="${p.icono}" alt="icon" style="width: 32px; height: 32px; object-fit: cover; border-radius: 50%;">`
+                : `<span>${p.icono || '📦'}</span>`;
+
+            return `
+            <tr>
+                <td class="text-center fs-4">${iconHtml}</td>
+                <td class="fw-bold">${p.nombre}</td>
+                <td class="text-muted small">${p.comentario || ''}</td>
+                <td class="text-end fw-bold">${p.precio}€</td>
+            </tr>`;
+        }).join('');
+    }
+
     // Actualizar UI según modo edición
     if (modoEdicionPrecios) {
         formAdd?.classList.remove('d-none');

@@ -155,11 +155,26 @@
     }
 
     /* 9. INPUTS CLAROS */
-    input,
-    select,
-    .input-group,
-    [id*="search"] {
+    /* 9. INPUTS CLAROS (Solo ocultar búsqueda) */
+    [id*="search"],
+    input[type="search"] {
         display: none !important;
+    }
+
+    /* Ajuste para inputs de Cierre de Caja en impresión */
+    .input-caja {
+        border: 1px solid #ddd !important;
+        background: transparent !important;
+        color: #000 !important;
+        font-weight: bold !important;
+        padding: 0 5px !important;
+        display: inline-block !important; /* Asegurar que se ve */
+    }
+    
+    .money-label, .money-total {
+        background-color: #f8f9fa !important;
+        color: #000 !important;
+        border: 1px solid #ddd !important;
     }
 
     /* 10. ESTILOS ESPECÍFICOS DE MÓDULOS */

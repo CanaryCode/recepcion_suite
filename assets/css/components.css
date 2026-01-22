@@ -8,6 +8,18 @@
     /* Permitir que efectos hover salgan */
 }
 
+/* --- BOTONES GENÉRICOS --- */
+.btn {
+    height: 38px; /* Altura estricta estándar */
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    padding: 0 12px; /* Padding horizontal consistente */
+}
+.btn-sm {
+    height: 31px; /* Altura estricta pequeña */
+}
+
 .card:hover {
     transform: translateY(-5px);
     box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.1) !important;

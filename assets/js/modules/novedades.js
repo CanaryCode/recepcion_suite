@@ -152,7 +152,7 @@ function manejarSubmitNovedad(e) {
         }
         document.getElementById('nov_id').value = '';
         const btn = document.querySelector('#formNovedad button[type="submit"]');
-        if (btn) btn.textContent = "Registrar Novedad";
+        if (btn) btn.innerHTML = '<i class="bi bi-pencil-square me-2"></i>Actualizar Novedad';
     } else {
         // NUEVA
         const novedad = {
@@ -239,8 +239,8 @@ function mostrarNovedades() {
                 </select>
             </td>
             <td class="text-end">
-                <button onclick="prepararEdicionNovedad(${n.id})" class="btn btn-sm btn-link" title="Editar"><i class="bi bi-pencil"></i></button>
-                <button onclick="eliminarNovedad(${n.id})" class="btn btn-sm btn-link text-danger"><i class="bi bi-trash"></i></button>
+                <button onclick="prepararEdicionNovedad(${n.id})" class="btn btn-sm btn-outline-primary border-0 me-1" title="Editar"><i class="bi bi-pencil"></i></button>
+                <button onclick="eliminarNovedad(${n.id})" class="btn btn-sm btn-outline-danger border-0" title="Eliminar"><i class="bi bi-trash"></i></button>
             </td>
         </tr>`;
     });
@@ -308,7 +308,7 @@ window.prepararEdicionNovedad = (id) => {
         });
 
         const btn = document.querySelector('#formNovedad button[type="submit"]');
-        if (btn) btn.textContent = "Actualizar Novedad";
+        if (btn) btn.innerHTML = '<i class="bi bi-pencil-square me-2"></i>Actualizar Novedad';
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 };

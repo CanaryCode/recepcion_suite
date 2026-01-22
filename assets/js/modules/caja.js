@@ -295,46 +295,174 @@ async function enviarCajaEmail() {
 
     const fecha = document.getElementById('caja_fecha')?.value || "";
     const turno = document.getElementById('caja_turno')?.value || "";
+    
+    // Obtener Totales
     const totalCaja = document.getElementById('total_caja')?.innerText || "0.00€";
     const recaudacion = document.getElementById('recaudacion_caja')?.innerText || "0.00€";
     const efectivo = document.getElementById('total_efectivo')?.innerText || "0.00€";
-    const otros = document.getElementById('subtotal_otros')?.innerText || "0.00€";
+    const otrosTotal = document.getElementById('subtotal_otros')?.innerText || "0.00€";
+    const billetesTotal = document.getElementById('subtotal_billetes')?.innerText || "0.00€";
+    const monedasTotal = document.getElementById('subtotal_monedas')?.innerText || "0.00€";
+
+    // --- HELPER: Obtener Desglose Detallado ---
+    const getDesgloseDinero = (containerId) => {
+        let items = [];
+        document.querySelectorAll(`#${containerId} .input-group`).forEach(row => {
+            const input = row.querySelector('input');
+            const cant = parseFloat(input?.value || 0);
+            if (cant > 0) {
+                const valor = input.dataset.valor;
+                const total = parseFloat(valor) * cant;
+                items.push({ 
+                    desc: `${valor}€ x ${cant}`, 
+                    total: Utils.formatCurrency(total) 
+                });
+            }
+        });
+        return items;
+    };
+
+    const periodicos = getDesgloseDinero('billetes-container');
+    const metalico = getDesgloseDinero('monedas-container');
+
+    // Desglose Otros Conceptos
+    let otrosItems = [];
+    
+    // 1. Fijos
+    const addSiExiste = (id, label, isCant = false) => {
+        const val = parseFloat(document.getElementById(id)?.value || 0);
+        if (val > 0) {
+            if (isCant) { // Caso especial Sellos
+                 const precio = parseFloat(document.getElementById('caja_sellos_precio')?.value || 0);
+                 otrosItems.push({ desc: `${label} (${val} x ${Utils.formatCurrency(precio)})`, total: Utils.formatCurrency(val * precio) });
+            } else {
+                 otrosItems.push({ desc: label, total: Utils.formatCurrency(val) });
+            }
+        }
+    };
+    
+    addSiExiste('caja_vales', 'Vales');
+    addSiExiste('caja_safe', 'Safe');
+    addSiExiste('caja_sellos_cant', 'Sellos', true);
+    addSiExiste('caja_monedas_extra', 'Extra');
+    
+    // 2. Dinámicos
+    document.querySelectorAll('.dynamic-concept').forEach(div => {
+        const nombre = div.querySelector('.concept-name')?.value || "Varios";
+        const val = parseFloat(div.querySelector('.concept-value')?.value || 0);
+        if (val !== 0) {
+            otrosItems.push({ desc: nombre, total: Utils.formatCurrency(val) });
+        }
+    });
+    
+    // Desembolsos (Restan)
+    const desembolsos = parseFloat(document.getElementById('caja_desembolsos')?.value || 0);
+    if (desembolsos > 0) {
+        otrosItems.push({ desc: 'Desembolsos', total: `-${Utils.formatCurrency(desembolsos)}` });
+    }
+
 
     const partes = fecha.split('-');
     const fechaFormateada = partes.length === 3 ? `${partes[2]}-${partes[1]}-${partes[0]}` : fecha;
     const subject = `Cierre de Caja - ${fechaFormateada} - ${turno.toUpperCase()}`;
 
+    // --- GENERACIÓN HTML ---
+    const generateTableRows = (items) => {
+        return items.map(i => `
+            <tr>
+                <td style="padding: 4px 10px; border-bottom: 1px solid #f0f0f0; font-size: 13px; color: #555;">${i.desc}</td>
+                <td style="padding: 4px 10px; border-bottom: 1px solid #f0f0f0; text-align: right; font-size: 13px;">${i.total}</td>
+            </tr>
+        `).join('');
+    };
+
     const htmlReporte = `
-        <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; border: 1px solid #eee; padding: 20px;">
-            <h2 style="color: #0d6efd; margin-top: 0;">CIERRE DE CAJA - HOTEL GAROÉ</h2>
-            <p style="margin: 5px 0;"><strong>Fecha:</strong> ${fechaFormateada} | <strong>Turno:</strong> ${turno.toUpperCase()}</p>
-            <p style="margin: 5px 0;"><strong>Recepcionista:</strong> ${nombre}</p>
-            <hr style="border: 0; border-top: 1px solid #ddd; margin: 15px 0;">
-            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-                <tr><td style="padding: 8px; border-bottom: 1px solid #eee;">Total Efectivo:</td><td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">${efectivo}</td></tr>
-                <tr><td style="padding: 8px; border-bottom: 1px solid #eee;">Otros Conceptos:</td><td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">${otros}</td></tr>
-                <tr style="font-weight: bold; background-color: #f8f9fa;">
-                    <td style="padding: 10px; border-top: 2px solid #333;">TOTAL TESORERÍA:</td>
-                    <td style="padding: 10px; border-top: 2px solid #333; text-align: right; font-size: 18px;">${totalCaja}</td>
-                </tr>
-                <tr style="font-weight: bold; color: #198754;">
-                    <td style="padding: 10px;">PRODUCCIÓN (VENTA):</td>
-                    <td style="padding: 10px; text-align: right; font-size: 18px;">${recaudacion}</td>
-                </tr>
-            </table>
-            <p style="font-size: 11px; color: #999; margin-top: 20px;">Reporte generado automáticamente desde Reception Suite.</p>
+        <div style="font-family: 'Segoe UI', system-ui, sans-serif; color: #333; max-width: 500px; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; background: #fff;">
+            <div style="background-color: #f8f9fa; padding: 15px 20px; border-bottom: 3px solid #0d6efd;">
+                <h2 style="color: #0d6efd; margin: 0; font-size: 20px;">CIERRE DE CAJA</h2>
+                <div style="font-size: 13px; color: #666; margin-top: 5px;">H. Garoé | ${fechaFormateada} | ${turno.toUpperCase()}</div>
+            </div>
+            
+            <div style="padding: 20px;">
+                <!-- EFECTIVO -->
+                <div style="margin-bottom: 20px;">
+                    <div style="font-weight: bold; color: #000; border-bottom: 2px solid #eee; padding-bottom: 5px; margin-bottom: 5px;">
+                        EFECTIVO <span style="float: right;">${efectivo}</span>
+                    </div>
+                    ${periodicos.length > 0 ? `
+                        <div style="font-size: 12px; font-weight: bold; color: #888; margin-top: 5px;">BILLETES (${billetesTotal})</div>
+                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 5px;">${generateTableRows(periodicos)}</table>
+                    ` : ''}
+                    
+                    ${metalico.length > 0 ? `
+                        <div style="font-size: 12px; font-weight: bold; color: #888; margin-top: 5px;">MONEDAS (${monedasTotal})</div>
+                        <table style="width: 100%; border-collapse: collapse;">${generateTableRows(metalico)}</table>
+                    ` : ''}
+                </div>
+
+                <!-- OTROS CONCEPTOS -->
+                ${otrosItems.length > 0 ? `
+                <div style="margin-bottom: 20px;">
+                    <div style="font-weight: bold; color: #000; border-bottom: 2px solid #eee; padding-bottom: 5px; margin-bottom: 5px;">
+                        OTROS CONCEPTOS <span style="float: right;">${otrosTotal}</span>
+                    </div>
+                    <table style="width: 100%; border-collapse: collapse;">${generateTableRows(otrosItems)}</table>
+                </div>
+                ` : ''}
+
+                <!-- TOTALES -->
+                <div style="background-color: #f1f8ff; padding: 15px; border-radius: 6px; margin-top: 15px;">
+                    <table style="width: 100%;">
+                        <tr>
+                            <td style="font-weight: bold; color: #004085; font-size: 16px;">TOTAL TESORERÍA</td>
+                            <td style="text-align: right; font-weight: bold; color: #004085; font-size: 20px;">${totalCaja}</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold; color: #155724; font-size: 14px; padding-top: 5px;">PRODUCCIÓN (VENTA)</td>
+                            <td style="text-align: right; font-weight: bold; color: #155724; font-size: 16px; padding-top: 5px;">${recaudacion}</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div style="margin-top: 15px; font-size: 12px; color: #999; text-align: right;">
+                    Recepcionista: <strong>${nombre}</strong>
+                </div>
+            </div>
         </div>
     `;
 
-    const textoPlano = `CIERRE DE CAJA - ${fechaFormateada}\nTurno: ${turno}\nRecepcionista: ${nombre}\n\nTotal Efectivo: ${efectivo}\nOtros: ${otros}\nTESORERÍA: ${totalCaja}\nVENTA: ${recaudacion}`;
+    // --- GENERACIÓN TEXTO PLANO ---
+    let textoPlano = `
+📋 CIERRE DE CAJA - ${fechaFormateada}
+=======================================
+Turno: ${turno.toUpperCase()} | Usuario: ${nombre}
 
-    if (await Utils.copyToClipboard(textoPlano, htmlReporte)) {
-        alert("¡Reporte visual copiado al portapapeles! Pegue el contenido (Ctrl+V) en el cuerpo del mensaje de correo.");
-    } else {
-        alert("Resumen copiado como texto plano.");
+💵 EFECTIVO: ${efectivo}
+`;
+    if (periodicos.length) textoPlano += periodicos.map(i => `   ${i.desc.padEnd(15)} : ${i.total}`).join('\n') + '\n';
+    if (metalico.length) textoPlano += metalico.map(i => `   ${i.desc.padEnd(15)} : ${i.total}`).join('\n') + '\n';
+    
+    if (otrosItems.length) {
+        textoPlano += `\n📑 OTROS CONCEPTOS: ${otrosTotal}\n`;
+        textoPlano += otrosItems.map(i => `   ${i.desc.padEnd(20)} : ${i.total}`).join('\n') + '\n';
     }
 
-    const mailBody = `Buenos días,\n\nAdjunto el cierre de caja correspondiente al turno de la ${turno}.\n\n[PEGUE AQUÍ EL REPORTE COPIADO]\n\nSaludos cordiales,\n${nombre}`;
+    textoPlano += `
+=======================================
+💰 TOTAL TESORERÍA:  ${totalCaja}
+📈 PRODUCCIÓN:       ${recaudacion}
+=======================================
+`;
+
+    // Copiar al portapapeles
+    if (await Utils.copyToClipboard(textoPlano, htmlReporte)) {
+        await window.showAlert("📋 Reporte DETALLADO copiado. Pégalo en el correo.", "success");
+    } else {
+        await window.showAlert("Resumen copiado como texto plano.", "info");
+    }
+
+    // Abrir cliente de correo
+    const mailBody = `Buenos días,\n\nAdjunto le envío el detalle del cierre de caja.\n\n[PEGAR AQUÍ EL REPORTE DETALLADO]\n\nSaludos,\n${nombre}`;
     window.location.href = `mailto:administracion@hotelgaroe.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(mailBody)}`;
 }
 

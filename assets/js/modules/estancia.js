@@ -102,6 +102,8 @@ function manejarSubmitEstancia(e) {
         totalHab
     });
 
+    window.showAlert("Registro guardado correctamente.", "success");
+
     mostrarEstancia();
     e.target.reset();
 

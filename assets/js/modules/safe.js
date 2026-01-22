@@ -91,7 +91,7 @@ function manejarSubmitSafe(e) {
     // 4. Reset
     e.target.reset();
     const btnSubmit = e.target.querySelector('button[type="submit"]');
-    if (btnSubmit) btnSubmit.textContent = "Registrar Alquiler";
+    if (btnSubmit) btnSubmit.innerHTML = '<i class="bi bi-save-fill me-2"></i>Guardar';
     Utils.setVal('safe_fecha_inicio', Utils.getTodayISO());
     mostrarSafeRentals();
 }
@@ -238,7 +238,7 @@ window.prepararEdicionSafe = (hab) => {
         Utils.setVal('safe_comentario', data.comentario || '');
 
         const btnSubmit = document.querySelector('#formNuevoSafe button[type="submit"]');
-        if (btnSubmit) btnSubmit.textContent = "Actualizar Alquiler";
+        if (btnSubmit) btnSubmit.innerHTML = '<i class="bi bi-pencil-square me-2"></i>Actualizar Alquiler';
         cambiarVistaSafe('trabajo');
     }
 };

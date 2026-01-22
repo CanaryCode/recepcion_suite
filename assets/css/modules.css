@@ -455,20 +455,26 @@
 } */
 
 /* FIX: Eliminar fondos extraños en iconos de botones */
-[id$="-content"] .btn i,
-[id$="-content"] .btn .bi {
+/* FIX: Eliminar fondos extraños en iconos de botones y aplicar color global */
+.btn i,
+.btn .bi {
     background: transparent !important;
     box-shadow: none !important;
+    color: white !important; /* Regla general: iconos blancos */
 }
 
-/* FIX: Asegurar contraste en botones sólidos (Iconos blancos) */
-[id$="-content"] .btn-primary i,
-[id$="-content"] .btn-success i,
-[id$="-content"] .btn-danger i,
-[id$="-content"] .btn-info i,
-[id$="-content"] .btn-warning i,
-[id$="-content"] .btn-dark i {
-    color: white !important;
+/* Excepciones: Botones con fondo blanco o estilo outline (en estado normal) */
+.btn-outline-primary i, .btn-outline-primary .bi,
+.btn-outline-secondary i, .btn-outline-secondary .bi,
+.btn-outline-success i, .btn-outline-success .bi,
+.btn-outline-danger i, .btn-outline-danger .bi,
+.btn-outline-warning i, .btn-outline-warning .bi,
+.btn-outline-info i, .btn-outline-info .bi,
+.btn-outline-dark i, .btn-outline-dark .bi,
+.btn-light i, .btn-light .bi,
+.btn-white i, .btn-white .bi,
+.btn-link i, .btn-link .bi {
+    color: inherit !important;
 }
 
 /* Resaltar el Total de Tesorería */

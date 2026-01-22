@@ -12,6 +12,7 @@ import { inicializarRiu } from './modules/riu.js';
 import { inicializarAyuda } from './modules/ayuda.js';
 import { inicializarNotasPermanentes } from './modules/notas_permanentes.js';
 import { inicializarPrecios } from './modules/precios.js';
+import { inicializarSystemAlarms } from './modules/alarms.js';
 
 // Core Systems
 import { APP_CONFIG } from './core/Config.js'; // Importar APP_CONFIG
@@ -77,7 +78,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         { nombre: 'Riu', init: inicializarRiu },
         { nombre: 'Ayuda', init: inicializarAyuda },
         { nombre: 'Notas Permanentes', init: inicializarNotasPermanentes },
-        { nombre: 'Precios', init: inicializarPrecios }
+        { nombre: 'Precios', init: inicializarPrecios },
+        { nombre: 'SystemAlarms', init: inicializarSystemAlarms }
     ];
 
     modulos.forEach(m => {

@@ -77,7 +77,7 @@ function manejarSubmitCenaFria(e) {
 
     e.target.reset();
     const btnSubmit = e.target.querySelector('button[type="submit"]');
-    if (btnSubmit) btnSubmit.textContent = "Registrar Cena";
+    if (btnSubmit) btnSubmit.innerHTML = '<i class="bi bi-save-fill me-2"></i>Registrar Cena';
 
     mostrarCenasFrias();
 }
@@ -205,7 +205,7 @@ window.prepararEdicionCenaFria = (hab) => {
         document.getElementById('cena_obs').value = data.obs || '';
 
         const btnSubmit = document.querySelector('#formNuevaCena button[type="submit"]');
-        if (btnSubmit) btnSubmit.textContent = "Actualizar Cena";
+        if (btnSubmit) btnSubmit.innerHTML = '<i class="bi bi-pencil-square me-2"></i>Actualizar Cena';
         cambiarVistaCenaFria('trabajo');
     }
 };

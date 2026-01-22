@@ -6,7 +6,7 @@ export const APP_CONFIG = {
     HOTEL: {
         NOMBRE: "Hotel Garoé",
         ALARMAS_SISTEMA: [
-            { hora: "23:30", mensaje: "Realizar lecturas de las VISAS" }
+            { hora: "23:30", mensaje: "Realizar lecturas de las VISAS", dias: "todos" } // dias: 'todos' o [0, 6] (dom, sab)
         ],
         STATS_CONFIG: {
             RANGOS: [

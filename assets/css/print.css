@@ -81,6 +81,7 @@
     .modal-backdrop,
     .modal {
         display: none !important;
+        visibility: hidden !important;
     }
 
     /* 6. CABECERA DE REPORTE */

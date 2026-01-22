@@ -12,17 +12,20 @@
 
 <div class="module-toolbar no-print">
     <div class="btn-group" role="group">
-        <button type="button" class="btn btn-outline-primary active" id="btnVistaTrabajoCena">
+        <button type="button" class="btn btn-outline-primary active" id="btnVistaTrabajoCena"
+            data-bs-toggle="tooltip" data-bs-title="Ver Formulario y Lista">
             <i class="bi bi-pencil-square me-2"></i>Vista de Trabajo
         </button>
-        <button type="button" class="btn btn-outline-primary" id="btnVistaRackCena">
+        <button type="button" class="btn btn-outline-primary" id="btnVistaRackCena"
+            data-bs-toggle="tooltip" data-bs-title="Ver Resumen por Habitaciones">
             <i class="bi bi-grid-3x3-gap me-2"></i>Vista de Rack
         </button>
     </div>
 
     <div class="btn-print-wrapper">
         <!-- Selector eliminado: Se usa usuario global -->
-        <button class="btn btn-dark btn-sm fw-bold" onclick="imprimirCenasFrias()">
+        <button class="btn btn-dark btn-sm fw-bold" onclick="imprimirCenasFrias()"
+            data-bs-toggle="tooltip" data-bs-title="Imprimir Listado para Cocina">
             <i class="bi bi-printer me-2"></i>Imprimir Listado
         </button>
     </div>
@@ -39,20 +42,22 @@
                 <div class="col-md-2">
                     <label class="form-label small fw-bold">Habitación</label>
                     <input type="text" id="cena_hab" class="form-control" placeholder="Ej: 101" required
-                        list="lista-habs-cena">
+                        list="lista-habs-cena" data-bs-toggle="tooltip" data-bs-title="Número de Habitación">
                     <datalist id="lista-habs-cena"></datalist>
                 </div>
                 <div class="col-md-2">
                     <label class="form-label small fw-bold">Pax</label>
-                    <input type="number" id="cena_pax" class="form-control" min="1" value="2" required>
+                    <input type="number" id="cena_pax" class="form-control" min="1" value="2" required
+                        data-bs-toggle="tooltip" data-bs-title="Número de Personas">
                 </div>
                 <div class="col-md-6">
                     <label class="form-label small fw-bold">Observaciones</label>
                     <textarea id="cena_obs" class="form-control" rows="2"
-                        placeholder="Ej: Sin embutido, mucha fruta..."></textarea>
+                        placeholder="Ej: Sin embutido, mucha fruta..."
+                        data-bs-toggle="tooltip" data-bs-title="Detalles Específicos"></textarea>
                 </div>
                 <div class="col-md-2">
-                    <button type="submit" class="btn btn-primary w-100 fw-bold py-2"><i class="bi bi-save-fill me-2"></i>Guardar</button>
+                    <button type="submit" class="btn btn-primary w-100 fw-bold py-2" data-bs-toggle="tooltip" data-bs-title="Guardar Pedido"><i class="bi bi-save-fill me-2"></i>Guardar</button>
                 </div>
             </form>
         </div>
@@ -61,7 +66,8 @@
     <div class="card shadow-sm border-0">
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
             <h6 class="mb-0 fw-bold">Cenas Pendientes</h6>
-            <button class="btn btn-sm btn-outline-danger border-0" onclick="limpiarCenasFrias()">
+            <button class="btn btn-sm btn-outline-danger border-0" onclick="limpiarCenasFrias()"
+                data-bs-toggle="tooltip" data-bs-title="Eliminar todos los registros">
                 <i class="bi bi-trash me-1"></i>Borrar Todo
             </button>
         </div>

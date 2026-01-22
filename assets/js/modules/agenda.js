@@ -301,8 +301,8 @@ async function mostrarContactos(filtro = "") {
                 <td style="width: 12%"><span class="badge ${catClass}">${c.categoria}</span></td>
                 <td style="width: 26%">${telList}${emailHtml}${webHtml}${addressHtml}</td>
                 <td style="width: 20%">
-                    <button onclick="prepararEdicionAgenda(${c.id})" class="btn btn-sm btn-outline-primary border-0 me-1"><i class="bi bi-pencil"></i></button>
-                    <button onclick="eliminarContacto(${c.id})" class="btn btn-sm btn-outline-danger border-0"><i class="bi bi-trash"></i></button>
+                    <button onclick="prepararEdicionAgenda(${c.id})" class="btn btn-sm btn-outline-primary border-0 me-1" data-bs-toggle="tooltip" data-bs-title="Editar"><i class="bi bi-pencil"></i></button>
+                    <button onclick="eliminarContacto(${c.id})" class="btn btn-sm btn-outline-danger border-0" data-bs-toggle="tooltip" data-bs-title="Eliminar"><i class="bi bi-trash"></i></button>
                 </td>
             </tr>`;
     });

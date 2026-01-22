@@ -80,22 +80,22 @@ function inyectarToolbarFlotante() {
         toolbar.style.transition = 'opacity 0.2s, top 0.1s, left 0.1s';
         toolbar.innerHTML = `
             <div class="btn-group btn-group-sm" role="group">
-                <button type="button" class="btn btn-dark border-0" onmousedown="event.preventDefault()" onclick="aplicarFormato('bold')" title="Negrita"><i class="bi bi-type-bold"></i></button>
-                <button type="button" class="btn btn-dark border-0" onmousedown="event.preventDefault()" onclick="aplicarFormato('italic')" title="Cursiva"><i class="bi bi-type-italic"></i></button>
-                <button type="button" class="btn btn-dark border-0" onmousedown="event.preventDefault()" onclick="aplicarFormato('underline')" title="Subrayado"><i class="bi bi-type-underline"></i></button>
-                <button type="button" class="btn btn-dark border-0" onmousedown="event.preventDefault()" onclick="aplicarFormato('strikeThrough')" title="Tachado"><i class="bi bi-type-strikethrough"></i></button>
+                <button type="button" class="btn btn-dark border-0" onmousedown="event.preventDefault()" onclick="aplicarFormato('bold')" data-bs-toggle="tooltip" data-bs-title="Negrita"><i class="bi bi-type-bold"></i></button>
+                <button type="button" class="btn btn-dark border-0" onmousedown="event.preventDefault()" onclick="aplicarFormato('italic')" data-bs-toggle="tooltip" data-bs-title="Cursiva"><i class="bi bi-type-italic"></i></button>
+                <button type="button" class="btn btn-dark border-0" onmousedown="event.preventDefault()" onclick="aplicarFormato('underline')" data-bs-toggle="tooltip" data-bs-title="Subrayado"><i class="bi bi-type-underline"></i></button>
+                <button type="button" class="btn btn-dark border-0" onmousedown="event.preventDefault()" onclick="aplicarFormato('strikeThrough')" data-bs-toggle="tooltip" data-bs-title="Tachado"><i class="bi bi-type-strikethrough"></i></button>
             </div>
             <div class="vr bg-secondary mx-1 opacity-50"></div>
             <div class="btn-group btn-group-sm" role="group">
-                <button type="button" class="btn btn-dark border-0" onmousedown="event.preventDefault()" onclick="aplicarFormato('foreColor', '#dc3545')" title="Rojo"><i class="bi bi-circle-fill" style="color: #dc3545;"></i></button>
-                <button type="button" class="btn btn-dark border-0" onmousedown="event.preventDefault()" onclick="aplicarFormato('foreColor', '#0d6efd')" title="Azul"><i class="bi bi-circle-fill" style="color: #0d6efd;"></i></button>
-                <button type="button" class="btn btn-dark border-0" onmousedown="event.preventDefault()" onclick="aplicarFormato('hiliteColor', '#ffc107')" title="Resaltar"><i class="bi bi-highlighter" style="color: #ffc107;"></i></button>
+                <button type="button" class="btn btn-dark border-0" onmousedown="event.preventDefault()" onclick="aplicarFormato('foreColor', '#dc3545')" data-bs-toggle="tooltip" data-bs-title="Rojo"><i class="bi bi-circle-fill" style="color: #dc3545;"></i></button>
+                <button type="button" class="btn btn-dark border-0" onmousedown="event.preventDefault()" onclick="aplicarFormato('foreColor', '#0d6efd')" data-bs-toggle="tooltip" data-bs-title="Azul"><i class="bi bi-circle-fill" style="color: #0d6efd;"></i></button>
+                <button type="button" class="btn btn-dark border-0" onmousedown="event.preventDefault()" onclick="aplicarFormato('hiliteColor', '#ffc107')" data-bs-toggle="tooltip" data-bs-title="Resaltar"><i class="bi bi-highlighter" style="color: #ffc107;"></i></button>
             </div>
             <div class="vr bg-secondary mx-1 opacity-50"></div>
             <div class="btn-group btn-group-sm" role="group">
-                <button type="button" class="btn btn-dark border-0" onmousedown="event.preventDefault()" onclick="insertarIcono('warning')" title="Alerta"><i class="bi bi-exclamation-triangle"></i></button>
-                <button type="button" class="btn btn-dark border-0" onmousedown="event.preventDefault()" onclick="insertarIcono('info')" title="Info"><i class="bi bi-info-circle"></i></button>
-                <button type="button" class="btn btn-dark border-0" onmousedown="event.preventDefault()" onclick="insertarIcono('check')" title="Check"><i class="bi bi-check-lg"></i></button>
+                <button type="button" class="btn btn-dark border-0" onmousedown="event.preventDefault()" onclick="insertarIcono('warning')" data-bs-toggle="tooltip" data-bs-title="Alerta"><i class="bi bi-exclamation-triangle"></i></button>
+                <button type="button" class="btn btn-dark border-0" onmousedown="event.preventDefault()" onclick="insertarIcono('info')" data-bs-toggle="tooltip" data-bs-title="Info"><i class="bi bi-info-circle"></i></button>
+                <button type="button" class="btn btn-dark border-0" onmousedown="event.preventDefault()" onclick="insertarIcono('check')" data-bs-toggle="tooltip" data-bs-title="Check"><i class="bi bi-check-lg"></i></button>
             </div>
         `;
         document.body.appendChild(toolbar);

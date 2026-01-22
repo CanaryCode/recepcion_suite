@@ -12,17 +12,20 @@
 
 <div class="module-toolbar no-print">
     <div class="btn-group" role="group">
-        <button type="button" class="btn btn-outline-primary active" id="btnVistaTrabajo">
+        <button type="button" class="btn btn-outline-primary active" id="btnVistaTrabajo"
+            data-bs-toggle="tooltip" data-bs-title="Ver Formulario y Lista">
             <i class="bi bi-pencil-square me-2"></i>Vista de Trabajo
         </button>
-        <button type="button" class="btn btn-outline-primary" id="btnVistaRack">
+        <button type="button" class="btn btn-outline-primary" id="btnVistaRack"
+            data-bs-toggle="tooltip" data-bs-title="Ver Resumen por Habitaciones">
             <i class="bi bi-grid-3x3-gap me-2"></i>Vista de Rack
         </button>
     </div>
 
     <div class="btn-print-wrapper">
         <!-- Selector eliminado: Se usa usuario global -->
-        <button class="btn btn-primary btn-sm fw-bold" onclick="imprimirAtenciones()">
+        <button class="btn btn-primary btn-sm fw-bold" onclick="imprimirAtenciones()"
+            data-bs-toggle="tooltip" data-bs-title="Imprimir Listado para Gobernanta/Room Service">
             <i class="bi bi-printer me-2"></i>Imprimir Listado
         </button>
     </div>
@@ -38,7 +41,7 @@
                 <div class="col-md-3">
                     <label class="form-label small fw-bold">Habitación</label>
                     <input type="text" id="atencion_hab" class="form-control" placeholder="Ej: 101" required
-                        list="lista-habs-atenciones">
+                        list="lista-habs-atenciones" data-bs-toggle="tooltip" data-bs-title="Número de Habitación">
                     <datalist id="lista-habs-atenciones"></datalist>
                 </div>
                 <div class="col-md-9">
@@ -95,10 +98,11 @@
                 <div class="col-md-9">
                     <label class="form-label small fw-bold">Comentario / Observaciones</label>
                     <textarea id="atencion_comentario" class="form-control" rows="2"
-                        placeholder="Ej: Poner en la mesa, cliente alérgico..."></textarea>
+                        placeholder="Ej: Poner en la mesa, cliente alérgico..."
+                        data-bs-toggle="tooltip" data-bs-title="Detalles Específicos"></textarea>
                 </div>
                 <div class="col-md-3">
-                    <button type="submit" class="btn btn-primary w-100 fw-bold py-2"><i class="bi bi-save-fill me-2"></i>Actualizar</button>
+                    <button type="submit" class="btn btn-primary w-100 fw-bold py-2" data-bs-toggle="tooltip" data-bs-title="Guardar Atención"><i class="bi bi-save-fill me-2"></i>Actualizar</button>
                 </div>
             </form>
         </div>
@@ -106,7 +110,8 @@
     <div class="card shadow-sm border-0">
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
             <h6 class="mb-0 fw-bold">Atenciones Activas</h6>
-            <button class="btn btn-sm btn-outline-danger border-0" onclick="resetearAtenciones()">
+            <button class="btn btn-sm btn-outline-danger border-0" onclick="resetearAtenciones()"
+                data-bs-toggle="tooltip" data-bs-title="Eliminar todas las atenciones">
                 <i class="bi bi-trash me-1"></i>Borrar Todo
             </button>
         </div>

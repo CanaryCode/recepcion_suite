@@ -165,7 +165,7 @@ function renderVistaRackCenaFria() {
             rackCont.innerHTML += `
                 <div class="d-flex align-items-center justify-content-center rounded rack-box ${colorClass}" 
                      style="${style}" 
-                     title="${data ? 'Pax: ' + data.pax + (data.obs ? ' | Obs: ' + data.obs : '') : 'Sin pedido'}">
+                     data-bs-toggle="tooltip" data-bs-title="${data ? 'Pax: ' + data.pax + (data.obs ? ' | Obs: ' + data.obs : '') : 'Sin pedido'}">
                     ${num}
                 </div>`;
         }

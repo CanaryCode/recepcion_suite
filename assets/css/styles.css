@@ -12,9 +12,31 @@
 /* @import 'print.css'; -- MOVIDO A INDEX.HTML PARA CONTROLAR CACHE */
 
 /* FIX: Navbar Layout */
-/* FIX: Navbar Layout - Ajustes finos */
 .nav-search-wrapper {
     width: 250px;
-    /* Ancho un poco mayor para mejor usabilidad */
     transition: width 0.3s ease;
+}
+
+/* FIX: Tooltip Stacking & Styling for Nav */
+.custom-tooltip {
+    /* Ensure the span behaves like a block container for events/positioning */
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+/* Clases generadas por Bootstrap */
+.tooltip {
+    z-index: 100000 !important; /* General Boost */
+}
+
+/* Clase especifica inyectada vía JS */
+.custom-nav-tooltip {
+    z-index: 999999 !important;
+    pointer-events: none; /* Asegurar que no bloquea clicks */
+}
+/* Asegurar que el inner también hereda o respeta */
+.custom-nav-tooltip .tooltip-inner {
+    background-color: #333; /* Darker distinct color */
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
 }

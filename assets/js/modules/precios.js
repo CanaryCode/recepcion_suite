@@ -230,7 +230,7 @@ function cargarEmojis(grid) {
     let html = '';
     for (const [cat, iconos] of Object.entries(categorias)) {
         html += `<div class="w-100 small fw-bold text-muted mt-2 mb-1 border-bottom">${cat}</div>`;
-        html += iconos.map(e => `<button class="btn btn-light fs-4 p-1 m-1 border" onclick="seleccionarIcono('${e}')" title="${e}">${e}</button>`).join('');
+        html += iconos.map(e => `<button class="btn btn-light fs-4 p-1 m-1 border" onclick="seleccionarIcono('${e}')" data-bs-toggle="tooltip" data-bs-title="${e}">${e}</button>`).join('');
     }
     grid.innerHTML = html;
 }

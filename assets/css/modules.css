@@ -733,6 +733,8 @@
         flex: 0 0 35% !important;
         padding-left: 15px !important;
         border-left: 1px dashed #ccc !important;
+        display: flex !important;
+        flex-direction: column !important;
     }
 
     /* GRID DE BILLETES Y MONEDAS (MUY COMPACTO) */
@@ -769,7 +771,7 @@
     }
 
     /* FOOTER DE OTROS CONCEPTOS (GRID 3 COLUMNAS) */
-    #otros-container {
+    #otros-container .row {
         display: grid !important;
         grid-template-columns: repeat(3, 1fr) !important;
         gap: 5px !important;
@@ -796,6 +798,19 @@
         border: 1px solid #ccc !important;
         font-size: 9pt !important;
         height: 20px !important;
+    }
+
+    /* COMENTARIOS QUE SE ESTIRAN */
+    #card-comentarios-caja {
+        display: flex !important;
+        flex-direction: column !important;
+        flex-grow: 1 !important;
+    }
+    
+    #print-comentarios-caja {
+        flex-grow: 1 !important;
+        height: auto !important; /* Dejar que flex lo controle */
+        border: 1px solid #ccc !important; /* Asegurar borde visible */
     }
 
     /* ÁREA DE COMENTARIOS (SIN TEXTAREA) */
@@ -852,4 +867,130 @@
         padding-top: 5px;
         font-size: 10pt;
     }
+}
+
+/* =================================================================*********
+   PDF EXPORT FORCED STYLES (Simulates Print Layout on Screen for html2pdf)
+   ========================================================================== */
+.pdf-export {
+    background-color: white !important;
+    font-family: Arial, sans-serif !important;
+    color: #000 !important;
+    width: 100% !important;
+}
+
+.pdf-export .btn, 
+.pdf-export .no-print,
+.pdf-export textarea,
+.pdf-export .dynamic-concept button { 
+    display: none !important; 
+}
+
+/* Visibility overrides */
+.pdf-export .report-header-print,
+.pdf-export .signature-area,
+.pdf-export #print-vales-details,
+.pdf-export #print-comentarios-caja {
+    display: block !important;
+}
+
+.pdf-export .signature-area {
+    display: flex !important;
+    justify-content: space-between !important;
+    margin-top: 30px !important;
+}
+
+/* Card Reset */
+.pdf-export .card {
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    margin-bottom: 5px !important;
+}
+
+.pdf-export .card-header {
+    background: transparent !important;
+    border-bottom: 2px solid #000 !important;
+    padding: 2px 0 !important;
+}
+
+/* Layout Columns */
+.pdf-export .row {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    width: 100% !important;
+    align-items: stretch !important;
+}
+
+.pdf-export .col-md-8 {
+    width: 65% !important;
+    flex: 0 0 65% !important;
+    max-width: 65% !important;
+    padding-right: 15px !important;
+}
+
+.pdf-export .col-md-4 {
+    width: 35% !important;
+    flex: 0 0 35% !important;
+    max-width: 35% !important;
+    padding-left: 15px !important;
+    border-left: 1px dashed #ccc !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+/* Money Grid */
+.pdf-export .money-grid-container {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 4px !important;
+    padding: 0 !important;
+    border: none !important;
+}
+
+.pdf-export .money-input-group {
+    border: 1px solid #ddd !important;
+}
+
+.pdf-export .money-input-group span,
+.pdf-export .money-input-group input {
+    font-size: 8pt !important;
+    padding: 1px !important;
+    height: auto !important;
+    border: none !important;
+}
+
+/* Otros Grid */
+.pdf-export #otros-container .row {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 5px !important;
+    margin-top: 5px !important;
+}
+
+.pdf-export #otros-container .col-md-4,
+.pdf-export #otros-container .col-6 {
+    width: 100% !important;
+}
+
+/* Comments Stretch */
+.pdf-export #card-comentarios-caja {
+    display: flex !important;
+    flex-direction: column !important;
+    flex-grow: 1 !important;
+}
+
+.pdf-export #print-comentarios-caja {
+    flex-grow: 1 !important;
+    border: 1px solid #ccc !important;
+    min-height: 100px !important;
+    white-space: pre-wrap !important;
+}
+
+/* Totals */
+.pdf-export #total_caja {
+    border: 2px solid #000 !important;
+    color: #000 !important;
+    font-size: 18pt !important;
+    background: white !important;
 }

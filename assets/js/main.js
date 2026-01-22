@@ -90,6 +90,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 6. Inicializar Gestión de Sesión Global
     inicializarSesionGlobal();
+    
+    // 7. Inicializar Tooltips
+    initGlobalTooltips();
 });
 
 function inicializarSesionGlobal() {
@@ -187,6 +190,69 @@ function inicializarSesionGlobal() {
         userBtn.classList.add('btn-outline-danger');
         location.reload(); // Recargar para limpiar estados de módulos si es necesario
     };
+}
+
+// Inicializar Tooltips Globalmente (Observer para contenido dinámico)
+function initGlobalTooltips() {
+    const initNode = (node) => {
+        // 1. Elementos estándar con data-bs-toggle="tooltip"
+        if (node.nodeType === 1) { 
+            if (node.matches && node.matches('[data-bs-toggle="tooltip"]')) {
+                if (!bootstrap.Tooltip.getInstance(node)) {
+                    new bootstrap.Tooltip(node, { trigger: 'hover', container: node.dataset.bsContainer || 'body' });
+                }
+            }
+            // Hijos estándar
+            if (node.querySelectorAll) {
+                node.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+                    if (!bootstrap.Tooltip.getInstance(el)) {
+                        new bootstrap.Tooltip(el, { trigger: 'hover', container: el.dataset.bsContainer || 'body' });
+                    }
+                });
+            }
+
+            // 2. Elementos con clase .custom-tooltip (Manual Check)
+            if (node.classList && node.classList.contains('custom-tooltip')) {
+                if (!bootstrap.Tooltip.getInstance(node)) {
+                    new bootstrap.Tooltip(node, { 
+                        trigger: 'hover', 
+                        container: 'body',
+                        html: true,
+                        // Fallback si no tiene data-bs-placement
+                        placement: node.dataset.bsPlacement || 'bottom' 
+                    });
+                }
+            }
+            // Hijos custom
+            if (node.querySelectorAll) {
+                node.querySelectorAll('.custom-tooltip').forEach(el => {
+                    if (!bootstrap.Tooltip.getInstance(el)) {
+                        new bootstrap.Tooltip(el, { 
+                            trigger: 'hover', 
+                            container: 'body',
+                            html: true,
+                            customClass: 'custom-nav-tooltip', // Class from styles.css
+                            placement: el.dataset.bsPlacement || 'bottom'
+                        });
+                    }
+                });
+            }
+        }
+    };
+
+    // Initial load
+    initNode(document.body);
+
+    // Observer
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            if (mutation.type === 'childList') {
+                mutation.addedNodes.forEach(initNode);
+            }
+        });
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
 }
 
 function updateUserUI(name) {

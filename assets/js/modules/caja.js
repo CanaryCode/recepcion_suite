@@ -1,11 +1,115 @@
 import { APP_CONFIG } from '../core/Config.js';
 import { Utils } from '../core/Utils.js';
 import { sessionService } from '../services/SessionService.js';
+import { Modal } from '../core/Modal.js';
 
 // ============================================================================
 // ESTADO
 // ============================================================================
 let interfazCajaGenerada = false;
+let listaVales = []; // { id, concepto, importe }
+
+// ... (existing helper functions)
+
+// ============================================================================
+// GESTIÓN DE VALES
+// ============================================================================
+
+window.abrirModalVales = () => {
+    const modal = new bootstrap.Modal(document.getElementById('modalVales'));
+    renderVales();
+    modal.show();
+    setTimeout(() => document.getElementById('vale_concepto')?.focus(), 500);
+};
+
+window.agregarVale = (e) => {
+    e.preventDefault();
+    const conceptoIn = document.getElementById('vale_concepto');
+    const importeIn = document.getElementById('vale_importe');
+    
+    const concepto = conceptoIn.value.trim();
+    const importe = parseFloat(importeIn.value);
+
+    if (concepto && importe > 0) {
+        listaVales.push({
+            id: Date.now(),
+            concepto,
+            importe
+        });
+        
+        conceptoIn.value = '';
+        importeIn.value = '';
+        conceptoIn.focus();
+        
+        renderVales();
+        calcularCaja();
+    }
+};
+
+window.eliminarVale = (id) => {
+    listaVales = listaVales.filter(v => v.id !== id);
+    renderVales();
+    calcularCaja();
+};
+
+function renderVales() {
+    // 1. Render en Modal
+    const container = document.getElementById('listaVales');
+    const msg = document.getElementById('noValesMsg');
+    const totalLabel = document.getElementById('modalValesTotal');
+    
+    if (container) {
+        if (listaVales.length === 0) {
+            container.innerHTML = '';
+            if (msg) msg.style.display = 'block';
+        } else {
+            if (msg) msg.style.display = 'none';
+            container.innerHTML = listaVales.map(v => `
+                <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+                    <div class="d-flex flex-column" style="min-width: 0;">
+                        <span class="fw-bold text-dark small text-break" style="word-wrap: break-word;">${v.concepto}</span>
+                    </div>
+                    <div class="d-flex align-items-center flex-shrink-0 ms-2">
+                        <span class="fw-bold text-primary me-3">${Utils.formatCurrency(v.importe)}</span>
+                        <button class="btn btn-sm btn-outline-danger border-0 p-1" onclick="eliminarVale(${v.id})" data-bs-toggle="tooltip" data-bs-title="Eliminar Vale">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+    }
+
+    // 2. Calcular Total
+    const total = listaVales.reduce((sum, v) => sum + v.importe, 0);
+    if (totalLabel) totalLabel.innerText = Utils.formatCurrency(total);
+    
+    // 3. Render para IMPRESIÓN / PDF (Compact Grid - Ancho Completo)
+    const printContainer = document.getElementById('print-vales-details');
+    if (printContainer) {
+        if (listaVales.length > 0) {
+            printContainer.innerHTML = `
+                <div class="border border-secondary rounded p-1 mt-1" style="background-color: #f8f9fa;">
+                    <div class="d-flex justify-content-between align-items-center border-bottom border-secondary mb-1 pb-1">
+                        <h6 class="fw-bold mb-0 text-dark" style="font-size: 11px;">DESGLOSE (${listaVales.length})</h6>
+                    </div>
+                    <div class="d-flex flex-wrap gap-1">
+                        ${listaVales.map(v => `
+                            <div class="d-flex justify-content-between border bg-white rounded px-1" style="width: 32%; font-size: 10px; border-color: #dee2e6 !important;">
+                                <span class="text-truncate me-1" style="max-width: 70%;">${v.concepto}</span>
+                                <span class="fw-bold">${Utils.formatCurrency(v.importe)}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        } else {
+            printContainer.innerHTML = '';
+        }
+    }
+}
+
+
 
 // ============================================================================
 // INICIALIZACIÓN
@@ -39,7 +143,46 @@ function abrirCaja() {
         triggerEl.click();
     }
     generarInterfazCaja();
+    actualizarDatosAutomaticosCaja(); // Force update on open
     calcularCaja();
+}
+
+function actualizarDatosAutomaticosCaja() {
+    const ahora = new Date();
+    
+    // 1. FECHA (Hoy)
+    const fechaInput = document.getElementById('caja_fecha');
+    if (fechaInput) {
+        // Formato ES: DD-MM-YYYY para visualización, o ISO para valor? 
+        // El input ahora es text, mejor mostrar algo legible
+        // Pero para PDF/Email se usa el value. Usemos ISO YYYY-MM-DD para consistencia con lógica existente
+        // o mejor DD/MM/YYYY que es más legible.
+        // Revisando código existente: usa split('-') esperando YYYY-MM-DD o similar.
+        // Utils.getTodayISO() devuelve YYYY-MM-DD.
+        fechaInput.value = Utils.getTodayISO(); 
+    }
+
+    // 2. TURNO (Automático)
+    /*
+        07:00 - 15:00 -> Mañana
+        15:00 - 23:00 -> Tarde
+        23:00 - 07:00 -> Noche
+    */
+    const hora = ahora.getHours();
+    let turno = "tarde"; // Default safe
+    
+    if (hora >= 7 && hora < 15) {
+        turno = "mañana";
+    } else if (hora >= 15 && hora < 23) {
+        turno = "tarde";
+    } else {
+        turno = "noche";
+    }
+
+    const turnoInput = document.getElementById('caja_turno');
+    if (turnoInput) {
+        turnoInput.value = turno.toUpperCase();
+    }
 }
 
 /**
@@ -48,11 +191,7 @@ function abrirCaja() {
 function generarInterfazCaja() {
     if (interfazCajaGenerada) return;
 
-    // Configurar Fecha si está vacía
-    const fechaInput = document.getElementById('caja_fecha');
-    if (fechaInput && !fechaInput.value) {
-        fechaInput.value = Utils.getTodayISO();
-    }
+    actualizarDatosAutomaticosCaja();
 
     // Generar Inputs de Dinero
     const billetes = APP_CONFIG.CAJA?.BILLETES || [500, 200, 100, 50, 20, 10, 5];
@@ -86,7 +225,7 @@ function renderizarInputs(containerId, valores, iconClass, titulo) {
         div.className = 'input-group input-group-sm money-input-group';
         div.innerHTML = `
             <span class="input-group-text money-label"><i class="bi ${iconClass} me-1"></i>${valor}€</span>
-            <input type="number" min="0" class="form-control input-caja" data-valor="${valor}" placeholder="Cant.">
+            <input type="number" min="0" class="form-control input-caja" data-valor="${valor}" placeholder="0">
             <span class="input-group-text money-total sub-caja">0.00€</span>
         `;
         container.appendChild(div);
@@ -101,9 +240,9 @@ function agregarNuevoConcepto() {
     div.className = 'col-md-4 dynamic-concept';
     div.innerHTML = `
         <div class="input-group input-group-sm">
-            <input type="text" class="form-control concept-name text-start fw-bold" placeholder="Concepto..." style="width: 45%;">
+            <input type="text" class="form-control concept-name text-start fw-bold" placeholder="Ej: Gasto Extra..." style="width: 45%;">
             <input type="number" class="form-control concept-value text-end" placeholder="0.00" style="width: 35%;">
-            <button class="btn btn-outline-danger d-print-none" onclick="this.closest('.dynamic-concept').remove(); calcularCaja();" style="width: 20%;">
+            <button class="btn btn-outline-danger d-print-none" onclick="this.closest('.dynamic-concept').remove(); calcularCaja();" style="width: 20%;" data-bs-toggle="tooltip" data-bs-title="Eliminar Concepto">
                 <i class="bi bi-trash"></i>
             </button>
         </div>
@@ -144,7 +283,12 @@ function calcularCaja() {
 
     // Otros conceptos
     const getVal = (id) => parseFloat(document.getElementById(id)?.value) || 0;
-    const vales = getVal('caja_vales');
+    
+    // VALES (Calculado desde array)
+    const totalVales = listaVales.reduce((sum, v) => sum + v.importe, 0);
+    const valesInput = document.getElementById('caja_vales_total');
+    if (valesInput) valesInput.value = Utils.formatCurrency(totalVales);
+
     const safe = getVal('caja_safe');
     const sellosCant = getVal('caja_sellos_cant');
     const sellosPrecio = getVal('caja_sellos_precio');
@@ -160,7 +304,8 @@ function calcularCaja() {
     let totalDinamicos = 0;
     document.querySelectorAll('.concept-value').forEach(input => totalDinamicos += (parseFloat(input.value) || 0));
 
-    const totalOtros = (vales + safe + totalSellos + extra + totalDinamicos) - desembolsos;
+    // Sumar Total
+    const totalOtros = (totalVales + safe + totalSellos + extra + totalDinamicos) - desembolsos;
     const totalTesoreria = totalEfectivo + totalOtros;
     const fondoCaja = getVal('caja_fondo');
     const recaudacion = totalTesoreria - fondoCaja;
@@ -203,8 +348,11 @@ async function resetearCaja() {
         });
 
         document.querySelectorAll('.dynamic-concept').forEach(el => el.remove());
+        
+        listaVales = [];
+        renderVales();
 
-        Utils.setVal('caja_fecha', Utils.getTodayISO());
+        actualizarDatosAutomaticosCaja();
         Utils.setVal('caja_sellos_precio', "1.50");
         Utils.setVal('caja_fondo', "2000.00");
 
@@ -224,6 +372,14 @@ function imprimirCierreCaja() {
     const printDiv = document.getElementById('print-comentarios-caja');
     if (printDiv) printDiv.textContent = comentarios;
 
+    // FIX IMPRESIÓN: Sincronizar valor visual con atributo DOM para que salga en papel
+    const inputs = document.querySelectorAll('#caja-content input');
+    inputs.forEach(i => {
+        if (i.type === 'number' || i.type === 'text') {
+            i.setAttribute('value', i.value);
+        }
+    });
+
     Utils.printSection('print-date-caja', 'print-repc-nombre-caja', user);
 }
 
@@ -240,28 +396,77 @@ async function guardarCajaPDF() {
     const fechaFormateada = partes.length === 3 ? `${partes[2]}-${partes[1]}-${partes[0]}` : fecha;
     const filename = `${fechaFormateada}-${turno}.pdf`;
 
-    const source = document.getElementById('caja-content');
-    const headerPrint = source.querySelector('.report-header-print');
-    const signature = document.querySelector('.signature-area');
+    // 1. Preparar CLON para manipular (Sin afectar la UI real)
+    const original = document.getElementById('caja-content');
+    const clone = original.cloneNode(true);
 
-    if (headerPrint) { headerPrint.classList.remove('d-none'); headerPrint.style.display = 'flex'; }
-    if (signature) { signature.classList.remove('d-none'); signature.style.display = 'flex'; }
+    // 2. Crear Contenedor Temporal con clase PDF-EXPORT para forzar estilos
+    const wrapper = document.createElement('div');
+    wrapper.className = 'pdf-export p-4'; // p-4 para margen interno blanco
+    wrapper.style.position = 'absolute';
+    wrapper.style.left = '-9999px';
+    wrapper.style.top = '0';
+    wrapper.style.width = '210mm'; // A4 width hint
+    wrapper.appendChild(clone);
+    document.body.appendChild(wrapper);
 
-    // Ocultar flechas select
-    const selects = source.querySelectorAll('.form-select');
-    selects.forEach(s => s.style.backgroundImage = 'none');
+    // 3. Sincronizar Datos en el CLON
+    // Entradas de texto/numeros -> Atributos value para que salgan
+    const inputsOriginal = original.querySelectorAll('input, select, textarea');
+    const inputsClone = clone.querySelectorAll('input, select, textarea');
+    
+    inputsClone.forEach((inputClone, i) => {
+        const inputOriginal = inputsOriginal[i];
+        if (inputOriginal) {
+           if (inputClone.tagName === 'SELECT') {
+               try {
+                  const selectedText = inputOriginal.options[inputOriginal.selectedIndex]?.text || inputOriginal.value;
+                  // Reemplazar select por span para mejor visualización
+                  const span = document.createElement('span');
+                  span.className = 'fw-bold';
+                  span.textContent = selectedText;
+                  inputClone.parentNode.replaceChild(span, inputClone);
+               } catch(e) {}
+           } else {
+               inputClone.setAttribute('value', inputOriginal.value);
+               // Si es checkbox/radio
+               if (inputOriginal.checked) inputClone.setAttribute('checked', 'checked');
+           }
+        }
+    });
 
+    // Comentarios
+    const comentariosVal = document.getElementById('caja_comentarios_cierre')?.value || "";
+    const printComentarios = clone.querySelector('#print-comentarios-caja');
+    if (printComentarios) {
+        printComentarios.textContent = comentariosVal;
+        printComentarios.classList.remove('d-none'); // Asegurar visible
+    }
+
+    // Cabeceras y Firmas (Están d-none en UI, forzar block en clon)
+    // Ya lo hace el CSS .pdf-export, pero aseguramos
+    const headerPrint = clone.querySelector('.report-header-print');
+    if (headerPrint) headerPrint.classList.remove('d-none');
+    
+    const signature = clone.querySelector('.signature-area');
+    if (signature) signature.classList.remove('d-none');
+    
+    // Vales
+    const printVales = clone.querySelector('#print-vales-details');
+    if (printVales) printVales.classList.remove('d-none');
+
+    // 4. Configurar PDF
     const opt = {
-        margin: [10, 10],
+        margin: [5, 5, 5, 5], // Márgenes pequeños, el padding lo da el wrapper
         filename: filename,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false, ignoreElements: (el) => el.tagName === 'BUTTON' || el.classList.contains('no-print') },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
     try {
         if (window.showSaveFilePicker) {
-            const pdfBlob = await html2pdf().set(opt).from(source).output('blob');
+            const pdfBlob = await html2pdf().set(opt).from(wrapper).output('blob');
             const handle = await window.showSaveFilePicker({
                 suggestedName: filename,
                 types: [{ description: 'PDF Document', accept: { 'application/pdf': ['.pdf'] } }],
@@ -271,7 +476,7 @@ async function guardarCajaPDF() {
             await writable.close();
             await window.showAlert(`Guardado PDF: ${filename}`, "success");
         } else {
-            await html2pdf().set(opt).from(source).save();
+            await html2pdf().set(opt).from(wrapper).save();
             await window.showAlert(`Descargado PDF: ${filename}`, "success");
         }
     } catch (err) {
@@ -280,9 +485,8 @@ async function guardarCajaPDF() {
             await window.showAlert("Error al generar PDF.", "error");
         }
     } finally {
-        if (headerPrint) { headerPrint.classList.add('d-none'); headerPrint.style.display = ''; }
-        if (signature) { signature.classList.add('d-none'); signature.style.display = ''; }
-        selects.forEach(s => s.style.backgroundImage = '');
+        // 5. Limpieza
+        document.body.removeChild(wrapper);
     }
 }
 
@@ -476,3 +680,45 @@ window.calcularCaja = calcularCaja;
 window.agregarNuevoConcepto = agregarNuevoConcepto;
 window.guardarCajaPDF = guardarCajaPDF;
 window.enviarCajaEmail = enviarCajaEmail;
+
+window.toggleLockCaja = (inputId, btn) => {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+
+    // Check for both readonly (inputs) and disabled (selects)
+    const isLocked = input.hasAttribute('readonly') || input.hasAttribute('disabled');
+    const icon = btn.querySelector('i');
+
+    if (isLocked) {
+        input.removeAttribute('readonly');
+        input.removeAttribute('disabled');
+        input.classList.remove('bg-light');
+        icon.className = 'bi bi-unlock-fill';
+        // Visual feedback based on color
+        if (inputId === 'caja_fecha') {
+            btn.classList.remove('btn-outline-primary', 'text-primary');
+            btn.classList.add('btn-primary', 'text-white');
+        } else {
+            btn.classList.remove('btn-outline-success', 'text-success');
+            btn.classList.add('btn-success', 'text-white');
+        }
+    } else {
+        // Lock it back
+        if (input.tagName === 'SELECT') {
+            input.setAttribute('disabled', 'true');
+        } else {
+            input.setAttribute('readonly', 'true');
+        }
+        input.classList.add('bg-light');
+        icon.className = 'bi bi-lock-fill';
+        
+        // Restore visual state
+        if (inputId === 'caja_fecha') {
+            btn.classList.remove('btn-primary', 'text-white');
+            btn.classList.add('btn-outline-primary', 'text-primary');
+        } else {
+            btn.classList.remove('btn-success', 'text-white');
+            btn.classList.add('btn-outline-success', 'text-success');
+        }
+    }
+};

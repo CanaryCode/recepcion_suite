@@ -63,42 +63,56 @@
             <li class="nav-item">
                 <button class="nav-link active" id="dashboard-tab" data-bs-toggle="tab"
                     data-bs-target="#dashboard-content" type="button">
-                    <i class="bi bi-house-door-fill me-1"></i> Inicio
+                    <span class="custom-tooltip" data-bs-placement="right" data-bs-title="Panel Principal">
+                        <i class="bi bi-house-door-fill me-1"></i> Inicio
+                    </span>
                 </button>
             </li>
 
             <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button">
-                    <i class="bi bi-person-walking me-1"></i> Operaciones
+                   <span class="custom-tooltip" data-bs-title="Módulos Operativos">
+                        <i class="bi bi-person-walking me-1"></i> Operaciones
+                   </span>
                 </a>
                 <ul class="dropdown-menu shadow border-0">
-                    <li><button class="dropdown-item" data-bs-toggle="tab" data-bs-target="#despertadores-content"><i
+                    <li><button class="dropdown-item" data-bs-toggle="tab" data-bs-target="#despertadores-content"
+                                data-bs-toggle="tooltip" data-bs-placement="left" data-bs-title="Gestionar Despertadores"><i
                                 class="bi bi-alarm me-2"></i>Despertadores</button></li>
-                    <li><button class="dropdown-item" data-bs-toggle="tab" data-bs-target="#desayuno-content"><i
+                    <li><button class="dropdown-item" data-bs-toggle="tab" data-bs-target="#desayuno-content"
+                                data-bs-toggle="tooltip" data-bs-placement="left" data-bs-title="Pedidos de Desayuno Temprano"><i
                                 class="bi bi-egg-fried me-2"></i>Desayuno Temprano</button></li>
-                    <li><button class="dropdown-item" data-bs-toggle="tab" data-bs-target="#cena-fria-content"><i
+                    <li><button class="dropdown-item" data-bs-toggle="tab" data-bs-target="#cena-fria-content"
+                                data-bs-toggle="tooltip" data-bs-placement="left" data-bs-title="Solicitudes de Cena Fría"><i
                                 class="bi bi-moon-stars me-2"></i>Cenas Frías</button></li>
-                    <li><button class="dropdown-item" data-bs-toggle="tab" data-bs-target="#atenciones-content"><i
+                    <li><button class="dropdown-item" data-bs-toggle="tab" data-bs-target="#atenciones-content"
+                                data-bs-toggle="tooltip" data-bs-placement="left" data-bs-title="Registro de Atenciones"><i
                                 class="bi bi-gift me-2"></i>Atenciones</button></li>
                 </ul>
             </li>
 
             <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button">
-                    <i class="bi bi-piggy-bank me-1"></i> Administración
+                   <span class="custom-tooltip" data-bs-title="Herramientas Administrativas">
+                        <i class="bi bi-piggy-bank me-1"></i> Administración
+                   </span>
                 </a>
                 <ul class="dropdown-menu shadow border-0">
-                    <li><button class="dropdown-item" onclick="abrirCaja()"><i class="bi bi-cash-coin me-2"></i>Cierre
+                    <li><button class="dropdown-item" onclick="abrirCaja()"
+                                data-bs-toggle="tooltip" data-bs-placement="left" data-bs-title="Arqueo y Cierre de Turno"><i class="bi bi-cash-coin me-2"></i>Cierre
                             de
                             Caja</button></li>
-                    <li><button class="dropdown-item" data-bs-toggle="tab" data-bs-target="#safe-content"><i
+                    <li><button class="dropdown-item" data-bs-toggle="tab" data-bs-target="#safe-content"
+                                data-bs-toggle="tooltip" data-bs-placement="left" data-bs-title="Control de Caja Fuerte"><i
                                 class="bi bi-safe2 me-2"></i>Control de Safe</button></li>
                 </ul>
             </li>
 
             <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button">
-                    <i class="bi bi-graph-up-arrow me-1"></i> Gestión
+                   <span class="custom-tooltip" data-bs-title="Gestión de Huéspedes">
+                        <i class="bi bi-graph-up-arrow me-1"></i> Gestión
+                   </span>
                 </a>
                 <ul class="dropdown-menu shadow border-0">
                     <li><button class="dropdown-item" data-bs-toggle="tab" data-bs-target="#riu-content"><i
@@ -110,7 +124,9 @@
 
             <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button">
-                    <i class="bi bi-life-preserver me-2"></i> Ayuda
+                    <span class="custom-tooltip" data-bs-title="Ayuda">
+                        <i class="bi bi-life-preserver me-2"></i> Ayuda
+                    </span>
                 </a>
                 <ul class="dropdown-menu shadow border-0">
                     <li><button class="dropdown-item" data-bs-toggle="tab" data-bs-target="#ayuda-content"><i
@@ -141,7 +157,8 @@
             <!-- Buscador Global y Selector de Usuario -->
             <div class="d-flex align-items-center ms-auto">
                 <!-- Visor de Alarmas -->
-                <button class="btn btn-link text-secondary me-2 position-relative" id="btnSystemAlarms" title="Alarmas del Sistema">
+                <button class="btn btn-link text-secondary me-2 position-relative" id="btnSystemAlarms" 
+                        data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-container="body" data-bs-title="Alarmas del Sistema" style="z-index: 1050;">
                     <i class="bi bi-bell-fill fs-5"></i>
                     <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle d-none" id="badgeSystemAlarms">
                         <span class="visually-hidden">New alerts</span>
@@ -152,7 +169,7 @@
                 <div class="dropdown me-3">
                     <button class="btn btn-outline-secondary dropdown-toggle btn-sm" type="button" id="globalUserBtn"
                         data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="bi bi-person-circle me-1"></i> <span id="globalUserName">Seleccionar Usuario</span>
+                        <i class="bi bi-person-circle me-1"></i> <span id="globalUserName" class="custom-tooltip" data-bs-title="Seleccionar Usuario">Seleccionar Usuario</span>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="globalUserBtn"
                         id="globalUserList">
@@ -185,25 +202,29 @@
                         <h4 class="fw-bold text-secondary mb-2">Accesos Directos</h4>
                     </div>
                     <div class="col-md-3">
-                        <a href="#" onclick="navegarA('#cobro-content')" class="btn-shortcut shortcut-success">
+                        <a href="#" onclick="navegarA('#cobro-content')" class="btn-shortcut shortcut-success"
+                           data-bs-toggle="tooltip" data-bs-title="Registrar Cobro">
                             <i class="bi bi-calculator-fill"></i>
                             <span>Cobro a Cliente</span>
                         </a>
                     </div>
                     <div class="col-md-3">
-                        <a href="#" onclick="navegarA('#novedades-content')" class="btn-shortcut shortcut-info">
+                        <a href="#" onclick="navegarA('#novedades-content')" class="btn-shortcut shortcut-info"
+                           data-bs-toggle="tooltip" data-bs-title="Libro de Novedades">
                             <i class="bi bi-journal-text"></i>
                             <span>Novedades</span>
                         </a>
                     </div>
                     <div class="col-md-3">
-                        <a href="#" onclick="navegarA('#agenda-content')" class="btn-shortcut shortcut-primary">
+                        <a href="#" onclick="navegarA('#agenda-content')" class="btn-shortcut shortcut-primary"
+                           data-bs-toggle="tooltip" data-bs-title="Agenda Telefónica">
                             <i class="bi bi-telephone-outbound"></i>
                             <span>Agenda</span>
                         </a>
                     </div>
                     <div class="col-md-3">
-                        <a href="#" onclick="navegarA('#notas-content')" class="btn-shortcut shortcut-warning">
+                        <a href="#" onclick="navegarA('#notas-content')" class="btn-shortcut shortcut-warning"
+                           data-bs-toggle="tooltip" data-bs-title="Notas Informativas">
                             <i class="bi bi-journal-bookmark-fill"></i>
                             <span>Notas Permanentes</span>
                         </a>
@@ -216,7 +237,8 @@
 
                     <div class="col-md-6 col-xl-3" id="dash-col-despertadores">
                         <div class="card border-0 shadow-sm h-100" style="cursor: pointer;"
-                            onclick="navegarA('#despertadores-content')">
+                            onclick="navegarA('#despertadores-content')"
+                            data-bs-toggle="tooltip" data-bs-title="Ver Despertadores Pendientes">
                             <div class="card-header border-0 py-2 d-flex justify-content-between align-items-center">
                                 <h6 class="mb-0 fw-bold"><i class="bi bi-alarm me-2"></i>Despertadores</h6>
                                 <div class="d-flex align-items-center gap-2">
@@ -233,7 +255,8 @@
 
                     <div class="col-md-6 col-xl-3" id="dash-col-novedades">
                         <div class="card border-0 shadow-sm h-100" style="cursor: pointer;"
-                            onclick="navegarA('#novedades-content')">
+                            onclick="navegarA('#novedades-content')"
+                            data-bs-toggle="tooltip" data-bs-title="Ver Novedades del Día">
                             <div class="card-header border-0 py-2 d-flex justify-content-between align-items-center">
                                 <h6 class="mb-0 fw-bold"><i class="bi bi-journal-text me-2"></i>Novedades</h6>
                                 <div class="d-flex align-items-center gap-2">
@@ -250,7 +273,8 @@
 
                     <div class="col-md-6 col-xl-3" id="dash-col-cenas">
                         <div class="card border-0 shadow-sm h-100" style="cursor: pointer;"
-                            onclick="navegarA('#cena-fria-content')">
+                            onclick="navegarA('#cena-fria-content')"
+                            data-bs-toggle="tooltip" data-bs-title="Ver Cenas Frías">
                             <div class="card-header border-0 py-2 d-flex justify-content-between align-items-center">
                                 <h6 class="mb-0 fw-bold"><i class="bi bi-moon-stars me-2"></i>Cenas Frías</h6>
                                 <div class="d-flex align-items-center gap-2">
@@ -268,7 +292,8 @@
 
                     <div class="col-md-6 col-xl-3" id="dash-col-desayunos">
                         <div class="card border-0 shadow-sm h-100" style="cursor: pointer;"
-                            onclick="navegarA('#desayuno-content')">
+                            onclick="navegarA('#desayuno-content')"
+                            data-bs-toggle="tooltip" data-bs-title="Ver Desayunos Tempranos">
                             <div class="card-header border-0 py-2 d-flex justify-content-between align-items-center">
                                 <h6 class="mb-0 fw-bold"><i class="bi bi-egg-fried me-2"></i>Desayunos</h6>
                                 <div class="d-flex align-items-center gap-2">

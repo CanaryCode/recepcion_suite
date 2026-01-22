@@ -13,7 +13,7 @@
     <div class="d-flex align-items-center gap-3">
         <h4 class="fw-bold text-secondary mb-0"><i class="bi bi-journal-bookmark-fill me-2"></i>Tablón de Notas</h4>
         <button class="btn btn-outline-secondary btn-sm border-0" onclick="toggleEdicionNotas()" id="btn-lock-notas"
-            title="Habilitar Edición">
+            title="Habilitar/Deshabilitar edición (eliminar notas)" data-bs-toggle="tooltip">
             <i class="bi bi-lock-fill" id="icon-lock-notas"></i> <span id="text-lock-notas"
                 class="d-none d-md-inline">Bloqueado</span>
         </button>
@@ -23,11 +23,12 @@
         <div class="input-group shadow-sm">
             <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
             <input type="text" id="searchNotas" class="form-control border-start-0 ps-0"
-                placeholder="Buscar en notas...">
+                placeholder="Buscar en notas..." data-bs-toggle="tooltip" data-bs-title="Filtrar notas...">
         </div>
     </div>
 
-    <button class="btn btn-primary shadow-sm d-none" id="btn-nueva-nota" onclick="abrirModalNota()">
+    <button class="btn btn-primary shadow-sm d-none" id="btn-nueva-nota" onclick="abrirModalNota()"
+            data-bs-toggle="tooltip" data-bs-title="Crear un nuevo Post-it">
         <i class="bi bi-plus-lg me-2"></i>Nueva Nota
     </button>
 </div>

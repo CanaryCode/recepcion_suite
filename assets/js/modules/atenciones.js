@@ -139,7 +139,7 @@ async function renderVistaRack() {
                 if (data && data.comentario) tooltip += ` (${data.comentario})`;
             }
 
-            rackHtml += `<div class="d-flex align-items-center justify-content-center rounded rack-box ${colorClass}" title="${tooltip}">${num}</div>`;
+            rackHtml += `<div class="d-flex align-items-center justify-content-center rounded rack-box ${colorClass}" data-bs-toggle="tooltip" data-bs-title="${tooltip}">${num}</div>`;
         }
     });
     rackCont.innerHTML = rackHtml;

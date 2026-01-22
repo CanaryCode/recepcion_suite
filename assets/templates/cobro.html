@@ -14,14 +14,18 @@
         <div class="card mb-4">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <span><i class="bi bi-calculator me-2"></i>Calculadora de Cambio</span>
-                <button class="btn btn-sm btn-light" onclick="resetearCobro()">Nueva Operación</button>
+                <button class="btn btn-sm btn-outline-primary shadow-sm fw-bold border-0" onclick="resetearCobro()"
+                    data-bs-toggle="tooltip" data-bs-title="Reiniciar calculadora para nuevo cliente">
+                    <i class="bi bi-arrow-repeat me-1"></i>Nueva Operación
+                </button>
             </div>
             <div class="card-body">
                 <div class="mb-4">
                     <label class="form-label fw-bold text-primary"><i class="bi bi-receipt me-2"></i>1. Total a Cobrar
                         (€)</label>
                     <input type="number" step="0.01" id="cobro_total_a_cobrar"
-                        class="form-control form-control-lg border-primary fw-bold" placeholder="0.00">
+                        class="form-control form-control-lg border-primary fw-bold" placeholder="0.00"
+                        data-bs-toggle="tooltip" data-bs-title="Introduce el importe total">
                 </div>
                 <div class="row">
                     <div class="col-md-6 border-end" id="recibido-container">

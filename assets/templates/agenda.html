@@ -17,7 +17,7 @@
                 <div class="row g-2 mb-2">
                     <div class="col-6">
                         <label class="form-label small mb-0">Prioridad *</label>
-                        <select id="agenda_categoria" class="form-select form-select-sm">
+                        <select id="agenda_categoria" class="form-select form-select-sm" data-bs-toggle="tooltip" data-bs-title="Tipo de Prioridad">
                             <option value="Común">Común</option>
                             <option value="Urgencia">Urgencia</option>
                             <option value="Información">Información</option>
@@ -26,7 +26,7 @@
                     </div>
                     <div class="col-6">
                         <label class="form-label small mb-0">Vínculo *</label>
-                        <select id="agenda_vinculo" class="form-select form-select-sm">
+                        <select id="agenda_vinculo" class="form-select form-select-sm" data-bs-toggle="tooltip" data-bs-title="Relación con el Contacto">
                             <option value="Trabajador">Trabajador</option>
                             <option value="Cliente">Cliente</option>
                             <option value="Empresa">Empresa</option>
@@ -37,16 +37,19 @@
                 </div>
                 <div class="mb-2">
                     <label class="form-label small mb-0">Nombre *</label>
-                    <input type="text" id="agenda_nombre" class="form-control form-control-sm" required>
+                    <input type="text" id="agenda_nombre" class="form-control form-control-sm" required
+                        data-bs-toggle="tooltip" data-bs-title="Nombre del Contacto">
                 </div>
                 <div id="telefonos-wrapper" class="mb-2"></div>
                 <div class="mb-2">
                     <label class="form-label small mb-0">Email</label>
-                    <input type="email" id="agenda_email" class="form-control form-control-sm">
+                    <input type="email" id="agenda_email" class="form-control form-control-sm"
+                        data-bs-toggle="tooltip" data-bs-title="Correo Electrónico">
                 </div>
                 <div class="mb-2">
                     <label class="form-label small mb-0">Web</label>
-                    <input type="url" id="agenda_web" class="form-control form-control-sm">
+                    <input type="url" id="agenda_web" class="form-control form-control-sm"
+                        data-bs-toggle="tooltip" data-bs-title="Sitio Web">
                 </div>
                 <div id="direccion-wrapper" class="row g-1 mb-2">
                     <div class="col-4">
@@ -72,14 +75,15 @@
                 </div>
                 <div class="mb-2">
                     <label class="form-label small mb-0">Comentarios</label>
-                    <textarea id="agenda_comentarios" class="form-control form-control-sm" rows="2"></textarea>
+                    <textarea id="agenda_comentarios" class="form-control form-control-sm" rows="2"
+                        data-bs-toggle="tooltip" data-bs-title="Notas Adicionales"></textarea>
                 </div>
                 <div class="d-flex justify-content-between align-items-center mt-3">
                     <div class="form-check mb-0">
                         <input type="checkbox" class="form-check-input" id="agenda_favorito">
                         <label class="form-check-label small" for="agenda_favorito">Favorito</label>
                     </div>
-                    <button type="submit" id="btnAgendaSubmit" class="btn btn-primary btn-sm px-4"><i class="bi bi-person-plus-fill me-2"></i>Guardar
+                    <button type="submit" id="btnAgendaSubmit" class="btn btn-primary btn-sm px-4" data-bs-toggle="tooltip" data-bs-title="Guardar Nuevo Contacto"><i class="bi bi-person-plus-fill me-2"></i>Guardar
                         Contacto</button>
                 </div>
             </form>
@@ -90,8 +94,10 @@
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h6 class="mb-0">Contactos (<span id="totalContactos">0</span>)</h6>
                 <div class="d-flex gap-2 w-50">
-                    <input type="text" id="searchAgenda" class="form-control form-control-sm" placeholder="Buscar...">
-                    <button class="btn btn-sm btn-outline-success" onclick="exportarAgendaCSV()">Exportar</button>
+                    <input type="text" id="searchAgenda" class="form-control form-control-sm" placeholder="Buscar..."
+                        data-bs-toggle="tooltip" data-bs-title="Filtrar contactos...">
+                    <button class="btn btn-sm btn-outline-success" onclick="exportarAgendaCSV()"
+                        data-bs-toggle="tooltip" data-bs-title="Exportar a CSV">Exportar</button>
                 </div>
             </div>
             <div class="table-responsive">

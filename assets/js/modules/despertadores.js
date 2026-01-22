@@ -189,10 +189,12 @@ function mostrarDespertadores() {
                 </div>
             </td>
             <td class="text-end">
-                <button onclick="prepararEdicionDespertador('${data.habitacion}')" class="btn btn-sm btn-outline-primary border-0 me-1" title="Editar">
+                <button onclick="prepararEdicionDespertador('${data.habitacion}')" class="btn btn-sm btn-outline-primary border-0 me-1"
+                        data-bs-toggle="tooltip" data-bs-title="Editar">
                     <i class="bi bi-pencil"></i>
                 </button>
-                <button onclick="eliminarDespertador('${data.habitacion}')" class="btn btn-sm btn-outline-success border-0" title="Marcar como hecho">
+                <button onclick="eliminarDespertador('${data.habitacion}')" class="btn btn-sm btn-outline-success border-0"
+                        data-bs-toggle="tooltip" data-bs-title="Marcar como hecho">
                     <i class="bi bi-check-circle-fill"></i>
                 </button>
             </td>
@@ -222,7 +224,7 @@ function renderVistaRackDespertadores() {
 
             rackCont.innerHTML += `
             <div class="d-flex align-items-center justify-content-center rounded rack-box ${colorClass}" 
-                 title="${data ? 'Despertador: ' + data.hora + (data.comentario ? ' - ' + data.comentario : '') : 'Sin programar'}">
+                 data-bs-toggle="tooltip" data-bs-title="${data ? 'Despertador: ' + data.hora + (data.comentario ? ' - ' + data.comentario : '') : 'Sin programar'}">
                 ${num}
             </div>`;
         }

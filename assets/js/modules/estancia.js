@@ -159,7 +159,7 @@ function mostrarEstancia() {
                     <td>${libres}</td>
                     <td><span class="badge bg-primary">${porcentaje}%</span></td>
                     <td class="text-end pe-4">
-                        <button onclick="eliminarDiaEstancia('${data.fecha}')" class="btn btn-sm btn-link text-danger p-0"><i class="bi bi-trash"></i></button>
+                        <button onclick="eliminarDiaEstancia('${data.fecha}')" class="btn btn-sm btn-link text-danger p-0" data-bs-toggle="tooltip" data-bs-title="Eliminar Registro"><i class="bi bi-trash"></i></button>
                     </td>
                 </tr>`;
         } else {

@@ -12,17 +12,20 @@
 
 <div class="module-toolbar no-print">
     <div class="btn-group" role="group">
-        <button type="button" class="btn btn-outline-primary active" id="btnVistaTrabajoSafe">
+        <button type="button" class="btn btn-outline-primary active" id="btnVistaTrabajoSafe"
+            data-bs-toggle="tooltip" data-bs-title="Ver Formulario y Lista">
             <i class="bi bi-pencil-square me-2"></i>Vista de Trabajo
         </button>
-        <button type="button" class="btn btn-outline-primary" id="btnVistaRackSafe">
+        <button type="button" class="btn btn-outline-primary" id="btnVistaRackSafe"
+            data-bs-toggle="tooltip" data-bs-title="Ver Resumen por Habitaciones">
             <i class="bi bi-grid-3x3-gap me-2"></i>Vista de Rack
         </button>
     </div>
 
     <div class="btn-print-wrapper">
         <!-- Selector eliminado: Se usa usuario global -->
-        <button class="btn btn-dark btn-sm fw-bold" onclick="imprimirSafe()">
+        <button class="btn btn-dark btn-sm fw-bold" onclick="imprimirSafe()"
+            data-bs-toggle="tooltip" data-bs-title="Imprimir Listado">
             <i class="bi bi-printer me-2"></i>Imprimir Listado
         </button>
     </div>
@@ -39,26 +42,29 @@
                 <div class="col-md-3">
                     <label class="form-label small fw-bold">Habitación</label>
                     <input type="text" id="safe_hab" class="form-control" placeholder="Ej: 101" required
-                        list="lista-habs-safe">
+                        list="lista-habs-safe" data-bs-toggle="tooltip" data-bs-title="Número de Habitación">
                     <datalist id="lista-habs-safe"></datalist>
                 </div>
                 <div class="col-md-4">
                     <label class="form-label small fw-bold">Nombre del Cliente</label>
-                    <input type="text" id="safe_nombre" class="form-control" placeholder="Nombre completo" required>
+                    <input type="text" id="safe_nombre" class="form-control" placeholder="Nombre completo" required
+                        data-bs-toggle="tooltip" data-bs-title="Nombre del Huésped">
                 </div>
                 <div class="col-md-3">
                     <label class="form-label small fw-bold">Fecha de Inicio</label>
-                    <input type="date" id="safe_fecha_inicio" class="form-control" required>
+                    <input type="date" id="safe_fecha_inicio" class="form-control" required
+                        data-bs-toggle="tooltip" data-bs-title="Inicio del Alquiler">
                 </div>
                 <div class="col-md-2">
-                    <button type="submit" class="btn btn-primary w-100 fw-bold py-2"><i class="bi bi-save-fill me-2"></i>Guardar</button>
+                    <button type="submit" class="btn btn-primary w-100 fw-bold py-2" data-bs-toggle="tooltip" data-bs-title="Registrar Alquiler"><i class="bi bi-save-fill me-2"></i>Guardar</button>
                 </div>
                 <!-- Selector de recepcionista estático -->
                 <!-- Selector de recepcionista eliminado -->
                 <div class="col-12 mt-2">
                     <label class="form-label small fw-bold">Comentarios</label>
                     <textarea id="safe_comentario" class="form-control" rows="2"
-                        placeholder="Notas adicionales sobre el alquiler (pérdida de llave, descuentos, etc.)"></textarea>
+                        placeholder="Notas adicionales sobre el alquiler (pérdida de llave, descuentos, etc.)"
+                        data-bs-toggle="tooltip" data-bs-title="Información Adicional"></textarea>
                 </div>
             </form>
         </div>

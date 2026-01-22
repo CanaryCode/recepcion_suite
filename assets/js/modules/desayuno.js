@@ -160,7 +160,7 @@ function renderVistaRackDesayuno() {
 
             rackCont.innerHTML += `
                 <div class="d-flex align-items-center justify-content-center rounded rack-box ${colorClass}" 
-                     title="${data ? 'Pax: ' + data.pax + ' | Hora: ' + data.hora + (data.obs ? ' | Obs: ' + data.obs : '') : 'Sin pedido'}">
+                     data-bs-toggle="tooltip" data-bs-title="${data ? 'Pax: ' + data.pax + ' | Hora: ' + data.hora + (data.obs ? ' | Obs: ' + data.obs : '') : 'Sin pedido'}">
                     ${num}
                 </div>`;
         }

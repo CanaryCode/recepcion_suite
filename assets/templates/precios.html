@@ -14,7 +14,8 @@
 
     <div class="btn-print-wrapper">
         <!-- Selector eliminado: Se usa usuario global -->
-        <button class="btn btn-primary btn-sm fw-bold" onclick="imprimirPrecios()">
+        <button class="btn btn-primary btn-sm fw-bold" onclick="imprimirPrecios()"
+            data-bs-toggle="tooltip" data-bs-title="Imprimir Listado de Precios">
             <i class="bi bi-printer me-2"></i>Imprimir Lista
         </button>
     </div>
@@ -31,10 +32,11 @@
                         <span class="input-group-text bg-light border-end-0"><i
                                 class="bi bi-search text-muted"></i></span>
                         <input type="text" id="search-precios-modulo" class="form-control border-start-0 bg-light"
-                            placeholder="Buscar artículo...">
+                            placeholder="Buscar artículo..." data-bs-toggle="tooltip" data-bs-title="Filtrar por nombre...">
                     </div>
 
-                    <button class="btn btn-outline-primary btn-sm text-nowrap" onclick="toggleEdicionPrecios()">
+                    <button class="btn btn-outline-primary btn-sm text-nowrap" onclick="toggleEdicionPrecios()"
+                            data-bs-toggle="tooltip" data-bs-title="Añadir o Borrar Artículos">
                         <i class="bi bi-lock-fill me-1" id="icon-lock-precios"></i>
                         <span id="btn-text-precios">Editar Lista</span>
                     </button>
@@ -47,7 +49,8 @@
             <form onsubmit="agregarPrecio(event)" class="row g-2 align-items-center">
                 <div class="col-auto"><input type="text" id="new-precio-icon" class="form-control text-center"
                         placeholder="Icono" style="width: 60px;" value="📦"
-                        onclick="abrirSelectorIconos('new-precio-icon')" readonly role="button"></div>
+                        onclick="abrirSelectorIconos('new-precio-icon')" readonly role="button"
+                        data-bs-toggle="tooltip" data-bs-title="Elige un icono"></div>
                 <div class="col"><input type="text" id="new-precio-nombre" class="form-control"
                         placeholder="Ej: Coca Cola" required></div>
                 <div class="col"><input type="text" id="new-precio-comentario" class="form-control"

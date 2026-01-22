@@ -239,8 +239,8 @@ function mostrarNovedades() {
                 </select>
             </td>
             <td class="text-end">
-                <button onclick="prepararEdicionNovedad(${n.id})" class="btn btn-sm btn-outline-primary border-0 me-1" title="Editar"><i class="bi bi-pencil"></i></button>
-                <button onclick="eliminarNovedad(${n.id})" class="btn btn-sm btn-outline-danger border-0" title="Eliminar"><i class="bi bi-trash"></i></button>
+                <button onclick="prepararEdicionNovedad(${n.id})" class="btn btn-sm btn-outline-primary border-0 me-1" data-bs-toggle="tooltip" data-bs-title="Editar"><i class="bi bi-pencil"></i></button>
+                <button onclick="eliminarNovedad(${n.id})" class="btn btn-sm btn-outline-danger border-0" data-bs-toggle="tooltip" data-bs-title="Eliminar"><i class="bi bi-trash"></i></button>
             </td>
         </tr>`;
     });

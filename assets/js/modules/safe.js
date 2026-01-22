@@ -169,7 +169,7 @@ function renderVistaRackSafe() {
 
             rackCont.innerHTML += `
                 <div class="d-flex align-items-center justify-content-center rounded rack-box ${colorClass}" 
-                     title="${data ? data.nombre + ' (Desde: ' + Utils.formatDate(data.fechaInicio) + ')' + (data.comentario ? ' | Obs: ' + data.comentario : '') : 'Libre'}">
+                     data-bs-toggle="tooltip" data-bs-title="${data ? data.nombre + ' (Desde: ' + Utils.formatDate(data.fechaInicio) + ')' + (data.comentario ? ' | Obs: ' + data.comentario : '') : 'Libre'}">
                     ${num}
                 </div>`;
         }

@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Reception Suite - Hotel Garoé</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/styles.css">
+    <!-- CARGA DIRECTA DE ESTILOS DE IMPRESIÓN (SIN CACHÉ) -->
+    <link rel="stylesheet" href="assets/css/print.css" media="print">
+    <script>
+        // DIAGNÓSTICO VISUAL DE ERRORES (TEMPORAL)
+        window.onerror = function (msg, url, line, col, error) {
+            let errorBox = document.getElementById('global-error-box');
+            if (!errorBox) {
+                errorBox = document.createElement('div');
+                errorBox.id = 'global-error-box';
+                errorBox.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:red;color:white;padding:20px;z-index:99999;font-family:monospace;max-height:50vh;overflow:auto;border-top:4px solid darkred;font-size:14px;';
+                document.body.appendChild(errorBox);
+            }
+            errorBox.innerHTML += `<div><strong>ERROR:</strong> ${msg} <br><small>${url}:${line}:${col}</small></div><hr>`;
+            return false;
+        };
+
+        // Capturar errores de Promesas no manejadas (Async)
+        window.addEventListener('unhandledrejection', function (event) {
+            window.onerror(event.reason, 'Promesa Async', 0, 0, event.reason);
+        });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Librería para generar PDF directamente -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+
+<body>
+    <div id="app-layout" class="container py-4">
+
+        <div class="text-center mb-4 no-print">
+            <div class="app-header-panel w-100">
+                <h1 class="display-4 fw-bold mb-0 text-dark" style="letter-spacing: -2px;">
+                    Recepción <span
+                        style="background: linear-gradient(45deg, #0d6efd, #6610f2); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">Suite</span>
+                </h1>
+                <div class="mt-2">
+                    <span class="text-muted fw-bold text-uppercase"
+                        style="font-size: 0.75rem; letter-spacing: 3px; opacity: 0.8;">
+                        <i class="bi bi-geo-alt-fill me-1"></i>Hotel Garoé
+                    </span>
+                    <div class="mt-1" style="font-size: 0.85rem; font-weight: 600; color: #6c757d;">
+                        Designed by <span class="text-primary">A. Jesús</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navegación por Pestañas -->
+        <ul class="nav nav-tabs mb-3 px-2" id="mainTabs" role="tablist">
+            <li class="nav-item">
+                <button class="nav-link active" id="dashboard-tab" data-bs-toggle="tab"
+                    data-bs-target="#dashboard-content" type="button">
+                    <i class="bi bi-house-door-fill me-1"></i> Inicio
+                </button>
+            </li>
+
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button">
+                    <i class="bi bi-person-walking me-1"></i> Operaciones
+                </a>
+                <ul class="dropdown-menu shadow border-0">
+                    <li><button class="dropdown-item" data-bs-toggle="tab" data-bs-target="#despertadores-content"><i
+                                class="bi bi-alarm me-2"></i>Despertadores</button></li>
+                    <li><button class="dropdown-item" data-bs-toggle="tab" data-bs-target="#desayuno-content"><i
+                                class="bi bi-egg-fried me-2"></i>Desayuno Temprano</button></li>
+                    <li><button class="dropdown-item" data-bs-toggle="tab" data-bs-target="#cena-fria-content"><i
+                                class="bi bi-moon-stars me-2"></i>Cenas Frías</button></li>
+                    <li><button class="dropdown-item" data-bs-toggle="tab" data-bs-target="#atenciones-content"><i
+                                class="bi bi-gift me-2"></i>Atenciones</button></li>
+                </ul>
+            </li>
+
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button">
+                    <i class="bi bi-piggy-bank me-1"></i> Administración
+                </a>
+                <ul class="dropdown-menu shadow border-0">
+                    <li><button class="dropdown-item" onclick="abrirCaja()"><i class="bi bi-cash-coin me-2"></i>Cierre
+                            de
+                            Caja</button></li>
+                    <li><button class="dropdown-item" data-bs-toggle="tab" data-bs-target="#safe-content"><i
+                                class="bi bi-safe2 me-2"></i>Control de Safe</button></li>
+                </ul>
+            </li>
+
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button">
+                    <i class="bi bi-graph-up-arrow me-1"></i> Gestión
+                </a>
+                <ul class="dropdown-menu shadow border-0">
+                    <li><button class="dropdown-item" data-bs-toggle="tab" data-bs-target="#riu-content"><i
+                                class="bi bi-credit-card-2-front me-2"></i>Gestión RIU Class</button></li>
+                    <li><button class="dropdown-item" data-bs-toggle="tab" data-bs-target="#estancia-content"><i
+                                class="bi bi-bar-chart-line me-2"></i>Control Estancia</button></li>
+                </ul>
+            </li>
+
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button">
+                    <i class="bi bi-life-preserver me-2"></i> Ayuda
+                </a>
+                <ul class="dropdown-menu shadow border-0">
+                    <li><button class="dropdown-item" data-bs-toggle="tab" data-bs-target="#ayuda-content"><i
+                                class="bi bi-journal-check me-2"></i>Guías Operativas</button></li>
+                    <li><button class="dropdown-item" data-bs-toggle="tab" data-bs-target="#precios-content"><i
+                                class="bi bi-tags-fill me-2"></i>Lista de Precios</button></li>
+                </ul>
+            </li>
+
+            <!-- Disparadores ocultos para navegación limpia desde el Dashboard -->
+            <li class="d-none" role="presentation">
+                <button data-bs-toggle="tab" data-bs-target="#riu-content" id="tab-riu-content"></button>
+                <button data-bs-toggle="tab" data-bs-target="#agenda-content" id="tab-agenda-content"></button>
+                <button data-bs-toggle="tab" data-bs-target="#caja-content" id="tab-caja-content"></button>
+                <button data-bs-toggle="tab" data-bs-target="#cobro-content" id="tab-cobro-content"></button>
+                <button data-bs-toggle="tab" data-bs-target="#safe-content" id="tab-safe-content"></button>
+                <button data-bs-toggle="tab" data-bs-target="#despertadores-content"
+                    id="tab-despertadores-content"></button>
+                <button data-bs-toggle="tab" data-bs-target="#novedades-content" id="tab-novedades-content"></button>
+                <button data-bs-toggle="tab" data-bs-target="#estancia-content" id="tab-estancia-content"></button>
+                <button data-bs-toggle="tab" data-bs-target="#desayuno-content" id="tab-desayuno-content"></button>
+                <button data-bs-toggle="tab" data-bs-target="#cena-fria-content" id="tab-cena-fria-content"></button>
+                <button data-bs-toggle="tab" data-bs-target="#atenciones-content" id="tab-atenciones-content"></button>
+                <button data-bs-toggle="tab" data-bs-target="#notas-content" id="tab-notas-content"></button>
+                <button data-bs-toggle="tab" data-bs-target="#precios-content" id="tab-precios-content"></button>
+            </li>
+
+            <!-- Buscador Global y Selector de Usuario -->
+            <div class="d-flex align-items-center ms-auto">
+                <!-- Selector de Usuario Global -->
+                <div class="dropdown me-3">
+                    <button class="btn btn-outline-secondary dropdown-toggle btn-sm" type="button" id="globalUserBtn"
+                        data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-person-circle me-1"></i> <span id="globalUserName">Seleccionar Usuario</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="globalUserBtn"
+                        id="globalUserList">
+                        <!-- Se llena dinámicamente -->
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+                        <li><button class="dropdown-item text-danger" onclick="window.logoutGlobal()"><i
+                                    class="bi bi-box-arrow-right me-2"></i>Desconectar</button></li>
+                    </ul>
+                </div>
+
+                <div class="nav-search-wrapper">
+                    <div class="input-group input-group-sm shadow-sm">
+                        <span class="input-group-text bg-white border-end-0"><i
+                                class="bi bi-search text-muted"></i></span>
+                        <input type="text" id="globalSearch" class="form-control border-start-0 ps-0"
+                            placeholder="Buscar módulo..." autocomplete="off">
+                    </div>
+                    <div id="searchResults" class="search-results-dropdown d-none"></div>
+                </div>
+            </div>
+        </ul>
+
+        <div class="tab-content" id="mainTabsContent">
+            <!-- Nueva pestaña de Dashboard -->
+            <div class="tab-pane fade show active" id="dashboard-content" role="tabpanel">
+                <div class="row g-3 py-2">
+                    <div class="col-md-12">
+                        <h4 class="fw-bold text-secondary mb-2">Accesos Directos</h4>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="#" onclick="navegarA('#cobro-content')" class="btn-shortcut shortcut-success">
+                            <i class="bi bi-calculator-fill"></i>
+                            <span>Cobro a Cliente</span>
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="#" onclick="navegarA('#novedades-content')" class="btn-shortcut shortcut-info">
+                            <i class="bi bi-journal-text"></i>
+                            <span>Novedades</span>
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="#" onclick="navegarA('#agenda-content')" class="btn-shortcut shortcut-primary">
+                            <i class="bi bi-telephone-outbound"></i>
+                            <span>Agenda</span>
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="#" onclick="navegarA('#notas-content')" class="btn-shortcut shortcut-warning">
+                            <i class="bi bi-journal-bookmark-fill"></i>
+                            <span>Notas Permanentes</span>
+                        </a>
+                    </div>
+
+                    <!-- Sección de Resumen Simplificado -->
+                    <div class="col-md-12 mt-3">
+                        <h4 class="fw-bold text-secondary mb-2">Resumen del Día</h4>
+                    </div>
+
+                    <div class="col-md-6 col-xl-3" id="dash-col-despertadores">
+                        <div class="card border-0 shadow-sm h-100" style="cursor: pointer;"
+                            onclick="navegarA('#despertadores-content')">
+                            <div class="card-header border-0 py-2 d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0 fw-bold"><i class="bi bi-alarm me-2"></i>Despertadores</h6>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-warning text-dark" id="dash-count-despertadores">0</span>
+                                </div>
+                            </div>
+                            <div class="card-body p-0 overflow-auto" style="max-height: 200px;">
+                                <table class="table table-sm table-hover mb-0" style="font-size: 0.8rem;">
+                                    <tbody id="dash-tabla-despertadores"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 col-xl-3" id="dash-col-novedades">
+                        <div class="card border-0 shadow-sm h-100" style="cursor: pointer;"
+                            onclick="navegarA('#novedades-content')">
+                            <div class="card-header border-0 py-2 d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0 fw-bold"><i class="bi bi-journal-text me-2"></i>Novedades</h6>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-info" id="dash-count-novedades">0</span>
+                                </div>
+                            </div>
+                            <div class="card-body p-0 overflow-auto" style="max-height: 200px;">
+                                <table class="table table-sm table-hover mb-0" style="font-size: 0.8rem;">
+                                    <tbody id="dash-tabla-novedades"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 col-xl-3" id="dash-col-cenas">
+                        <div class="card border-0 shadow-sm h-100" style="cursor: pointer;"
+                            onclick="navegarA('#cena-fria-content')">
+                            <div class="card-header border-0 py-2 d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0 fw-bold"><i class="bi bi-moon-stars me-2"></i>Cenas Frías</h6>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-primary" id="dash-count-cenas"
+                                        style="background-color: #6610f2 !important;">0</span>
+                                </div>
+                            </div>
+                            <div class="card-body p-0 overflow-auto" style="max-height: 200px;">
+                                <table class="table table-sm table-hover mb-0" style="font-size: 0.8rem;">
+                                    <tbody id="dash-tabla-cenas"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 col-xl-3" id="dash-col-desayunos">
+                        <div class="card border-0 shadow-sm h-100" style="cursor: pointer;"
+                            onclick="navegarA('#desayuno-content')">
+                            <div class="card-header border-0 py-2 d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0 fw-bold"><i class="bi bi-egg-fried me-2"></i>Desayunos</h6>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-danger" id="dash-count-desayunos">0</span>
+                                </div>
+                            </div>
+                            <div class="card-body p-0 overflow-auto" style="max-height: 200px;">
+                                <table class="table table-sm table-hover mb-0" style="font-size: 0.8rem;">
+                                    <tbody id="dash-tabla-desayunos"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="riu-content" role="tabpanel"></div>
+            <div class="tab-pane fade" id="agenda-content" role="tabpanel"></div>
+            <div class="tab-pane fade" id="caja-content" role="tabpanel"></div>
+            <div class="tab-pane fade" id="cobro-content" role="tabpanel"></div>
+            <div class="tab-pane fade" id="safe-content" role="tabpanel"></div>
+            <div class="tab-pane fade" id="despertadores-content" role="tabpanel"></div>
+            <div class="tab-pane fade" id="novedades-content" role="tabpanel"></div>
+            <div class="tab-pane fade" id="estancia-content" role="tabpanel"></div>
+            <div class="tab-pane fade" id="desayuno-content" role="tabpanel"></div>
+            <div class="tab-pane fade" id="cena-fria-content" role="tabpanel"></div>
+            <div class="tab-pane fade" id="atenciones-content" role="tabpanel"></div>
+            <div class="tab-pane fade" id="ayuda-content" role="tabpanel"></div>
+            <div class="tab-pane fade" id="notas-content" role="tabpanel"></div>
+            <div class="tab-pane fade" id="precios-content" role="tabpanel"></div>
+        </div>
+
+    </div> <!-- END #app-layout -->
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script type="module" src="assets/js/main.js"></script>
+</body>
+
+</html>

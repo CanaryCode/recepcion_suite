@@ -1,0 +1,111 @@
+<div class="d-none d-print-block report-header-print">
+    <div class="report-info-left">
+        <h2>Lista de Precios</h2>
+        <p>Hotel Garoé • Recepción</p>
+    </div>
+    <div class="report-info-right">
+        <div><strong>Fecha:</strong> <span id="print-date-precios"></span></div>
+        <div class="text-muted" style="font-size: 7pt; margin-top: 5px;">Documento Interno de Uso Operativo</div>
+    </div>
+</div>
+
+<div class="module-toolbar no-print d-flex justify-content-end">
+
+    <div class="btn-print-wrapper">
+        <!-- Selector eliminado: Se usa usuario global -->
+        <button class="btn btn-primary btn-sm fw-bold" onclick="imprimirPrecios()">
+            <i class="bi bi-printer me-2"></i>Imprimir Lista
+        </button>
+    </div>
+</div>
+
+<div class="container-fluid p-3">
+    <div class="card shadow-sm border-0">
+        <!-- Controles de Filtro y Edición -->
+        <div class="card-header bg-white py-3 border-bottom">
+            <div class="d-flex justify-content-between align-items-center gap-3">
+                <h5 class="mb-0 fw-bold text-success"><i class="bi bi-tags-fill me-2"></i>Lista de Precios</h5>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="input-group input-group-sm" style="max-width: 300px;">
+                        <span class="input-group-text bg-light border-end-0"><i
+                                class="bi bi-search text-muted"></i></span>
+                        <input type="text" id="search-precios-modulo" class="form-control border-start-0 bg-light"
+                            placeholder="Buscar artículo...">
+                    </div>
+
+                    <button class="btn btn-outline-secondary btn-sm text-nowrap" onclick="toggleEdicionPrecios()">
+                        <i class="bi bi-lock-fill me-1" id="icon-lock-precios"></i>
+                        <span id="btn-text-precios">Editar Lista</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Formulario de añadir (Solo visible en edición) -->
+        <div id="form-add-precio-container" class="card-body bg-light border-bottom p-3 d-none">
+            <form onsubmit="agregarPrecio(event)" class="row g-2 align-items-center">
+                <div class="col-auto"><input type="text" id="new-precio-icon" class="form-control text-center"
+                        placeholder="Icono" style="width: 60px;" value="📦"
+                        onclick="abrirSelectorIconos('new-precio-icon')" readonly role="button"></div>
+                <div class="col"><input type="text" id="new-precio-nombre" class="form-control"
+                        placeholder="Ej: Coca Cola" required></div>
+                <div class="col"><input type="text" id="new-precio-comentario" class="form-control"
+                        placeholder="Comentario / Detalle"></div>
+                <div class="col-auto">
+                    <div class="input-group"><input type="number" id="new-precio-valor" class="form-control"
+                            placeholder="0.00" step="0.01" style="width: 100px;" required><span
+                            class="input-group-text">€</span></div>
+                </div>
+                <div class="col-auto"><button type="submit" class="btn btn-primary"><i
+                            class="bi bi-plus-lg"></i></button></div>
+            </form>
+        </div>
+
+        <div class="card-body p-0" style="max-height: calc(100vh - 220px); overflow-y: auto;">
+            <div id="lista-precios-container" class="list-group list-group-flush"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Selección de Icono -->
+<div class="modal fade" id="modalIconos" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Seleccionar Icono</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <ul class="nav nav-tabs mb-3" id="iconTabs" role="tablist">
+                    <li class="nav-item" role="presentation"><button class="nav-link active" id="emojis-tab"
+                            data-bs-toggle="tab" data-bs-target="#emojis-panel" type="button"><i
+                                class="bi bi-emoji-smile me-2"></i>Iconos</button></li>
+                    <li class="nav-item" role="presentation"><button class="nav-link" id="images-tab"
+                            data-bs-toggle="tab" data-bs-target="#images-panel" type="button"><i
+                                class="bi bi-image me-2"></i>Mi PC</button></li>
+                </ul>
+                <div class="tab-content">
+                    <div class="tab-pane fade show active" id="emojis-panel" role="tabpanel">
+                        <div class="input-group input-group-sm mb-2">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control" placeholder="Filtrar iconos..."
+                                onkeyup="filtrarEmojis(this.value)">
+                        </div>
+                        <div class="d-flex flex-wrap gap-2 justify-content-center" id="emoji-grid"
+                            style="max-height: 300px; overflow-y: auto;"></div>
+                    </div>
+                    <div class="tab-pane fade" id="images-panel" role="tabpanel">
+                        <div class="text-center p-4 border rounded bg-light">
+                            <label for="inputImagenPC" class="btn btn-primary mb-3">
+                                <i class="bi bi-upload me-2"></i>Seleccionar imagen del PC
+                            </label>
+                            <input type="file" id="inputImagenPC" class="d-none" accept="image/*"
+                                onchange="procesarImagenSubida(this)">
+                            <p class="small text-muted mb-0">La imagen se guardará y redimensionará automáticamente.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

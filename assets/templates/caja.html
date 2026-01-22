@@ -1,0 +1,149 @@
+<div class="module-toolbar no-print d-flex justify-content-end">
+    <div class="btn-print-wrapper gap-2">
+        <!-- Selector eliminado: Se usa usuario global -->
+        <button class="btn btn-danger btn-sm fw-bold" onclick="guardarCajaPDF()">
+            <i class="bi bi-file-earmark-pdf me-2"></i>Guardar
+        </button>
+        <button class="btn btn-info btn-sm fw-bold text-white" onclick="enviarCajaEmail()">
+            <i class="bi bi-envelope me-2"></i>Email
+        </button>
+        <button class="btn btn-primary btn-sm fw-bold" onclick="imprimirCierreCaja()">
+            <i class="bi bi-printer me-2"></i>Imprimir Cierre
+        </button>
+    </div>
+</div>
+
+<div class="report-header-print d-none d-print-flex">
+    <div class="report-info-left">
+        <h2>CIERRE DE CAJA</h2>
+        <p>Hotel Garoé - Recepción</p>
+    </div>
+    <div class="report-info-right">
+        <div><strong>Fecha:</strong> <span id="print-date-caja"></span></div>
+        <div><strong>Recepcionista:</strong> <span id="print-repc-nombre-caja"></span></div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-3 shadow-sm border-0">
+            <div class="card-body py-2">
+                <div class="row g-3 align-items-center">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted mb-1"><i
+                                class="bi bi-calendar3 me-1"></i>FECHA AC CONTABLE</label>
+                        <input type="date" id="caja_fecha" class="form-control form-control-sm bg-light" readonly>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted mb-1">TURNO</label>
+                        <select id="caja_turno" class="form-select form-select-sm">
+                            <option value="mañana">Mañana</option>
+                            <option value="tarde" selected>Tarde</option>
+                            <option value="noche">Noche</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card mb-4 shadow-sm border-0">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-calculator me-2"></i>Efectivo</span>
+                <div>
+                    <button class="btn btn-sm btn-primary me-1 shadow-sm" onclick="agregarNuevoConcepto()"><i
+                            class="bi bi-plus-circle me-1"></i>Concepto</button>
+                    <button class="btn btn-sm btn-outline-danger border-0" onclick="resetearCaja()"><i
+                            class="bi bi-trash me-1"></i>Limpiar</button>
+                </div>
+            </div>
+            <div class="card-body row">
+                <div class="col-md-6 border-end" id="billetes-container">
+                    <h6>Billetes</h6>
+                </div>
+                <div class="col-md-6" id="monedas-container">
+                    <h6>Monedas</h6>
+                </div>
+            </div>
+            <div class="card-footer bg-white row g-3" id="otros-container">
+                <div class="col-md-4">
+                    <div class="input-group input-group-sm"><span class="input-group-text w-50"><i
+                                class="bi bi-ticket-perforated me-2"></i>Vales</span><input type="number"
+                            id="caja_vales" class="form-control"></div>
+                </div>
+                <div class="col-md-4">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text"><i class="bi bi-postage me-2"></i>Sellos</span>
+                        <input type="number" id="caja_sellos_cant" class="form-control" placeholder="Ej: 5">
+                        <input type="number" id="caja_sellos_precio" class="form-control" value="2.00"
+                            title="Precio Unitario">
+                        <span class="input-group-text fw-bold text-primary bg-white"
+                            id="caja_sellos_total_lbl">0.00€</span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="input-group input-group-sm"><span class="input-group-text text-danger"><i
+                                class="bi bi-dash-circle me-2"></i>Desemb.</span><input type="number"
+                            id="caja_desembolsos" class="form-control border-danger"></div>
+                </div>
+                <div class="col-md-4">
+                    <div class="input-group input-group-sm"><span class="input-group-text w-50"><i
+                                class="bi bi-safe me-2"></i>Safe</span><input type="number" id="caja_safe"
+                            class="form-control"></div>
+                </div>
+                <div class="col-md-4">
+                    <div class="input-group input-group-sm"><span class="input-group-text w-50"><i
+                                class="bi bi-plus-circle me-2"></i>Extra</span><input type="number"
+                            id="caja_monedas_extra" class="form-control"></div>
+                </div>
+                <div class="col-md-4">
+                    <div class="input-group input-group-sm"><span class="input-group-text w-50"><i
+                                class="bi bi-bank me-2"></i>Fondo</span><input type="number" id="caja_fondo"
+                            class="form-control" value="2000"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="sticky-top" style="top: 20px; z-index: 1;">
+            <div class="card mb-3 shadow-sm border-0">
+                <div class="card-body text-center">
+                    <h5 class="text-secondary"><i class="bi bi-wallet2 me-2"></i>Total Tesorería</h5>
+                    <h1 class="display-4 fw-bold" id="total_caja">0.00€</h1>
+                    <hr class="my-2">
+                    <div class="d-flex justify-content-between small"><span>Billetes:</span><span
+                            id="subtotal_billetes">0.00€</span></div>
+                    <div class="d-flex justify-content-between small"><span>Monedas:</span><span
+                            id="subtotal_monedas">0.00€</span></div>
+                    <div class="d-flex justify-content-between small fw-bold border-top pt-1 mb-1 text-primary">
+                        <span>TOTAL
+                            EFECTIVO:</span><span id="total_efectivo">0.00€</span>
+                    </div>
+
+                    <div class="d-flex justify-content-between small fw-bold text-primary"><span>OTROS
+                            CONCEPTOS:</span><span id="subtotal_otros">0.00€</span></div>
+
+                    <div class="p-3 rounded bg-primary bg-opacity-25 mt-4 border border-primary">
+                        <small class="text-info fw-bold"><i class="bi bi-graph-up-arrow me-1"></i>PRODUCCIÓN
+                            (VENTA)</small>
+                        <h2 class="fw-bold" id="recaudacion_caja">0.00€</h2>
+                    </div>
+
+                </div>
+            </div>
+            <div class="card shadow-sm border-0 flex-grow-1 d-flex flex-column" id="card-comentarios-caja">
+                <div class="card-body d-flex flex-column">
+                    <label class="small fw-bold text-muted mb-2"><i
+                            class="bi bi-chat-left-text me-2"></i>COMENTARIOS</label>
+                    <textarea id="caja_comentarios_cierre" class="form-control flex-grow-1 d-print-none"
+                        style="min-height: 150px;" placeholder="Ej: Falta ticket de taxi, sobrante de 2€..."></textarea>
+                    <div id="print-comentarios-caja" class="d-none d-print-block flex-grow-1 border p-2"
+                        style="white-space: pre-wrap; font-size: 9pt; min-height: 250px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="signature-area d-none d-print-flex">
+    <div class="sig-box"><span>Firma Recepcionista</span></div>
+    <div class="sig-box"><span>Firma Intervención</span></div>
+</div>

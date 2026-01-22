@@ -1,0 +1,59 @@
+<div class="module-toolbar no-print d-flex justify-content-end">
+
+    <div class="btn-print-wrapper">
+        <!-- Selector eliminado: Se usa usuario global -->
+        <button class="btn btn-primary btn-sm fw-bold" onclick="imprimirGuia()">
+            <i class="bi bi-printer me-2"></i>Imprimir Guía
+        </button>
+    </div>
+</div>
+
+<div id="ayuda-wrapper" class="container-fluid p-4">
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
+            <div class="d-flex align-items-center gap-3">
+                <select class="form-select form-select-sm fw-bold border-primary text-primary" id="select-guia-ayuda"
+                    style="width: auto; min-width: 220px;">
+                    <option value="noche" selected>🌙 Guía Turno de Noche</option>
+                    <option value="mañana">☕ Guía Turno de Mañana</option>
+                    <option value="tarde">☀️ Guía Turno de Tarde</option>
+                </select>
+                <h5 class="mb-0 text-primary fw-bold d-none" id="titulo-guia">
+                    <!-- El título se actualiza via JS pero ahora usamos el select como título interactivo -->
+                </h5>
+                <input type="text" id="search-precios" class="form-control form-control-sm d-none"
+                    placeholder="Buscar producto..." style="width: 200px;">
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-secondary btn-sm" onclick="toggleEdicionGuia()">
+                    <i class="bi bi-lock-fill me-1" id="icono-candado"></i>
+                    <span id="texto-btn-edicion">Editar Guía</span>
+                </button>
+                <button class="btn btn-light border shadow-sm text-muted" onclick="resetearChecksGuia()">
+                    <i class="bi bi-arrow-counterclockwise me-2"></i>Resetear Todo
+                </button>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div id="lista-pasos-container" class="list-group list-group-flush">
+                <!-- Los pasos se renderizan aquí -->
+            </div>
+
+            <!-- Área de agregar paso (Solo visible en edición) -->
+            <div id="form-agregar-paso" class="p-3 bg-light border-top d-none">
+                <div class="d-flex gap-2 align-items-start">
+                    <div id="nuevo-paso-texto" contenteditable="true" class="form-control bg-white"
+                        onfocus="setFoco(this)"
+                        onkeydown="if(event.key==='Enter'){event.preventDefault(); agregarPasoGuiaManual();}"
+                        style="min-height: 38px;"></div>
+                    <button onclick="agregarPasoGuiaManual()" class="btn btn-primary px-4"><i class="bi bi-plus-lg"></i>
+                        Añadir</button>
+                </div>
+            </div>
+        </div>
+        <div class="card-footer bg-light text-muted small">
+            <i class="bi bi-info-circle me-1"></i>
+            <span id="info-footer">Modo Lectura: Marca las casillas a medida que completes las tareas.</span>
+        </div>
+    </div>
+</div>

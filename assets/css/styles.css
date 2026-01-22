@@ -1,0 +1,20 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+/* === ORQUESTADOR DE ESTILOS === */
+/* Importamos los módulos en orden específico */
+
+@import 'base.css';
+/* Variables, Reset y Tipografía */
+@import 'components.css';
+/* Botones, Tarjetas, Menús, Inputs */
+@import 'modules.css';
+/* Estilos específicos de cada módulo (Caja, Riu, Notas...) */
+/* @import 'print.css'; -- MOVIDO A INDEX.HTML PARA CONTROLAR CACHE */
+
+/* FIX: Navbar Layout */
+/* FIX: Navbar Layout - Ajustes finos */
+.nav-search-wrapper {
+    width: 250px;
+    /* Ancho un poco mayor para mejor usabilidad */
+    transition: width 0.3s ease;
+}

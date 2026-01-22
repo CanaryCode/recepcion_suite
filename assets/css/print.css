@@ -1,0 +1,163 @@
+/* ==========================================================================
+   SISTEMA DE IMPRESIÓN - VERSIÓN "NUCLEAR" CORREGIDA
+   ========================================================================== */
+@media print {
+
+    /* 1. RESET DE PÁGINA */
+    @page {
+        size: A4 portrait;
+        margin: 0 !important;
+        /* Margen 0 físico */
+    }
+
+    /* 2. OCULTAR TODO EL DOCUMENTO POR DEFECTO */
+    body {
+        visibility: hidden !important;
+        background: white !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    /* 3. VISIBILIDAD DE CONTENIDO CLAVE */
+    /* Hacemos visible el wrapper y la pestaña activa */
+    #app-layout {
+        visibility: visible !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        width: 100% !important;
+    }
+
+    .tab-content {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .tab-pane.active {
+        visibility: visible !important;
+        display: block !important;
+
+        /* POSICIONAMIENTO ABSOLUTO PARA IGNORAR FLUJO */
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+
+        /* Margen de seguridad estético (1cm) */
+        padding: 10mm !important;
+        margin: 0 !important;
+
+        background: white !important;
+        z-index: 9999 !important;
+    }
+
+    /* Aseguramos que los hijos sean visibles */
+    .tab-pane.active * {
+        visibility: visible !important;
+    }
+
+    /* 4. RESET CRÍTICO DE CLASES JS (.content-panel, etc) */
+    .content-panel,
+    [id$="-trabajo"],
+    [id$="-rack"] {
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+        background: transparent !important;
+        min-height: auto !important;
+    }
+
+    /* 5. OCULTAR ELEMENTOS DE INTERFAZ */
+    .no-print,
+    .nav,
+    .navbar,
+    .app-header-panel,
+    .module-toolbar,
+    .btn,
+    .btn-group,
+    footer,
+    .d-print-none,
+    .modal-backdrop,
+    .modal {
+        display: none !important;
+    }
+
+    /* 6. CABECERA DE REPORTE */
+    .report-header-print {
+        display: flex !important;
+        width: 100% !important;
+        justify-content: space-between !important;
+        align-items: flex-start !important;
+        border-bottom: 2px solid #000 !important;
+        margin-bottom: 15px !important;
+        padding-bottom: 10px !important;
+        margin-top: 0 !important;
+    }
+
+    .report-info-left h2 {
+        font-size: 16pt !important;
+        font-weight: 800 !important;
+        margin: 0 0 5px 0 !important;
+        text-transform: uppercase !important;
+        color: #000 !important;
+    }
+
+    .report-info-left p {
+        font-size: 9pt !important;
+        color: #444 !important;
+        margin: 0 !important;
+    }
+
+    .report-info-right {
+        text-align: right !important;
+        font-size: 9pt !important;
+    }
+
+    /* 7. TABLAS */
+    .table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        margin-bottom: 0 !important;
+    }
+
+    .table th {
+        background-color: #f0f0f0 !important;
+        color: #000 !important;
+        font-weight: bold !important;
+        border-bottom: 1px solid #000 !important;
+        padding: 5px !important;
+    }
+
+    .table td {
+        border-bottom: 1px solid #ddd !important;
+        padding: 5px !important;
+    }
+
+    /* 8. TARJETAS */
+    .card {
+        border: none !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        margin-bottom: 10px !important;
+    }
+
+    .card-header {
+        background: transparent !important;
+        border-bottom: 1px solid #000 !important;
+        padding: 5px 0 !important;
+        margin-bottom: 5px !important;
+    }
+
+    .card-body {
+        padding: 0 !important;
+    }
+
+    /* 9. INPUTS CLAROS */
+    input,
+    select {
+        border: none !important;
+        background: transparent !important;
+        padding: 0 !important;
+    }
+}

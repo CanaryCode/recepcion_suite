@@ -1,7 +1,9 @@
 export const APP_CONFIG = {
     SYSTEM: {
-        USE_API: false, // Set to true to switch to Backend API
-        API_URL: "http://localhost:3000/api"
+        USE_API: false, // Legacy flag, might be deprecated in favor of hybrid
+        USE_SYNC_SERVER: true, // Enable Background Sync
+        API_URL: "http://localhost:3000/api",
+        SYNC_INTERVAL: 10000 // Retry sync every 10 seconds
     },
     HOTEL: {
         NOMBRE: "Hotel Garoé",

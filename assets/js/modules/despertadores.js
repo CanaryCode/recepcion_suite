@@ -2,6 +2,7 @@ import { APP_CONFIG } from '../core/Config.js';
 import { Utils } from '../core/Utils.js';
 import { despertadorService } from '../services/DespertadorService.js';
 import { sessionService } from '../services/SessionService.js';
+import { systemAlarmsService } from '../services/SystemAlarmsService.js';
 
 let checkInterval = null;
 let ultimoMinutoProcesado = "";
@@ -31,6 +32,9 @@ export function inicializarDespertadores() {
 
     document.getElementById('btnVistaTrabajoDesp')?.addEventListener('click', () => cambiarVistaDespertadores('trabajo'));
     document.getElementById('btnVistaRackDesp')?.addEventListener('click', () => cambiarVistaDespertadores('rack'));
+
+    // Navegar a despertadores al pulsar la campana (MODIFICADO: Abrir visor manual)
+    // Evento de Campana ELIMINADO de aquí. Ahora lo gestiona alarms.js
 
     // Poblar datalist de habitaciones
     const datalist = document.getElementById('lista-habs-desp');
@@ -67,6 +71,7 @@ function crearModalAlarma() {
                 <div class="modal-content border-danger shadow-lg">
                     <div class="modal-header bg-danger text-white">
                         <h5 class="modal-title fw-bold"><i class="bi bi-alarm-fill me-2"></i>¡ALARMA DE DESPERTADOR!</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body text-center p-4">
                         <div class="display-1 text-danger mb-3"><i class="bi bi-bell-fill"></i></div>
@@ -74,7 +79,7 @@ function crearModalAlarma() {
                         <div class="text-start bg-light p-3 rounded border" id="alarma-lista-display" style="max-height: 300px; overflow-y: auto;"></div>
                     </div>
                     <div class="modal-footer justify-content-center">
-                        <button type="button" class="btn btn-danger btn-lg fw-bold px-5" data-bs-dismiss="modal"><i class="bi bi-check-lg me-2"></i>ENTENDIDO, APAGAR</button>
+                        <button type="button" class="btn btn-secondary btn-lg fw-bold px-5" data-bs-dismiss="modal">CERRAR</button>
                     </div>
                 </div>
             </div>
@@ -149,6 +154,7 @@ function manejarSubmitDespertador(e) {
 // ============================================================================
 
 function mostrarDespertadores() {
+    actualizarEstadoCampana(new Date());
     const despertadores = despertadorService.getDespertadores();
 
     // Actualizar Dashboard (si existe)
@@ -239,60 +245,148 @@ function renderVistaRackDespertadores() {
     </div>`;
 }
 
-// ============================================================================
-// VERIFICADOR DE ALARMAS
-// ============================================================================
-
 function verificarAlarmas() {
     try {
         const ahora = new Date();
         const horaActual = `${ahora.getHours().toString().padStart(2, '0')}:${ahora.getMinutes().toString().padStart(2, '0')}`;
 
-        if (horaActual === ultimoMinutoProcesado) return;
+        if (horaActual === ultimoMinutoProcesado) {
+             actualizarEstadoCampana(ahora); 
+             return;
+        }
+        
+        actualizarEstadoCampana(ahora); 
 
         const despertadores = despertadorService.getDespertadores();
-        const habitacionesAlerta = [];
+        const alertas = [];
 
         despertadores.forEach(d => {
             if (d.hora === horaActual) {
-                habitacionesAlerta.push(`• Habitación ${d.habitacion}${d.comentario ? ' (' + d.comentario + ')' : ''}`);
+                alertas.push({
+                    type: 'room',
+                    id: d.habitacion,
+                    text: `Habitación ${d.habitacion}`,
+                    subtext: d.comentario || ''
+                });
             }
         });
 
-        if (APP_CONFIG.HOTEL?.ALARMAS_SISTEMA) {
-            APP_CONFIG.HOTEL.ALARMAS_SISTEMA.forEach(alarma => {
-                if (alarma.hora === horaActual) {
-                    habitacionesAlerta.push(`⚠️ TAREA DE SISTEMA: ${alarma.mensaje}`);
-                }
-            });
-        }
+        // SYSTEM ALARMS REMOVED FROM HERE
 
-        if (habitacionesAlerta.length > 0) {
+        if (alertas.length > 0) {
             ultimoMinutoProcesado = horaActual;
-            lanzarAlarma(habitacionesAlerta, horaActual);
+            lanzarAlarma(alertas, horaActual, true); // Play sound = true
         }
     } catch (error) {
         console.error("Error silencioso en el verificador de alarmas:", error);
     }
 }
 
-function lanzarAlarma(lista, hora) {
+function lanzarAlarma(lista, hora, playSound = false) {
     alarmaAudio.currentTime = 0;
-    alarmaAudio.play().catch(err => console.error("Error audio:", err));
+    if (playSound) {
+        alarmaAudio.play().catch(err => console.error("Error audio:", err));
+    }
 
     const modalEl = document.getElementById('modalAlarmaDespertador');
     if (modalEl && typeof bootstrap !== 'undefined') {
         document.getElementById('alarma-hora-display').innerText = hora;
-        document.getElementById('alarma-lista-display').innerHTML = lista.map(t => `<div class="mb-2 pb-2 border-bottom border-secondary border-opacity-25 fw-bold">${t}</div>`).join('');
+        
+        const container = document.getElementById('alarma-lista-display');
+        container.innerHTML = lista.map(item => `
+            <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom border-secondary border-opacity-25" id="alarm-item-${item.id}">
+                <div class="text-start">
+                    <div class="fw-bold fs-5">${item.text}</div>
+                    ${item.subtext ? `<div class="small text-muted">${item.subtext}</div>` : ''}
+                    <div class="small fw-bold text-primary">${item.horaStr || ''}</div> 
+                </div>
+                <div>
+                    ${item.type === 'room' ? `
+                    <button class="btn btn-sm btn-outline-danger me-1" onclick="borrarAlarmaDesdeModal('${item.id}')" title="Borrar Definitivamente">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                    ` : ''}
+                    <button class="btn btn-success" onclick="atenderAlarma('${item.id}')" title="Marcar como atendida (Solo hoy)">
+                        <i class="bi bi-check-lg"></i>
+                    </button>
+                </div>
+            </div>
+        `).join('');
+
         const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
         modal.show();
     } else {
         setTimeout(() => {
-            alert("⏰ ¡ATENCIÓN: DESPERTADORES!\n\nHora: " + hora + "\n\nLlamar a:\n" + lista.join('\n'));
-            alarmaAudio.pause();
+            const textos = lista.map(i => i.text + (i.subtext ? ` (${i.subtext})` : ''));
+            alert("⏰ Alarmas Pendientes:\n\n" + textos.join('\n'));
         }, 100);
     }
 }
+
+function abrirVisorAlarmasManual() {
+    const ahora = new Date();
+    const ahoraMins = (ahora.getHours() * 60) + ahora.getMinutes();
+    const despertadores = despertadorService.getDespertadores();
+    
+    // Buscar PENDIENTES (Futuras hoy)
+    const pendientes = [];
+    
+    despertadores.forEach(d => {
+        const parts = d.hora.split(':');
+        const dMins = (parseInt(parts[0]) * 60) + parseInt(parts[1]);
+        if (dMins > ahoraMins) {
+            pendientes.push({
+               type: 'room',
+               id: d.habitacion,
+               text: `Habitación ${d.habitacion}`,
+               subtext: d.comentario || '',
+               horaStr: d.hora
+            });
+        }
+    });
+
+    pendientes.sort((a, b) => a.horaStr.localeCompare(b.horaStr));
+
+    // SYSTEM ALARMS REMOVED (Separation of concerns)
+
+    if (pendientes.length > 0) {
+        lanzarAlarma(pendientes, "PENDIENTES HOY", false); // No sound
+    } else {
+        // Si no hay pendientes, ir al módulo completo para ver todo o crear nuevas
+        if (window.navegarA) window.navegarA('#despertadores-content');
+        cambiarVistaDespertadores('trabajo');
+        mostrarDespertadores();
+    }
+}
+
+window.atenderAlarma = (id) => {
+    const el = document.getElementById(`alarm-item-${id}`);
+    if (el) {
+        el.classList.add('opacity-25', 'text-decoration-line-through');
+        const btns = el.querySelectorAll('button');
+        btns.forEach(b => b.disabled = true);
+        
+        // Comprobar si quedan pendientes visualmente
+        const container = document.getElementById('alarma-lista-display');
+        const pendientes = container.querySelectorAll('div[id^="alarm-item-"]:not(.opacity-25)');
+        if (pendientes.length === 0) {
+            // Opcional: Cerrar modal automáticamente o dejar que el usuario lo cierre con el botón grande
+            // setTimeout(() => {
+            //     const modalEl = document.getElementById('modalAlarmaDespertador');
+            //     const modal = bootstrap.Modal.getInstance(modalEl);
+            //     modal.hide();
+            // }, 1000);
+        }
+    }
+};
+
+window.borrarAlarmaDesdeModal = async (hab) => {
+    if (await window.showConfirm("¿Eliminar esta alarma permanentemente? Ya no sonará mañana.")) {
+        despertadorService.removeDespertador(hab);
+        atenderAlarma(hab); // Visualmente marcar como hecho
+        mostrarDespertadores(); // Actualizar tabla de fondo
+    }
+};
 
 // ============================================================================
 // ACCIONES GLOBALES
@@ -328,7 +422,15 @@ window.prepararEdicionDespertador = (hab) => {
         if (btnSubmit) btnSubmit.innerHTML = '<i class="bi bi-pencil-square me-2"></i>Actualizar Despertador';
 
         cambiarVistaDespertadores('trabajo');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        
+        // Scroll y Focus mejorado con Highlight
+        const formCard = document.querySelector('#despertadores-trabajo .card');
+        if (formCard) {
+            formCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            formCard.classList.add('border-primary', 'border-2');
+            setTimeout(() => formCard.classList.remove('border-primary', 'border-2'), 2000);
+        }
+        document.getElementById('desp_hora')?.focus();
     }
 };
 
@@ -347,3 +449,7 @@ window.limpiarDespertadoresPasados = async () => {
 window.cambiarVistaDespertadores = cambiarVistaDespertadores;
 window.imprimirDespertadores = imprimirDespertadores;
 window.limpiarDespertadoresPasados = limpiarDespertadoresPasados;
+
+function actualizarEstadoCampana(nowDate) {
+    // FUNCIÓN DESHABILITADA: La campana ahora es exclusiva para Alarmas de Sistema.
+}

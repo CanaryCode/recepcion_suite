@@ -26,8 +26,8 @@ export const CompLoader = {
      * @param {Array<{id: string, path: string}>} components 
      */
     loadAll: async (components) => {
-        for (const comp of components) {
-            await CompLoader.loadComponent(comp.id, comp.path);
-        }
+        // Cargar todos en paralelo para mayor velocidad
+        const promises = components.map(comp => CompLoader.loadComponent(comp.id, comp.path));
+        await Promise.all(promises);
     }
 };

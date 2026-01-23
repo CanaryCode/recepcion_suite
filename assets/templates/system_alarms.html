@@ -1,0 +1,115 @@
+<div class="module-toolbar no-print">
+    <div class="d-flex align-items-center">
+        <h4 class="mb-0 text-primary fw-bold"><i class="bi bi-broadcast me-2"></i>Alarmas del Sistema</h4>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Formulario de Creación -->
+    <div class="col-md-5">
+        <div class="content-panel h-100">
+            <h5 class="fw-bold mb-3">Configurar Alerta</h5>
+            <form id="formSystemAlarm">
+                <input type="hidden" id="sys_alarm_id">
+                
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Mensaje / Tarea</label>
+                    <textarea id="sys_alarm_msg" class="form-control" rows="2" placeholder="Ej: Realizar cierre de caja..." required></textarea>
+                </div>
+
+                <div class="row">
+                    <div class="col-6 mb-3">
+                        <label class="form-label small fw-bold">Hora</label>
+                        <input type="time" id="sys_alarm_hora" class="form-control text-center fw-bold" required>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <label class="form-label small fw-bold">Periodicidad</label>
+                        <select id="sys_alarm_type" class="form-select" onchange="togglePeriodicidadInputs()">
+                            <option value="daily">Diaria</option>
+                            <option value="weekly">Semanal</option>
+                            <option value="date">Una Fecha</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Input Condicional: Fecha -->
+                <div class="mb-3 d-none" id="group-date">
+                    <label class="form-label small fw-bold">Fecha Específica</label>
+                    <input type="date" id="sys_alarm_date" class="form-control">
+                </div>
+
+                <!-- Input Condicional: Días Semana -->
+                <div class="mb-3 d-none" id="group-days">
+                    <label class="form-label small fw-bold mb-1">Días de la Semana</label>
+                    <div class="d-flex justify-content-between bg-light p-2 rounded border">
+                        <div class="form-check form-check-inline p-0 m-0">
+                            <input type="checkbox" class="btn-check" id="day-1" value="1" autocomplete="off">
+                            <label class="btn btn-outline-primary btn-sm p-1 px-2" for="day-1">L</label>
+                        </div>
+                        <div class="form-check form-check-inline p-0 m-0">
+                            <input type="checkbox" class="btn-check" id="day-2" value="2" autocomplete="off">
+                            <label class="btn btn-outline-primary btn-sm p-1 px-2" for="day-2">M</label>
+                        </div>
+                        <div class="form-check form-check-inline p-0 m-0">
+                            <input type="checkbox" class="btn-check" id="day-3" value="3" autocomplete="off">
+                            <label class="btn btn-outline-primary btn-sm p-1 px-2" for="day-3">X</label>
+                        </div>
+                        <div class="form-check form-check-inline p-0 m-0">
+                            <input type="checkbox" class="btn-check" id="day-4" value="4" autocomplete="off">
+                            <label class="btn btn-outline-primary btn-sm p-1 px-2" for="day-4">J</label>
+                        </div>
+                        <div class="form-check form-check-inline p-0 m-0">
+                            <input type="checkbox" class="btn-check" id="day-5" value="5" autocomplete="off">
+                            <label class="btn btn-outline-primary btn-sm p-1 px-2" for="day-5">V</label>
+                        </div>
+                        <div class="form-check form-check-inline p-0 m-0">
+                            <input type="checkbox" class="btn-check" id="day-6" value="6" autocomplete="off">
+                            <label class="btn btn-outline-primary btn-sm p-1 px-2" for="day-6">S</label>
+                        </div>
+                        <div class="form-check form-check-inline p-0 m-0">
+                            <input type="checkbox" class="btn-check" id="day-0" value="0" autocomplete="off">
+                            <label class="btn btn-outline-primary btn-sm p-1 px-2" for="day-0">D</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="sys_alarm_active" checked>
+                    <label class="form-check-label" for="sys_alarm_active">Alarma Activa</label>
+                </div>
+
+                <div class="d-grid gap-2 mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save me-2"></i>Guardar Alarma
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="resetFormSystemAlarm()">
+                        Cancelar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Lista de Alarmas -->
+    <div class="col-md-7">
+        <div class="content-panel h-100">
+            <h5 class="fw-bold mb-3">Alertas Programadas</h5>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 80px;">Hora</th>
+                            <th>Mensaje</th>
+                            <th>Frecuencia</th>
+                            <th class="text-center" style="width: 50px;">Activa</th>
+                            <th class="text-end" style="width: 100px;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableSystemAlarmsBody">
+                        <!-- JS Injection -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

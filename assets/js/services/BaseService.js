@@ -10,6 +10,7 @@ export class BaseService {
     constructor(endpoint, defaultValue = []) {
         this.endpoint = endpoint;
         this.defaultValue = defaultValue;
+        this.cache = null;
     }
 
     useApi() {
@@ -17,14 +18,23 @@ export class BaseService {
     }
 
     getAll() {
+        if (this.cache) return this.cache;
+        
         if (this.useApi()) {
-            return Api.get(this.endpoint);
+            // For now, API is handled via async which might break sync callers
+            // but the current app uses LocalStorage.
+            return Api.get(this.endpoint).then(data => {
+                this.cache = data;
+                return data;
+            });
         } else {
-            return LocalStorage.get(this.endpoint, this.defaultValue);
+            this.cache = LocalStorage.get(this.endpoint, this.defaultValue);
+            return this.cache;
         }
     }
 
     save(data) {
+        this.cache = data;
         if (this.useApi()) {
             return Api.post(this.endpoint, data);
         } else {
@@ -39,6 +49,7 @@ export class BaseService {
     }
 
     clear() {
+        this.cache = null;
         if (this.useApi()) {
             // Api.delete(this.endpoint)?
         } else {

@@ -338,10 +338,12 @@
 }
 
 .btn-outline-primary:hover,
-.btn-outline-primary.active {
+.btn-outline-primary.active,
+.btn-check:checked + .btn-outline-primary {
     background: linear-gradient(135deg, var(--primary-color), #0a58ca) !important;
     color: white !important;
     box-shadow: 0 5px 15px rgba(13, 110, 253, 0.3) !important;
+    border-color: transparent !important;
 }
 
 /* ==========================================================================
@@ -351,19 +353,25 @@
 
 /* Guardar / Imprimir (Success - Verde Intenso) */
 /* Guardar / Imprimir (Success - Verde Intenso) */
-.btn-success,
-.btn-outline-success {
+/* Guardar / Imprimir (Success - Verde Intenso) */
+.btn-success {
     background: linear-gradient(135deg, #198754, #146c43) !important;
     /* Fondo Sólido */
     color: #ffffff !important;
     border: none !important;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
-    /* Sombra al texto para contraste máximo */
     opacity: 1 !important;
 }
 
+.btn-outline-success {
+    background: white !important;
+    color: #198754 !important;
+    border: 1px solid #198754 !important;
+}
+
 .btn-success:hover,
-.btn-outline-success:hover {
+.btn-outline-success:hover,
+.btn-check:checked + .btn-outline-success {
     background: linear-gradient(135deg, #146c43, #0f5132) !important;
     color: #ffffff !important;
     transform: translateY(-3px) !important;
@@ -371,9 +379,7 @@
 }
 
 /* Email (Info - Azul Cian) */
-/* Email (Info - Azul Cian) */
-.btn-info,
-.btn-outline-info {
+.btn-info {
     background: linear-gradient(135deg, #0dcaf0, #0aa2c0) !important;
     /* Fondo Sólido */
     color: #ffffff !important;
@@ -382,8 +388,15 @@
     opacity: 1 !important;
 }
 
+.btn-outline-info {
+    background: white !important;
+    color: #0dcaf0 !important;
+    border: 1px solid #0dcaf0 !important;
+}
+
 .btn-info:hover,
-.btn-outline-info:hover {
+.btn-outline-info:hover,
+.btn-check:checked + .btn-outline-info {
     background: linear-gradient(135deg, #0aa2c0, #087990) !important;
     color: #ffffff !important;
     transform: translateY(-3px) !important;
@@ -391,9 +404,7 @@
 }
 
 /* PDF / Eliminar (Danger - Rojo) */
-/* PDF / Eliminar (Danger - Rojo) */
-.btn-danger,
-.btn-outline-danger {
+.btn-danger {
     background: linear-gradient(135deg, #dc3545, #b02a37) !important;
     /* Fondo Sólido */
     color: #ffffff !important;
@@ -402,8 +413,15 @@
     opacity: 1 !important;
 }
 
+.btn-outline-danger {
+    background: white !important;
+    color: #dc3545 !important;
+    border: 1px solid #dc3545 !important;
+}
+
 .btn-danger:hover,
-.btn-outline-danger:hover {
+.btn-outline-danger:hover,
+.btn-check:checked + .btn-outline-danger {
     background: linear-gradient(135deg, #b02a37, #842029) !important;
     color: #ffffff !important;
     transform: translateY(-3px) !important;
@@ -427,10 +445,29 @@
     border: 1px solid #6c757d !important;
 }
 
-.btn-outline-secondary:hover {
+.btn-outline-secondary:hover,
+.btn-check:checked + .btn-outline-secondary {
     background: #6c757d !important;
     color: white !important;
     box-shadow: 0 5px 15px rgba(108, 117, 125, 0.3) !important;
+}
+
+/* FIX: Add checked state support for other buttons */
+.btn-check:checked + .btn-outline-success {
+    background: linear-gradient(135deg, #198754, #146c43) !important;
+    color: white !important;
+}
+.btn-check:checked + .btn-outline-danger {
+    background: linear-gradient(135deg, #dc3545, #b02a37) !important;
+    color: white !important;
+}
+.btn-check:checked + .btn-outline-info {
+    background: linear-gradient(135deg, #0dcaf0, #0aa2c0) !important;
+    color: white !important;
+}
+.btn-check:checked + .btn-outline-warning {
+    background: #ffc107 !important;
+    color: #000 !important;
 }
 
 /* Botones de Eliminar/Acción (Rojos suaves que se intensifican) */
@@ -993,4 +1030,39 @@
     color: #000 !important;
     font-size: 18pt !important;
     background: white !important;
+}
+/* Rack Printing Adjustments */
+/* Rack Printing Adjustments */
+#rack-grid-container {
+    width: 100% !important;
+}
+
+@media print {
+    /* Hide Sidebars and Toolbars in Rack */
+    #rack-content .col-md-3,
+    #rack-content .module-toolbar,
+    .d-print-none {
+        display: none !important;
+    }
+
+    /* Expand Main Grid */
+    #rack-content .col-md-9 {
+        width: 100% !important;
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+        padding: 0 !important;
+    }
+
+    /* Adjust Room Cards for Print */
+    .room-card {
+        border: 1px solid #ccc !important;
+        box-shadow: none !important;
+        page-break-inside: avoid;
+    }
+
+    .room-card .badge,
+    .room-card i {
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+    }
 }

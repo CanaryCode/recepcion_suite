@@ -45,3 +45,37 @@ body {
 .modal {
     z-index: 10050 !important;
 }
+
+/* ==========================================================================
+   RACK MODULE STYLES
+   ========================================================================== */
+.room-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+    border: 1px solid rgba(0,0,0,0.05) !important;
+}
+
+.room-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1) !important;
+    border-color: var(--primary-color) !important;
+}
+
+/* Sidebar Scrollbar */
+.overflow-auto::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.overflow-auto::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.overflow-auto::-webkit-scrollbar-thumb {
+    background-color: rgba(0,0,0,0.1);
+    border-radius: 3px;
+}
+
+.overflow-auto::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(0,0,0,0.2);
+}

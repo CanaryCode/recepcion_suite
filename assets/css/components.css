@@ -75,6 +75,15 @@
     transform: translateY(-2px);
 }
 
+.btn-outline-primary:hover,
+.btn-outline-primary.active,
+.btn-check:checked + .btn-outline-primary {
+    background: linear-gradient(135deg, var(--primary-color), #0a58ca) !important;
+    color: white !important;
+    box-shadow: 0 5px 15px rgba(13, 110, 253, 0.3) !important;
+    border-color: transparent !important; /* Ensure border doesn't clash */
+}
+
 .nav-link.active {
     background: linear-gradient(135deg, var(--primary-color), #0a58ca) !important;
     color: white !important;

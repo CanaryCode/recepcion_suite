@@ -13,6 +13,8 @@ import { inicializarAyuda } from './modules/ayuda.js';
 import { inicializarNotasPermanentes } from './modules/notas_permanentes.js';
 import { inicializarPrecios } from './modules/precios.js';
 import { inicializarSystemAlarms } from './modules/alarms.js';
+import { inicializarSystemAlarmsUI } from './modules/system_alarms_ui.js';
+import { inicializarRack } from './modules/rack.js';
 
 // Core Systems
 import { APP_CONFIG } from './core/Config.js'; // Importar APP_CONFIG
@@ -53,7 +55,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         { id: 'atenciones-content', path: 'assets/templates/atenciones.html' },
         { id: 'ayuda-content', path: 'assets/templates/ayuda.html' },
         { id: 'notas-content', path: 'assets/templates/notas_permanentes.html' },
-        { id: 'precios-content', path: 'assets/templates/precios.html' }
+        { id: 'precios-content', path: 'assets/templates/precios.html' },
+        { id: 'system-alarms-content', path: 'assets/templates/system_alarms.html' },
+        { id: 'rack-content', path: 'assets/templates/rack.html' }
     ];
 
     // 3. Cargar plantillas
@@ -63,36 +67,49 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Se ha movido la lógica específica a los módulos correspondientes (Estancia, RIU, etc)
     // para mantener main.js limpio y agnóstico.
 
-    // 5. Inicializar Módulos de Negocio
-    const modulos = [
+    // 5. Inicialización Escalonada para mayor rapidez inicial
+    const modulosPrioritarios = [
+        { nombre: 'Despertadores', init: inicializarDespertadores },
+        { nombre: 'Novedades', init: inicializarNovedades },
+        { nombre: 'Cena Fría', init: inicializarCenaFria },
+        { nombre: 'Desayuno', init: inicializarDesayuno },
+        { nombre: 'SystemAlarms', init: inicializarSystemAlarms },
+        { nombre: 'SystemAlarmsUI', init: inicializarSystemAlarmsUI }
+    ];
+
+    const modulosSecundarios = [
         { nombre: 'Agenda', init: inicializarAgenda },
         { nombre: 'Caja', init: inicializarCaja },
         { nombre: 'Cobro', init: inicializarCobro },
         { nombre: 'Safe', init: inicializarSafe },
-        { nombre: 'Despertadores', init: inicializarDespertadores },
-        { nombre: 'Desayuno', init: inicializarDesayuno },
-        { nombre: 'Novedades', init: inicializarNovedades },
         { nombre: 'Estancia', init: inicializarEstancia },
-        { nombre: 'Cena Fría', init: inicializarCenaFria },
         { nombre: 'Atenciones', init: inicializarAtenciones },
         { nombre: 'Riu', init: inicializarRiu },
         { nombre: 'Ayuda', init: inicializarAyuda },
         { nombre: 'Notas Permanentes', init: inicializarNotasPermanentes },
         { nombre: 'Precios', init: inicializarPrecios },
-        { nombre: 'SystemAlarms', init: inicializarSystemAlarms }
+        { nombre: 'Rack', init: inicializarRack }
     ];
 
-    modulos.forEach(m => {
-        if (m.init) {
-            try { m.init(); } catch (e) { console.error(`Error en ${m.nombre}:`, e); }
-        }
+    // Cargar prioritarios inmediatamente
+    modulosPrioritarios.forEach(m => {
+        try { m.init(); } catch (e) { console.error(`Error en ${m.nombre}:`, e); }
     });
 
-    // 6. Inicializar Gestión de Sesión Global
-    inicializarSesionGlobal();
-    
-    // 7. Inicializar Tooltips
-    initGlobalTooltips();
+    // Cargar secundarios en el siguiente tick
+    setTimeout(() => {
+        modulosSecundarios.forEach(m => {
+            try { m.init(); } catch (e) { console.error(`Error en ${m.nombre}:`, e); }
+        });
+        
+        // 6. Inicializar Gestión de Sesión Global
+        inicializarSesionGlobal();
+        
+        // 7. Inicializar Tooltips
+        initGlobalTooltips();
+        
+        console.log("Sistema completamente inicializado.");
+    }, 100);
 });
 
 function inicializarSesionGlobal() {
@@ -264,3 +281,21 @@ function updateUserUI(name) {
         userBtn.classList.add('btn-success', 'text-white');
     }
 }
+
+// Global Navigation Helper
+window.navegarA = (tabSelector) => {
+    // 1. Activate Tab
+    const triggerEl = document.querySelector(`button[data-bs-target="${tabSelector}"]`);
+    if (triggerEl) {
+        const tab = new bootstrap.Tab(triggerEl);
+        tab.show();
+    } else {
+        console.warn(`navegarA: No tab trigger found for selector ${tabSelector}`);
+        // Fallback: try to find the tab pane directly and add class
+        const tabPane = document.querySelector(tabSelector);
+        if (tabPane) {
+            // This is a rough fallback, better to use the trigger
+            tabPane.classList.add('show', 'active');
+        }
+    }
+};

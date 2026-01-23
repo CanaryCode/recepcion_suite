@@ -21,14 +21,17 @@ export async function inicializarAgenda() {
     formAgenda = document.getElementById('formAgenda');
     agendaCuerpo = document.getElementById('agendaCuerpo');
 
-    // Configurar wrapper de teléfonos
+    // 1. Verificar datos (ahora es explícito y no bloquea el constructor)
+    await agendaService.verificarDatosIniciales();
+
+    // 2. Configurar wrapper de teléfonos
     const wrapper = document.getElementById('telefonos-wrapper');
     if (wrapper) {
         wrapper.innerHTML = '<label class="form-label small d-flex justify-content-between mb-1">Teléfonos <button type="button" class="btn btn-sm btn-outline-secondary border-0 py-0" onclick="agregarCampoTelefono()"><i class="bi bi-plus-circle"></i></button></label>';
         agregarCampoTelefono();
     }
 
-    // Cargar lista de países para datalist
+    // 3. Cargar lista de países para datalist
     const datalist = document.getElementById('paises-list');
     if (datalist && datalist.options.length === 0) {
         APP_CONFIG.AGENDA.PAISES.forEach(p => {
@@ -53,11 +56,17 @@ export async function inicializarAgenda() {
 
     const searchInput = document.getElementById('searchAgenda');
     if (searchInput) {
-        searchInput.addEventListener('input', (e) => mostrarContactos(e.target.value));
+        searchInput.removeEventListener('input', manejarBusqueda);
+        searchInput.addEventListener('input', manejarBusqueda);
     }
 
     await mostrarContactos();
     actualizarVisibilidadCampos();
+}
+
+function manejarBusqueda(e) {
+    const term = e.target.value.trim();
+    mostrarContactos(term);
 }
 
 // ============================================================================
@@ -249,15 +258,20 @@ async function mostrarContactos(filtro = "") {
     const totalEl = document.getElementById('totalContactos');
     if (totalEl) totalEl.innerText = contactos.length;
 
-    contactos.sort((a, b) => (b.favorito ? 1 : 0) - (a.favorito ? 1 : 0));
+    contactos.sort((a, b) => {
+        if (a.favorito !== b.favorito) return b.favorito ? 1 : -1;
+        return a.nombre.localeCompare(b.nombre);
+    });
 
-    const filtrados = contactos.filter(c =>
-        c.nombre.toLowerCase().includes(filtro.toLowerCase()) ||
-        (c.telefonos && c.telefonos.some(t => t.numero && t.numero.includes(filtro))) ||
-        (c.telefono && c.telefono.includes(filtro)) ||
-        (c.email && c.email.toLowerCase().includes(filtro.toLowerCase()))
-    );
+    const filtrados = filtro.trim() === "" 
+        ? contactos 
+        : contactos.filter(c =>
+            c.nombre.toLowerCase().includes(filtro.toLowerCase()) ||
+            (c.telefonos && c.telefonos.some(t => t.numero && t.numero.includes(filtro))) ||
+            (c.email && c.email.toLowerCase().includes(filtro.toLowerCase()))
+        );
 
+    let html = '';
     filtrados.forEach(c => {
         const favIcon = c.favorito ? '<i class="bi bi-star-fill text-warning me-1"></i>' : '';
         let telList = "";
@@ -287,7 +301,7 @@ async function mostrarContactos(filtro = "") {
         const vinculoClass = { "Empresa": "bg-secondary", "Cliente": "bg-info", "Hotel": "bg-primary", "Otro": "bg-light text-dark border" }[c.vinculo] || "bg-dark";
         const catClass = { "Urgencia": "bg-danger", "Información": "bg-primary", "Extensión": "bg-success" }[c.categoria] || "bg-secondary";
 
-        agendaCuerpo.innerHTML += `
+        html += `
             <tr class="${c.favorito ? 'table-warning' : ''}">
                 <td style="width: 30%">
                     <div class="d-flex align-items-center">
@@ -306,6 +320,7 @@ async function mostrarContactos(filtro = "") {
                 </td>
             </tr>`;
     });
+    agendaCuerpo.innerHTML = html;
 }
 
 /**

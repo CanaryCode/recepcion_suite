@@ -1,37 +1,86 @@
 @echo off
-setlocal
+setlocal enabledelayedexpansion
+set "VERSION=2.1"
+
+:: Forzar que el script se ejecute siempre en su propia carpeta
+cd /d "%~dp0"
 
 :: Título de la ventana
-title SERVIDOR HOTEL - NO CERRAR
+title [ RECEPCION SUITE v%VERSION% ] - SERVIDOR ACTIVO
 
-:: 1. Detectar Node.js
-:: Primero intentamos usar "node" normal (para cuando lo instales en otro PC)
-set "NODE_EXEC=node"
-where node >nul 2>nul
+echo.
+echo  =======================================================
+echo   RECEPCION SUITE - Sistema de Gestion Hotelera
+echo  =======================================================
+echo.
 
-:: Si no encuentra "node", usamos la ruta de emergencia de tu PC actual
-if %errorlevel% neq 0 (
-    set "NODE_EXEC=C:\Users\jesus\AppData\Local\ms-playwright-go\1.50.1\node.exe"
+:: ---------------------------------------------------------
+:: 1. BUSQUEDA DE MOTOR NODE.JS
+:: ---------------------------------------------------------
+
+:: Opcion 1: Node.js Portable (Carpeta local 'bin')
+set "NODE_EXEC=%~dp0bin\node.exe"
+if exist "!NODE_EXEC!" (
+    echo   [+] Modo: PORTABLE (Usando Node local)
+    goto :StartServer
 )
 
+:: Opcion 2: Node.js Instalado (PATH del sistema)
+where node >nul 2>nul
+if %errorlevel% equ 0 (
+    set "NODE_EXEC=node"
+    echo   [+] Modo: INSTALADO (Usando Node del PATH)
+    goto :StartServer
+)
+
+:: Opcion 3: Node.js en Program Files (Estandar)
+if exist "%ProgramFiles%\nodejs\node.exe" (
+    set "NODE_EXEC=%ProgramFiles%\nodejs\node.exe"
+    echo   [+] Modo: INSTALADO (Detectado en Program Files)
+    goto :StartServer
+)
+
+:: Opcion 4: Node.js en Program Files x86 (Compatibilidad)
+if exist "%ProgramFiles(x86)%\nodejs\node.exe" (
+    set "NODE_EXEC=%ProgramFiles(x86)%\nodejs\node.exe"
+    echo   [+] Modo: INSTALADO (Detectado en Program Files x86)
+    goto :StartServer
+)
+
+:: ---------------------------------------------------------
+:: SI LLEGAMOS AQUI, NO SE ENCONTRO NADA
+:: ---------------------------------------------------------
 echo.
-echo  =======================================================
-echo   INICIANDO HOTEL MANAGEMENT SYSTEM
-echo  =======================================================
+echo   [!] ERROR: No se ha detectado Node.js en este ordenador.
 echo.
-echo   [1/2] Cargando sistema de datos...
-echo   [2/2] Abriendo aplicacion...
+echo   OPCION A: Instalar Node.js desde https://nodejs.org/
+echo   OPCION B: Ejecuta "PACK_PORTABLE.bat" en un PC que si tenga Node
+echo             para crear una version portable automaticamente.
 echo.
-echo   IMPORTANTE: 
-echo   NO CIERRES ESTA VENTANA MIENTRAS USES LA APLICACION.
-echo   (Minimizala para que no moleste)
+pause
+exit /b
+
+:: ---------------------------------------------------------
+:: 2. LANZAR SERVIDOR
+:: ---------------------------------------------------------
+:StartServer
+
+echo   [+] Estado: INICIANDO SERVIDOR...
+echo   [+] Motor: !NODE_EXEC!
+echo   [+] Web: http://localhost:3000
+echo.
+echo   AVISO: NO CIERRES ESTA VENTANA. 
+echo   Minimizala para mantener la aplicacion activa.
 echo.
 
-:: Esperamos 2 segundos para dar tiempo al usuario a leer
-timeout /t 2 >nul
-
-:: Abrimos el navegador automáticamente apuntando a nuestro servidor
+:: Abrimos el navegador automáticamente
 start http://localhost:3000
 
-:: Arrancamos el servidor (Esto se quedará ejecutando aquí)
-"%NODE_EXEC%" server/app.js
+:: Arrancamos el servidor (Relative path)
+if exist "server/app.js" (
+    "!NODE_EXEC!" server/app.js
+) else (
+    echo [!] ERROR: No se encuentra el archivo 'server/app.js'
+    echo Asegurate de que estas ejecutando este .bat desde la carpeta del proyecto.
+    pause
+)

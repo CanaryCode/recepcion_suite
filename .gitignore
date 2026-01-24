@@ -6,3 +6,9 @@ Thumbs.db
 storage/*.json
 !storage/precios.json
 !storage/ayuda.json
+
+# Portable binaries
+bin/
+
+# Windows artifacts
+desktop.ini

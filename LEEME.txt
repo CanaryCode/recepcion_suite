@@ -14,13 +14,13 @@ PASOS PARA INSTALAR EN UN ORDENADOR NUEVO:
 ------------------------------------------
 
 1. COPIAR LA CARPETA:
-   Copia la carpeta entera del proyecto ("pruebas 1" o como la hayas nombrado)
+   Copia la carpeta entera del proyecto ("RECEPCIÓN SUITE" o como la hayas nombrado)
    al nuevo ordenador.
 
 2. INSTALAR DEPENDENCIAS (Solo la primera vez):
    a) Abre una terminal (CMD o PowerShell).
    b) Navega hasta la carpeta 'server' del proyecto.
-      Ejemplo: cd C:\TuRuta\pruebas 1\server
+      Ejemplo: cd C:\TuRuta\RECEPCIÓN SUITE\server
    c) Escribe el siguiente comando y pulsa Intro:
       npm install
    

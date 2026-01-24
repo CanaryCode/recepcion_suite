@@ -94,10 +94,10 @@ function renderVales() {
                     <div class="d-flex justify-content-between align-items-center border-bottom border-secondary mb-1 pb-1">
                         <h6 class="fw-bold mb-0 text-dark" style="font-size: 11px;">DESGLOSE VALES (${listaVales.length})</h6>
                     </div>
-                    <div class="d-flex flex-column gap-1">
+                    <div class="d-flex flex-column gap-1" style="overflow: hidden;">
                         ${listaVales.map(v => `
-                            <div class="d-flex justify-content-between border-bottom py-1" style="font-size: 10px;">
-                                <span class="text-wrap me-2" style="max-width: 75%;">${v.concepto}</span>
+                            <div class="d-flex justify-content-between border-bottom py-1" style="font-size: 10px; width: 100%; word-break: break-all;">
+                                <span class="text-wrap me-2" style="max-width: 70%;">${v.concepto}</span>
                                 <span class="fw-bold text-primary">${Utils.formatCurrency(v.importe)}</span>
                             </div>
                         `).join('')}
@@ -194,10 +194,10 @@ function renderDesembolsos() {
                     <div class="d-flex justify-content-between align-items-center border-bottom border-secondary mb-1 pb-1">
                         <h6 class="fw-bold mb-0 text-dark" style="font-size: 11px;">DESGLOSE DESEMBOLSOS (${listaDesembolsos.length})</h6>
                     </div>
-                    <div class="d-flex flex-column gap-1">
+                    <div class="d-flex flex-column gap-1" style="overflow: hidden;">
                         ${listaDesembolsos.map(d => `
-                            <div class="d-flex justify-content-between border-bottom py-1" style="font-size: 10px;">
-                                <span class="text-wrap me-2" style="max-width: 75%;">${d.concepto}</span>
+                            <div class="d-flex justify-content-between border-bottom py-1" style="font-size: 10px; width: 100%; word-break: break-all;">
+                                <span class="text-wrap me-2" style="max-width: 70%;">${d.concepto}</span>
                                 <span class="fw-bold text-primary">${Utils.formatCurrency(d.importe)}</span>
                             </div>
                         `).join('')}
@@ -326,7 +326,7 @@ function renderizarInputs(containerId, valores, iconClass, titulo) {
         const div = document.createElement('div');
         div.className = 'input-group input-group-sm money-input-group';
         div.innerHTML = `
-            <span class="input-group-text money-label fw-bold text-primary"><i class="bi ${iconClass} me-1"></i>${valor}€</span>
+            <span class="input-group-text money-label fw-bold"><i class="bi ${iconClass} me-1"></i>${valor}€</span>
             <input type="number" min="0" class="form-control input-caja text-center" data-valor="${valor}" placeholder="0">
             <span class="input-group-text money-total sub-caja fw-bold text-primary">0.00€</span>
         `;

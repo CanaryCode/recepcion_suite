@@ -143,7 +143,7 @@
 
                         <div class="col-6 d-print-col-6">
                             <div class="input-group input-group-sm flex-nowrap">
-                                <span class="input-group-text text-primary"><i class="bi bi-safe me-2"></i>Safe</span>
+                                <span class="input-group-text"><i class="bi bi-safe me-2"></i>Safe</span>
                                 <input type="number" id="caja_safe" class="form-control fw-bold text-primary text-center" placeholder="Total Safe" step="0.01"
                                     onchange="this.value = parseFloat(this.value || 0).toFixed(2)"
                                     data-bs-toggle="tooltip" data-bs-title="Recaudación de Cajas Fuertes">
@@ -152,7 +152,7 @@
                         </div>
                         <div class="col-6 d-print-col-6">
                             <div class="input-group input-group-sm flex-nowrap">
-                                <span class="input-group-text text-primary"><i class="bi bi-plus-circle me-2"></i>Extra</span>
+                                <span class="input-group-text"><i class="bi bi-plus-circle me-2"></i>Extra</span>
                                 <input type="number" id="caja_monedas_extra" class="form-control fw-bold text-primary text-center" placeholder="Ej: Bote" step="0.01"
                                     onchange="this.value = parseFloat(this.value || 0).toFixed(2)"
                                     data-bs-toggle="tooltip" data-bs-title="Otros extras (Bote, etc)">
@@ -186,6 +186,14 @@
                                 /* Forzar centrado en impresión para estos campos */
                                 #otros-container input {
                                     text-align: center !important;
+                                    font-size: 8.5pt !important;
+                                }
+                                #otros-container .input-group-text {
+                                    font-size: 8.5pt !important;
+                                }
+                                #otros-container h6 {
+                                    font-size: 9pt !important;
+                                    margin-bottom: 2px !important;
                                 }
                                 /* Fix overlaps and fixed heights in print */
                                 .col-md-4, .card, .card-body { 
@@ -202,6 +210,9 @@
                                 .text-primary { color: #0d6efd !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
                                 .text-danger { color: #dc3545 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
                                 .input-group-text { background-color: #f8f9fa !important; -webkit-print-color-adjust: exact !important; }
+                                
+                                /* Títulos en color */
+                                h1, h2, h3, h4, h5, h6 { color: #0d6efd !important; font-weight: bold !important; -webkit-print-color-adjust: exact !important; }
                             }
                         </style>
                     </div>

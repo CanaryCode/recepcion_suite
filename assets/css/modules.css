@@ -542,9 +542,11 @@
 .money-label,
 #cobro-content .input-group-text:first-child {
     font-weight: 700;
-    color: var(--primary-color);
-    min-width: 65px;
-    /* Ancho fijo para alinear */
+    color: #495057;
+    min-width: 75px !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+    /* Ancho fijo para alinear perfectamente */
 }
 
 .money-total,
@@ -738,16 +740,18 @@
     /* CABECERAS SIMPLES Y LIMPIAS */
     #caja-content .card-header {
         background-color: transparent !important;
-        border-bottom: 2px solid #000 !important;
+        border-bottom: 2px solid #0d6efd !important;
         padding: 2px 0 !important;
         margin-bottom: 5px !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
     }
 
     #caja-content .card-header span,
     #caja-content .card-header h6 {
         font-weight: bold !important;
         font-size: 10pt !important;
-        color: #000 !important;
+        color: #0d6efd !important;
         text-transform: uppercase;
         margin: 0 !important;
     }
@@ -838,13 +842,25 @@
         print-color-adjust: exact !important;
         font-size: 9pt !important;
     }
+
+    /* Excepción: Total Tesorería en NEGRO */
+    #total_caja {
+        color: #000 !important;
+        font-size: 20pt !important;
+    }
+
+    /* Asegurar que iconos conserven el color del padre o el suyo propio */
+    h6 i, h6 .bi {
+        color: inherit !important;
+        -webkit-print-color-adjust: exact !important;
+    }
     
     #otros-container .input-group-text, #otros-container input {
-        font-size: 8.5pt !important;
+        font-size: 8pt !important;
     }
 
     .small {
-        font-size: 9pt !important;
+        font-size: 8pt !important;
     }
 
     /* FIRMAS */

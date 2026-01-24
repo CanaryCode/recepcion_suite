@@ -167,12 +167,9 @@
                         <div class="col-6 d-print-col-12">
                             <div class="input-group input-group-sm flex-nowrap">
                                 <span class="input-group-text"><i class="bi bi-safe me-2"></i>Safe</span>
-                                <input type="number" id="caja_safe" class="form-control fw-bold text-primary bg-light" placeholder="Total Safe" step="0.01" readonly
+                                <input type="number" id="caja_safe" class="form-control fw-bold text-primary" placeholder="Total Safe" step="0.01"
                                     onchange="this.value = parseFloat(this.value || 0).toFixed(2)"
                                     data-bs-toggle="tooltip" data-bs-title="Recaudación de Cajas Fuertes">
-                                <button class="btn btn-outline-secondary d-print-none" type="button" onclick="toggleLockCaja('caja_safe', this)">
-                                    <i class="bi bi-lock-fill"></i>
-                                </button>
                                 <span class="input-group-text text-primary">€</span>
                             </div>
                         </div>

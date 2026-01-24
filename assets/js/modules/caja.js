@@ -2,7 +2,6 @@ import { APP_CONFIG } from '../core/Config.js';
 import { Utils } from '../core/Utils.js';
 import { sessionService } from '../services/SessionService.js';
 import { Modal } from '../core/Modal.js';
-import { safeService } from '../services/SafeService.js'; // Importado para cálculo automático
 
 // ============================================================================
 // ESTADO
@@ -246,7 +245,6 @@ function abrirCaja() {
     }
     generarInterfazCaja();
     actualizarDatosAutomaticosCaja(); // Force update on open
-    calcularSafeAutomatico(); // Recalcular safes al abrir (si está bloqueado)
     calcularCaja();
 }
 
@@ -309,43 +307,9 @@ function generarInterfazCaja() {
         fondoInput.value = "2000.00";
     }
 
-    // Cálculo automático de Safes
-    calcularSafeAutomatico();
-
     interfazCajaGenerada = true;
 }
 
-/**
- * Calcula el valor de safes activos x precio diario.
- * Solo si el campo está bloqueado (readonly).
- */
-function calcularSafeAutomatico() {
-    const safeInput = document.getElementById('caja_safe');
-    if (!safeInput) return;
-
-    // Si no tiene readonly, es porque el usuario lo desbloqueó para editar manual. Respetamos eso.
-    if (!safeInput.hasAttribute('readonly')) return;
-
-    // Obtener alquileres activos
-    const rentals = safeService.getRentals(); // Asume que getRentals devuelve todos los vigentes
-    // Si la lógica de "activos hoy" es más compleja (por fechas), habría que filtrar.
-    // Asumiremos que si está en el array, está activo hoy.
-    
-    // Contar cuántos hay
-    const count = rentals.length;
-    
-    // Precio
-    const precio = APP_CONFIG.SAFE?.PRECIO_DIARIO || 2.00;
-    
-    // Total
-    const total = count * precio;
-    
-    safeInput.value = total.toFixed(2);
-    
-    // Forzar recálculo global de caja si es necesario, 
-    // pero cuidado con bucles infinitos si calcularCaja llama a esto. 
-    // calcularCaja NO llama a esto, así que bien.
-}
 
 // ============================================================================
 // UI RENDERING
@@ -448,14 +412,15 @@ function calcularCaja() {
 
     // Sumar Total (Desembolsos ahora SUMAN, positivo)
     const fondoCaja = getVal('caja_fondo');
-    // El usuario indica que el fondo es negativo (se resta)
-    const totalOtros = (totalVales + safe + totalSellos + extra + totalDinamicos + desembolsos) - fondoCaja;
     
-    // Total Tesorería ahora será el saldo neto (Efectivo + Vales + Extras - Fondo)
+    // Total Otros: Suma de todos los conceptos manuales + Vales/Desembolsos (NO incluye el fondo aquí)
+    const totalOtros = (totalVales + safe + totalSellos + extra + totalDinamicos + desembolsos);
+    
+    // Total Tesorería: La suma total de dinero físico y vales (Excluyendo el fondo para que parta de 0)
     const totalTesoreria = totalEfectivo + totalOtros;
     
-    // Como el fondo ya está restado en Total Tesorería, la Recaudación es igual al Total Tesorería
-    const recaudacion = totalTesoreria;
+    // Producción (Venta): El resultado final menos el fondo de caja
+    const recaudacion = totalTesoreria - fondoCaja;
 
     // Actualizar UI
     updateUIValue('subtotal_billetes', totalBilletes);

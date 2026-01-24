@@ -168,58 +168,13 @@
                                 <button class="btn btn-outline-secondary d-print-none" type="button" onclick="toggleLockCaja('caja_fondo', this)">
                                     <i class="bi bi-lock-fill"></i>
                                 </button>
-                                <span class="input-group-text text-primary">€</span>
-                            </div>
                         </div>
-                        <style>
-                            @media print {
-                                .d-print-col-12 {
-                                    width: 100% !important;
-                                    flex: 0 0 100% !important;
-                                    max-width: 100% !important;
-                                }
-                                .d-print-col-6 {
-                                    width: 50% !important;
-                                    flex: 0 0 50% !important;
-                                    max-width: 50% !important;
-                                }
-                                /* Forzar centrado en impresión para estos campos */
-                                #otros-container input {
-                                    text-align: center !important;
-                                    font-size: 8pt !important;
-                                }
-                                #otros-container .input-group-text {
-                                    font-size: 8pt !important;
-                                }
-                                #otros-container h6 {
-                                    font-size: 8.5pt !important;
-                                    margin-bottom: 2px !important;
-                                }
-                                /* Fix overlaps and fixed heights in print */
-                                .col-md-4, .card, .card-body { 
-                                    height: auto !important; 
-                                    min-height: auto !important;
-                                    flex: none !important;
-                                    display: block !important;
-                                    overflow: visible !important;
-                                }
-                                #recaudacion_caja { background-color: transparent !important; }
-                                .card { border: 1px solid #eee !important; page-break-inside: avoid; margin-bottom: 10px !important; }
-                                
-                                /* Preservar colores en impresión */
-                                .text-primary { color: #0d6efd !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-                                .text-danger { color: #dc3545 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-                                .input-group-text { background-color: #f8f9fa !important; -webkit-print-color-adjust: exact !important; }
-                                
-                                /* Títulos en color */
-                                h1, h2, h3, h4, h5, h6 { color: #0d6efd !important; font-weight: bold !important; -webkit-print-color-adjust: exact !important; }
-                            }
-                        </style>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
+    </div> <!-- END col-md-8 -->
+
     <div class="col-md-4 d-flex flex-column h-100">
             <div class="card mb-3 shadow-sm border-0">
                 <div class="card-body text-center">
@@ -257,9 +212,53 @@
                         style="white-space: pre-wrap; font-size: 9pt; min-height: 250px;"></div>
                 </div>
             </div>
-        </div>
-    </div>
-</div>
+    </div> <!-- END col-md-4 -->
+</div> <!-- END row -->
+
+<style>
+    @media print {
+        .d-print-col-12 {
+            width: 100% !important;
+            flex: 0 0 100% !important;
+            max-width: 100% !important;
+        }
+        .d-print-col-6 {
+            width: 50% !important;
+            flex: 0 0 50% !important;
+            max-width: 50% !important;
+        }
+        /* Forzar centrado en impresión para estos campos */
+        #otros-container input {
+            text-align: center !important;
+            font-size: 8pt !important;
+        }
+        #otros-container .input-group-text {
+            font-size: 8pt !important;
+        }
+        #otros-container h6 {
+            font-size: 8.5pt !important;
+            margin-bottom: 2px !important;
+        }
+        /* Fix overlaps and fixed heights in print */
+        .col-md-4, .card, .card-body { 
+            height: auto !important; 
+            min-height: auto !important;
+            flex: none !important;
+            display: block !important;
+            overflow: visible !important;
+        }
+        #recaudacion_caja { background-color: transparent !important; }
+        .card { border: 1px solid #eee !important; page-break-inside: avoid; margin-bottom: 10px !important; }
+        
+        /* Preservar colores en impresión */
+        .text-primary { color: #0d6efd !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        .text-danger { color: #dc3545 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        .input-group-text { background-color: #f8f9fa !important; -webkit-print-color-adjust: exact !important; }
+        
+        /* Títulos en color */
+        h1, h2, h3, h4, h5, h6 { color: #0d6efd !important; font-weight: bold !important; -webkit-print-color-adjust: exact !important; }
+    }
+</style>
 
 <div class="signature-area d-none d-print-flex">
     <div class="sig-box"><span>Firma Recepcionista</span></div>

@@ -347,9 +347,9 @@ function renderizarInputs(containerId, valores, iconClass, titulo) {
     const div = document.createElement("div");
     div.className = "input-group input-group-sm money-input-group";
     div.innerHTML = `
-            <span class="input-group-text money-label fw-bold"><i class="bi ${iconClass} me-1"></i>${valor}€</span>
-            <input type="number" min="0" class="form-control input-caja text-center" data-valor="${valor}" placeholder="0">
-            <span class="input-group-text money-total sub-caja fw-bold text-primary">0.00€</span>
+            <span class="input-group-text" style="width: 80px; justify-content: flex-start;"><i class="bi ${iconClass} me-2"></i>${valor}€</span>
+            <input type="text" class="form-control input-caja text-center fw-bold" data-valor="${valor}" placeholder="0">
+            <span class="input-group-text sub-caja fw-bold text-primary bg-white" style="width: 100px; justify-content: flex-end;">0.00€</span>
         `;
     container.appendChild(div);
   });

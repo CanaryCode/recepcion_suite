@@ -539,19 +539,16 @@
     border-color: #ffecb5 !important;
 }
 
-.money-label,
 #cobro-content .input-group-text:first-child {
     font-weight: 700;
     color: #495057;
     min-width: 75px !important;
     justify-content: center !important;
     flex-shrink: 0 !important;
-    /* Ancho fijo para alinear perfectamente */
 }
 
-.money-total,
 #cobro-content .sub-caja {
-    font-weight: 600;
+    font-weight: 700;
     color: var(--primary-color);
     background-color: rgba(13, 110, 253, 0.05);
 }

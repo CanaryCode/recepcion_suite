@@ -3,30 +3,45 @@ import { Utils } from '../core/Utils.js';
 
 export function inicializarCobro() {
     const valores = APP_CONFIG.COBRO.VALORES;
-    const rCont = document.getElementById('recibido-container');
-    const eCont = document.getElementById('entregado-container');
+    const rBil = document.getElementById('recibido-billetes');
+    const rMon = document.getElementById('recibido-monedas');
+    const eBil = document.getElementById('entregado-billetes');
+    const eMon = document.getElementById('entregado-monedas');
 
-    if (!rCont || !eCont) return;
+    if (!rBil || !rMon || !eBil || !eMon) return;
 
     valores.forEach(v => {
         const label = Utils.formatCurrency(v);
         const isBill = v >= 5;
-        const styleClass = isBill ? 'bill-label' : 'coin-label'; // Clases para color
+        const styleClass = isBill ? 'bill-label' : 'coin-label';
         const iconClass = isBill ? 'bi-cash' : 'bi-coin';
 
-        // Inputs para Dinero Recibido
-        rCont.innerHTML += `
+        const html = `
             <div class="input-group input-group-sm mb-1">
-                <span class="input-group-text ${styleClass}" style="width: 75px"><i class="bi ${iconClass} me-1"></i>${label}</span>
-                <input type="number" min="0" class="form-control input-cobro-recibido" data-val="${v}" placeholder="0">
+                <span class="input-group-text ${styleClass} px-1" style="width: 55px; font-size: 0.75rem;"><i class="bi ${iconClass} me-1"></i>${v}€</span>
+                <input type="number" min="0" class="form-control ${isBill ? 'input-cobro-recibido' : 'input-cobro-recibido'} p-1 text-center" style="font-size: 0.85rem;" data-val="${v}" placeholder="0">
             </div>`;
 
-        // Inputs para Dinero Entregado
-        eCont.innerHTML += `
+        // RECONSTRUCCIÓN: Usar clases específicas para facilitar el querySelector posterior si es necesario, 
+        // pero manteniendo las clases originales para no romper calcularCobro()
+        
+        const inputHtml = (prefix) => `
             <div class="input-group input-group-sm mb-1">
-                <span class="input-group-text ${styleClass}" style="width: 75px"><i class="bi ${iconClass} me-1"></i>${label}</span>
-                <input type="number" min="0" class="form-control input-cobro-entregado" data-val="${v}" placeholder="0">
+                <span class="input-group-text ${styleClass} px-1 fw-bold" style="min-width: 50px; font-size: 0.75rem;"><i class="bi ${iconClass} me-1"></i>${valLabel(v)}</span>
+                <input type="text" class="form-control input-cobro-${prefix} p-1 text-center fw-bold" style="font-size: 0.8rem;" data-val="${v}" placeholder="0">
             </div>`;
+
+        function valLabel(num) {
+            return num >= 1 ? num + '€' : (num * 100) + 'c';
+        }
+
+        if (isBill) {
+            rBil.innerHTML += inputHtml('recibido');
+            eBil.innerHTML += inputHtml('entregado');
+        } else {
+            rMon.innerHTML += inputHtml('recibido');
+            eMon.innerHTML += inputHtml('entregado');
+        }
     });
 
     const cobroContent = document.getElementById('cobro-content');

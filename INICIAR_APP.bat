@@ -61,9 +61,31 @@ pause
 exit /b
 
 :: ---------------------------------------------------------
-:: 2. LANZAR SERVIDOR
+:: 2. VERIFICACION DE INTEGRIDAD
 :: ---------------------------------------------------------
 :StartServer
+
+:: Comprobar si faltan librerias
+if not exist "server\node_modules\" (
+    echo   [!] ADVERTENCIA: No se encuentra la carpeta 'node_modules'.
+    echo       Intentando restaurar librerias automaticamente...
+    
+    where npm >nul 2>nul
+    if !errorlevel! equ 0 (
+        cd /d "%~dp0server"
+        call npm install
+        cd /d "%~dp0"
+    ) else (
+        echo.
+        echo   [!] ERROR: Faltan las librerias del servidor y no se encontro NPM.
+        echo       Si has copiado el proyecto a otro PC, asegúrate de haber
+        echo       ejecutado "PACK_PORTABLE.bat" en el PC original antes de copiar,
+        echo       o instala Node.js en este PC.
+        echo.
+        pause
+        exit /b
+    )
+)
 
 echo   [+] Estado: INICIANDO SERVIDOR...
 echo   [+] Motor: !NODE_EXEC!

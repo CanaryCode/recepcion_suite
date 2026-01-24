@@ -61,16 +61,33 @@ echo   [+] Node.js encontrado en: !NODE_PATH!
 echo   [+] Copiando a carpeta local 'bin'...
 copy "!NODE_PATH!" "%~dp0bin\node.exe" >nul
 
+:: 5. Asegurar node_modules (OPCIONAL pero recomendado)
+echo   [?] Comprobando si existen librerias de servidor...
+if exist "%~dp0server\package.json" (
+    echo   [+] Detectado proyecto Node.js en 'server'.
+    cd /d "%~dp0server"
+    if not exist "node_modules" (
+        echo   [!] No se encontro 'node_modules'. Intentando instalar...
+        call npm install
+    ) else (
+        echo   [OK] Las librerias ya estan presentes.
+    )
+    cd /d "%~dp0"
+)
+
 if %errorlevel% equ 0 (
     echo.
-    echo   [OK] EXECITO: VERSION PORTABLE LISTA!
+    echo   =======================================================
+    echo   [OK] EXITO: ¡VERSION PORTABLE LISTA!
+    echo   =======================================================
     echo.
-    echo   Ahora puedes copiar toda la carpeta "RECEPCION SUITE" a un USB
-    echo   o enviarla por correo, y funcionara en otros ordenadores
-    echo   ejecutando "INICIAR_APP.bat".
+    echo   1. Copia toda esta carpeta ("RECEPCION SUITE") a un USB.
+    echo   2. En el otro PC, NO necesitas instalar nada.
+    echo   3. Ejecuta solo "INICIAR_APP.bat".
+    echo.
 ) else (
     echo.
-    echo   [!] ERROR al copiar el archivo.
+    echo   [!] ERROR al preparar la version portable.
 )
 
 echo.

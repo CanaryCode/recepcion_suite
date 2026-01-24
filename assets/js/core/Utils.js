@@ -29,7 +29,8 @@ export const Utils = {
     formatCurrency: (amount) => {
         const num = parseFloat(amount);
         if (isNaN(num)) return "0.00€";
-        return num.toFixed(2) + "€";
+        const sign = num < 0 ? "-" : "";
+        return sign + Math.abs(num).toFixed(2) + "€";
     },
 
     /**

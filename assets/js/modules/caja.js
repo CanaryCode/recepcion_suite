@@ -1,7 +1,7 @@
-import { APP_CONFIG } from '../core/Config.js';
-import { Utils } from '../core/Utils.js';
-import { sessionService } from '../services/SessionService.js';
-import { Modal } from '../core/Modal.js';
+import { APP_CONFIG } from "../core/Config.js";
+import { Utils } from "../core/Utils.js";
+import { sessionService } from "../services/SessionService.js";
+import { Modal } from "../core/Modal.js";
 
 // ============================================================================
 // ESTADO
@@ -9,6 +9,7 @@ import { Modal } from '../core/Modal.js';
 let interfazCajaGenerada = false;
 let listaVales = []; // { id, concepto, importe }
 let listaDesembolsos = []; // { id, concepto, importe }
+let fondoCajaValue = 2000; // Valor numérico interno para evitar errores con signos visuales
 
 // ... (existing helper functions)
 
@@ -17,55 +18,57 @@ let listaDesembolsos = []; // { id, concepto, importe }
 // ============================================================================
 
 window.abrirModalVales = () => {
-    const modal = new bootstrap.Modal(document.getElementById('modalVales'));
-    renderVales();
-    modal.show();
-    setTimeout(() => document.getElementById('vale_concepto')?.focus(), 500);
+  const modal = new bootstrap.Modal(document.getElementById("modalVales"));
+  renderVales();
+  modal.show();
+  setTimeout(() => document.getElementById("vale_concepto")?.focus(), 500);
 };
 
 window.agregarVale = (e) => {
-    e.preventDefault();
-    const conceptoIn = document.getElementById('vale_concepto');
-    const importeIn = document.getElementById('vale_importe');
-    
-    const concepto = conceptoIn.value.trim();
-    const importe = parseFloat(importeIn.value);
+  e.preventDefault();
+  const conceptoIn = document.getElementById("vale_concepto");
+  const importeIn = document.getElementById("vale_importe");
 
-    if (concepto && importe > 0) {
-        listaVales.push({
-            id: Date.now(),
-            concepto,
-            importe
-        });
-        
-        conceptoIn.value = '';
-        importeIn.value = '';
-        conceptoIn.focus();
-        
-        renderVales();
-        calcularCaja();
-    }
+  const concepto = conceptoIn.value.trim();
+  const importe = parseFloat(importeIn.value);
+
+  if (concepto && importe > 0) {
+    listaVales.push({
+      id: Date.now(),
+      concepto,
+      importe,
+    });
+
+    conceptoIn.value = "";
+    importeIn.value = "";
+    conceptoIn.focus();
+
+    renderVales();
+    calcularCaja();
+  }
 };
 
 window.eliminarVale = (id) => {
-    listaVales = listaVales.filter(v => v.id !== id);
-    renderVales();
-    calcularCaja();
+  listaVales = listaVales.filter((v) => v.id !== id);
+  renderVales();
+  calcularCaja();
 };
 
 function renderVales() {
-    // 1. Render en Modal
-    const container = document.getElementById('listaVales');
-    const msg = document.getElementById('noValesMsg');
-    const totalLabel = document.getElementById('modalValesTotal');
-    
-    if (container) {
-        if (listaVales.length === 0) {
-            container.innerHTML = '';
-            if (msg) msg.style.display = 'block';
-        } else {
-            if (msg) msg.style.display = 'none';
-            container.innerHTML = listaVales.map(v => `
+  // 1. Render en Modal
+  const container = document.getElementById("listaVales");
+  const msg = document.getElementById("noValesMsg");
+  const totalLabel = document.getElementById("modalValesTotal");
+
+  if (container) {
+    if (listaVales.length === 0) {
+      container.innerHTML = "";
+      if (msg) msg.style.display = "block";
+    } else {
+      if (msg) msg.style.display = "none";
+      container.innerHTML = listaVales
+        .map(
+          (v) => `
                 <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
                     <div class="d-flex flex-column" style="min-width: 0;">
                         <span class="fw-bold text-dark small text-break" style="word-wrap: break-word;">${v.concepto}</span>
@@ -77,37 +80,43 @@ function renderVales() {
                         </button>
                     </div>
                 </div>
-            `).join('');
-        }
+            `,
+        )
+        .join("");
     }
+  }
 
-    // 2. Calcular Total
-    const total = listaVales.reduce((sum, v) => sum + v.importe, 0);
-    if (totalLabel) totalLabel.innerText = Utils.formatCurrency(total);
-    
-    // 3. Render para IMPRESIÓN / PDF (Compact Grid - Ancho Completo)
-    const printContainer = document.getElementById('print-vales-details');
-    if (printContainer) {
-        if (listaVales.length > 0) {
-            printContainer.innerHTML = `
+  // 2. Calcular Total
+  const total = listaVales.reduce((sum, v) => sum + v.importe, 0);
+  if (totalLabel) totalLabel.innerText = Utils.formatCurrency(total);
+
+  // 3. Render para IMPRESIÓN / PDF (Compact Grid - Ancho Completo)
+  const printContainer = document.getElementById("print-vales-details");
+  if (printContainer) {
+    if (listaVales.length > 0) {
+      printContainer.innerHTML = `
                 <div class="border border-secondary rounded p-1 mt-1" style="background-color: #f8f9fa;">
                     <div class="d-flex justify-content-between align-items-center border-bottom border-secondary mb-1 pb-1">
                         <h6 class="fw-bold mb-0 text-dark" style="font-size: 11px;">DESGLOSE VALES (${listaVales.length})</h6>
                     </div>
                     <div class="d-flex flex-column gap-1" style="overflow: hidden;">
-                        ${listaVales.map(v => `
+                        ${listaVales
+                          .map(
+                            (v) => `
                             <div class="d-flex justify-content-between border-bottom py-1" style="font-size: 10px; width: 100%; word-break: break-all;">
                                 <span class="text-wrap me-2" style="max-width: 70%;">${v.concepto}</span>
                                 <span class="fw-bold text-primary">${Utils.formatCurrency(v.importe)}</span>
                             </div>
-                        `).join('')}
+                        `,
+                          )
+                          .join("")}
                     </div>
                 </div>
             `;
-        } else {
-            printContainer.innerHTML = '';
-        }
+    } else {
+      printContainer.innerHTML = "";
     }
+  }
 }
 
 // ============================================================================
@@ -115,55 +124,62 @@ function renderVales() {
 // ============================================================================
 
 window.abrirModalDesembolsos = () => {
-    const modal = new bootstrap.Modal(document.getElementById('modalDesembolsos'));
-    renderDesembolsos();
-    modal.show();
-    setTimeout(() => document.getElementById('desembolso_concepto')?.focus(), 500);
+  const modal = new bootstrap.Modal(
+    document.getElementById("modalDesembolsos"),
+  );
+  renderDesembolsos();
+  modal.show();
+  setTimeout(
+    () => document.getElementById("desembolso_concepto")?.focus(),
+    500,
+  );
 };
 
 window.agregarDesembolso = (e) => {
-    e.preventDefault();
-    const conceptoIn = document.getElementById('desembolso_concepto');
-    const importeIn = document.getElementById('desembolso_importe');
-    
-    const concepto = conceptoIn.value.trim();
-    const importe = parseFloat(importeIn.value);
+  e.preventDefault();
+  const conceptoIn = document.getElementById("desembolso_concepto");
+  const importeIn = document.getElementById("desembolso_importe");
 
-    if (concepto && importe > 0) {
-        listaDesembolsos.push({
-            id: Date.now(),
-            concepto,
-            importe
-        });
-        
-        conceptoIn.value = '';
-        importeIn.value = '';
-        conceptoIn.focus();
-        
-        renderDesembolsos();
-        calcularCaja();
-    }
+  const concepto = conceptoIn.value.trim();
+  const importe = parseFloat(importeIn.value);
+
+  if (concepto && importe > 0) {
+    listaDesembolsos.push({
+      id: Date.now(),
+      concepto,
+      importe,
+    });
+
+    conceptoIn.value = "";
+    importeIn.value = "";
+    conceptoIn.focus();
+
+    renderDesembolsos();
+    calcularCaja();
+  }
 };
 
 window.eliminarDesembolso = (id) => {
-    listaDesembolsos = listaDesembolsos.filter(d => d.id !== id);
-    renderDesembolsos();
-    calcularCaja();
+  listaDesembolsos = listaDesembolsos.filter((d) => d.id !== id);
+  renderDesembolsos();
+  calcularCaja();
 };
 
 function renderDesembolsos() {
-    // 1. Render en Modal
-    const container = document.getElementById('listaDesembolsos');
-    const msg = document.getElementById('noDesembolsosMsg');
-    const totalLabel = document.getElementById('modalDesembolsosTotal');
-    
-    if (container) {
-        if (listaDesembolsos.length === 0) {
-            container.innerHTML = '';
-            if (msg) msg.style.display = 'block';
-        } else {
-            if (msg) msg.style.display = 'none';
-            container.innerHTML = listaDesembolsos.map(d => `
+  // 1. Render en Modal
+  const container = document.getElementById("listaDesembolsos");
+  const msg = document.getElementById("noDesembolsosMsg");
+  const totalLabel = document.getElementById("modalDesembolsosTotal");
+
+  if (container) {
+    if (listaDesembolsos.length === 0) {
+      container.innerHTML = "";
+      if (msg) msg.style.display = "block";
+    } else {
+      if (msg) msg.style.display = "none";
+      container.innerHTML = listaDesembolsos
+        .map(
+          (d) => `
                 <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
                     <div class="d-flex flex-column" style="min-width: 0;">
                         <span class="fw-bold text-dark small text-break" style="word-wrap: break-word;">${d.concepto}</span>
@@ -175,42 +191,46 @@ function renderDesembolsos() {
                         </button>
                     </div>
                 </div>
-            `).join('');
-        }
+            `,
+        )
+        .join("");
     }
+  }
 
-    // 2. Calcular Total
-    const total = listaDesembolsos.reduce((sum, d) => sum + d.importe, 0);
-    if (totalLabel) totalLabel.innerText = Utils.formatCurrency(total);
-    
-    // 3. Render para IMPRESIÓN / PDF (Compact Grid - Ancho Completo)
-    // Para impresión, mantenemos un toque distintivo pero sutil, o lo unificamos también?
-    // User dijo "mismo color que todo", así que usaremos estilo neutro/gris similar a Vales.
-    const printContainer = document.getElementById('print-desembolsos-details');
-    if (printContainer) {
-        if (listaDesembolsos.length > 0) {
-            printContainer.innerHTML = `
+  // 2. Calcular Total
+  const total = listaDesembolsos.reduce((sum, d) => sum + d.importe, 0);
+  if (totalLabel) totalLabel.innerText = Utils.formatCurrency(total);
+
+  // 3. Render para IMPRESIÓN / PDF (Compact Grid - Ancho Completo)
+  // Para impresión, mantenemos un toque distintivo pero sutil, o lo unificamos también?
+  // User dijo "mismo color que todo", así que usaremos estilo neutro/gris similar a Vales.
+  const printContainer = document.getElementById("print-desembolsos-details");
+  if (printContainer) {
+    if (listaDesembolsos.length > 0) {
+      printContainer.innerHTML = `
                 <div class="border border-secondary rounded p-1 mt-1" style="background-color: #f8f9fa;">
                     <div class="d-flex justify-content-between align-items-center border-bottom border-secondary mb-1 pb-1">
                         <h6 class="fw-bold mb-0 text-dark" style="font-size: 11px;">DESGLOSE DESEMBOLSOS (${listaDesembolsos.length})</h6>
                     </div>
                     <div class="d-flex flex-column gap-1" style="overflow: hidden;">
-                        ${listaDesembolsos.map(d => `
+                        ${listaDesembolsos
+                          .map(
+                            (d) => `
                             <div class="d-flex justify-content-between border-bottom py-1" style="font-size: 10px; width: 100%; word-break: break-all;">
                                 <span class="text-wrap me-2" style="max-width: 70%;">${d.concepto}</span>
                                 <span class="fw-bold text-primary">${Utils.formatCurrency(d.importe)}</span>
                             </div>
-                        `).join('')}
+                        `,
+                          )
+                          .join("")}
                     </div>
                 </div>
             `;
-        } else {
-            printContainer.innerHTML = '';
-        }
+    } else {
+      printContainer.innerHTML = "";
     }
+  }
 }
-
-
 
 // ============================================================================
 // INICIALIZACIÓN
@@ -221,126 +241,127 @@ function renderDesembolsos() {
  * Genera la interfaz, configura listeners y realiza el cálculo inicial.
  */
 export function inicializarCaja() {
-    generarInterfazCaja();
+  generarInterfazCaja();
 
-    // Listener global para recalcular al escribir
-    document.addEventListener('input', (e) => {
-        if (e.target.closest('#caja-content')) {
-            calcularCaja();
-        }
-    });
+  // Listener global para recalcular al escribir
+  document.addEventListener("input", (e) => {
+    if (e.target.closest("#caja-content")) {
+      calcularCaja();
+    }
+  });
 
-    calcularCaja();
+  calcularCaja();
 }
 
 /**
  * Abre la sección de caja y asegura que esté actualizada.
  */
 function abrirCaja() {
-    const triggerEl = document.getElementById('tab-caja-content');
-    if (window.navegarA) {
-        window.navegarA('caja-content');
-    } else if (triggerEl) {
-        triggerEl.click();
-    }
-    generarInterfazCaja();
-    actualizarDatosAutomaticosCaja(); // Force update on open
-    calcularCaja();
+  const triggerEl = document.getElementById("tab-caja-content");
+  if (window.navegarA) {
+    window.navegarA("caja-content");
+  } else if (triggerEl) {
+    triggerEl.click();
+  }
+  generarInterfazCaja();
+  actualizarDatosAutomaticosCaja(); // Force update on open
+  calcularCaja();
 }
 
 function actualizarDatosAutomaticosCaja() {
-    const ahora = new Date();
-    
-    // 1. FECHA (Hoy)
-    const fechaInput = document.getElementById('caja_fecha');
-    if (fechaInput) {
-        // Formato ES: DD-MM-YYYY para visualización, o ISO para valor? 
-        // El input ahora es text, mejor mostrar algo legible
-        // Pero para PDF/Email se usa el value. Usemos ISO YYYY-MM-DD para consistencia con lógica existente
-        // o mejor DD/MM/YYYY que es más legible.
-        // Revisando código existente: usa split('-') esperando YYYY-MM-DD o similar.
-        // Utils.getTodayISO() devuelve YYYY-MM-DD.
-        fechaInput.value = Utils.getTodayISO(); 
-    }
+  const ahora = new Date();
 
-    // 2. TURNO (Automático)
-    /*
+  // 1. FECHA (Hoy)
+  const fechaInput = document.getElementById("caja_fecha");
+  if (fechaInput) {
+    // Formato ES: DD-MM-YYYY para visualización, o ISO para valor?
+    // El input ahora es text, mejor mostrar algo legible
+    // Pero para PDF/Email se usa el value. Usemos ISO YYYY-MM-DD para consistencia con lógica existente
+    // o mejor DD/MM/YYYY que es más legible.
+    // Revisando código existente: usa split('-') esperando YYYY-MM-DD o similar.
+    // Utils.getTodayISO() devuelve YYYY-MM-DD.
+    fechaInput.value = Utils.getTodayISO();
+  }
+
+  // 2. TURNO (Automático)
+  /*
         07:00 - 15:00 -> Mañana
         15:00 - 23:00 -> Tarde
         23:00 - 07:00 -> Noche
     */
-    const hora = ahora.getHours();
-    let turno = "tarde"; // Default safe
-    
-    if (hora >= 7 && hora < 15) {
-        turno = "mañana";
-    } else if (hora >= 15 && hora < 23) {
-        turno = "tarde";
-    } else {
-        turno = "noche";
-    }
+  const hora = ahora.getHours();
+  let turno = "tarde"; // Default safe
 
-    const turnoInput = document.getElementById('caja_turno');
-    if (turnoInput) {
-        turnoInput.value = turno.toUpperCase();
-    }
+  if (hora >= 7 && hora < 15) {
+    turno = "mañana";
+  } else if (hora >= 15 && hora < 23) {
+    turno = "tarde";
+  } else {
+    turno = "noche";
+  }
+
+  const turnoInput = document.getElementById("caja_turno");
+  if (turnoInput) {
+    turnoInput.value = turno.toUpperCase();
+  }
 }
 
 /**
  * Genera dinámicamente los inputs de billetes y monedas si no existen.
  */
 function generarInterfazCaja() {
-    if (interfazCajaGenerada) return;
+  if (interfazCajaGenerada) return;
 
-    actualizarDatosAutomaticosCaja();
+  actualizarDatosAutomaticosCaja();
 
-    // Generar Inputs de Dinero
-    const billetes = APP_CONFIG.CAJA?.BILLETES || [500, 200, 100, 50, 20, 10, 5];
-    const monedas = APP_CONFIG.CAJA?.MONEDAS || [2, 1, 0.50, 0.20, 0.10, 0.05, 0.02, 0.01];
+  // Generar Inputs de Dinero
+  const billetes = APP_CONFIG.CAJA?.BILLETES || [500, 200, 100, 50, 20, 10, 5];
+  const monedas = APP_CONFIG.CAJA?.MONEDAS || [
+    2, 1, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01,
+  ];
 
-    renderizarInputs('billetes-container', billetes, 'bi-cash', 'BILLETES');
-    renderizarInputs('monedas-container', monedas, 'bi-coin', 'MONEDAS');
+  renderizarInputs("billetes-container", billetes, "bi-cash", "BILLETES");
+  renderizarInputs("monedas-container", monedas, "bi-coin", "MONEDAS");
 
-    // Fondo por defecto
-    const fondoInput = document.getElementById('caja_fondo');
-    if (fondoInput && !fondoInput.value) {
-        fondoInput.value = "2000.00";
-    }
+  // Fondo por defecto
+  const fondoInput = document.getElementById("caja_fondo");
+  if (fondoInput && !fondoInput.value) {
+    fondoInput.value = "2000.00";
+  }
 
-    interfazCajaGenerada = true;
+  interfazCajaGenerada = true;
 }
-
 
 // ============================================================================
 // UI RENDERING
 // ============================================================================
 
 function renderizarInputs(containerId, valores, iconClass, titulo) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
+  const container = document.getElementById(containerId);
+  if (!container) return;
 
-    container.innerHTML = `<h6 class="small text-muted fw-bold mb-2">${titulo}</h6>`;
-    container.classList.add('money-grid-container');
+  container.innerHTML = `<h6 class="small text-muted fw-bold mb-2">${titulo}</h6>`;
+  container.classList.add("money-grid-container");
 
-        valores.forEach(valor => {
-        const div = document.createElement('div');
-        div.className = 'input-group input-group-sm money-input-group';
-        div.innerHTML = `
+  valores.forEach((valor) => {
+    const div = document.createElement("div");
+    div.className = "input-group input-group-sm money-input-group";
+    div.innerHTML = `
             <span class="input-group-text money-label fw-bold"><i class="bi ${iconClass} me-1"></i>${valor}€</span>
             <input type="number" min="0" class="form-control input-caja text-center" data-valor="${valor}" placeholder="0">
             <span class="input-group-text money-total sub-caja fw-bold text-primary">0.00€</span>
         `;
-        container.appendChild(div);
-    });
+    container.appendChild(div);
+  });
 }
 
 function agregarNuevoConcepto() {
-    const container = document.getElementById('otros-container');
-    if (!container) return;
+  const container = document.getElementById("otros-container");
+  if (!container) return;
 
-    const div = document.createElement('div');
-    div.className = 'col-md-4 dynamic-concept';
-    div.innerHTML = `
+  const div = document.createElement("div");
+  div.className = "col-md-4 dynamic-concept";
+  div.innerHTML = `
         <div class="input-group input-group-sm">
             <input type="text" class="form-control concept-name text-start fw-bold" placeholder="Ej: Gasto Extra..." style="width: 45%;">
             <input type="number" class="form-control concept-value text-center" placeholder="0.00" style="width: 35%;">
@@ -349,8 +370,8 @@ function agregarNuevoConcepto() {
             </button>
         </div>
     `;
-    container.appendChild(div);
-    div.querySelector('.concept-name').focus();
+  container.appendChild(div);
+  div.querySelector(".concept-name").focus();
 }
 
 // ============================================================================
@@ -358,94 +379,170 @@ function agregarNuevoConcepto() {
 // ============================================================================
 
 function calcularCaja() {
-    let totalBilletes = 0, totalMonedas = 0;
+  let totalBilletes = 0,
+    totalMonedas = 0;
 
-    // Helper interno para procesar contenedores
-    const procesarContainer = (containerId) => {
-        let subtotal = 0;
-        document.querySelectorAll(`#${containerId} .input-group`).forEach(row => {
-            const input = row.querySelector('input');
-            const span = row.querySelector('.sub-caja');
-            if (input && span && input.value !== "") {
-                const val = parseFloat(input.dataset.valor);
-                const cant = parseFloat(input.value) || 0;
-                const total = val * cant;
-                span.textContent = Utils.formatCurrency(total);
-                subtotal += total;
-            } else if (span) {
-                span.textContent = Utils.formatCurrency(0);
-            }
-        });
-        return subtotal;
-    };
+  // Helper interno para procesar contenedores
+  const procesarContainer = (containerId) => {
+    let subtotal = 0;
+    document.querySelectorAll(`#${containerId} .input-group`).forEach((row) => {
+      const input = row.querySelector("input");
+      const span = row.querySelector(".sub-caja");
+      if (input && span && input.value !== "") {
+        const val = parseFloat(input.dataset.valor);
+        const cant = parseFloat(input.value) || 0;
+        const total = val * cant;
+        span.textContent = Utils.formatCurrency(total);
+        subtotal += total;
+      } else if (span) {
+        span.textContent = Utils.formatCurrency(0);
+      }
+    });
+    return subtotal;
+  };
 
-    totalBilletes = procesarContainer('billetes-container');
-    totalMonedas = procesarContainer('monedas-container');
-    const totalEfectivo = totalBilletes + totalMonedas;
+  totalBilletes = procesarContainer("billetes-container");
+  totalMonedas = procesarContainer("monedas-container");
+  const totalEfectivo = totalBilletes + totalMonedas;
 
-    // Otros conceptos
-    const getVal = (id) => parseFloat(document.getElementById(id)?.value) || 0;
-    
-    // VALES (Calculado desde array)
-    const totalVales = listaVales.reduce((sum, v) => sum + v.importe, 0);
-    const valesInput = document.getElementById('caja_vales_total');
-    if (valesInput) valesInput.value = Utils.formatCurrency(totalVales);
+  // Otros conceptos
+  const getVal = (id) => parseFloat(document.getElementById(id)?.value) || 0;
 
-    const safe = getVal('caja_safe');
-    const sellosCant = getVal('caja_sellos_cant');
-    const sellosPrecio = getVal('caja_sellos_precio');
-    const totalSellos = sellosCant * sellosPrecio;
+  // VALES (Calculado desde array)
+  const totalVales = listaVales.reduce((sum, v) => sum + v.importe, 0);
+  const valesInput = document.getElementById("caja_vales_total");
+  if (valesInput) valesInput.value = Utils.formatCurrency(totalVales);
 
-    const sellosLbl = document.getElementById('caja_sellos_total_lbl');
-    if (sellosLbl) sellosLbl.textContent = Utils.formatCurrency(totalSellos);
+  // FONDO (Cargar y mostrar signo si existe el elemento)
+  const fondoInput = document.getElementById("caja_fondo");
+  if (fondoInput && document.activeElement !== fondoInput) {
+      fondoInput.value = Utils.formatCurrency(-Math.abs(fondoCajaValue));
+  }
 
-    const extra = getVal('caja_monedas_extra');
-    
-    // DESEMBOLSOS (Calculado desde array)
-    const desembolsos = listaDesembolsos.reduce((sum, d) => sum + d.importe, 0);
-    const desembolsosInput = document.getElementById('caja_desembolsos');
-    if (desembolsosInput) desembolsosInput.value = Utils.formatCurrency(desembolsos);
+  const safe = getVal("caja_safe");
+  const sellosCant = getVal("caja_sellos_cant");
+  const sellosPrecio = getVal("caja_sellos_precio");
+  const totalSellos = sellosCant * sellosPrecio;
 
-    // Dinámicos
-    let totalDinamicos = 0;
-    document.querySelectorAll('.concept-value').forEach(input => totalDinamicos += (parseFloat(input.value) || 0));
+  const sellosLbl = document.getElementById("caja_sellos_total_lbl");
+  if (sellosLbl) sellosLbl.textContent = Utils.formatCurrency(totalSellos);
 
-    // Sumar Total (Desembolsos ahora SUMAN, positivo)
-    const fondoCaja = getVal('caja_fondo');
-    
-    // Total Otros: Suma de todos los conceptos manuales + Vales/Desembolsos (NO incluye el fondo aquí)
-    const totalOtros = (totalVales + safe + totalSellos + extra + totalDinamicos + desembolsos);
-    
-    // Total Tesorería: La suma total de dinero físico y vales (Excluyendo el fondo para que parta de 0)
-    const totalTesoreria = totalEfectivo + totalOtros;
-    
-    // Producción (Venta): El resultado final menos el fondo de caja
-    const recaudacion = totalTesoreria - fondoCaja;
+  const extra = getVal("caja_monedas_extra");
 
-    // Actualizar UI
-    updateUIValue('subtotal_billetes', totalBilletes);
-    updateUIValue('subtotal_monedas', totalMonedas);
-    updateUIValue('total_efectivo', totalEfectivo);
-    updateUIValue('subtotal_otros', totalOtros);
-    updateUIValue('total_caja', totalTesoreria);
-    updateUIValue('recaudacion_caja', recaudacion);
+  // DESEMBOLSOS (Calculado desde array)
+  const desembolsos = listaDesembolsos.reduce((sum, d) => sum + d.importe, 0);
+  const desembolsosInput = document.getElementById("caja_desembolsos");
+  if (desembolsosInput)
+    desembolsosInput.value = Utils.formatCurrency(desembolsos);
+
+  // Dinámicos
+  let totalDinamicos = 0;
+  document
+    .querySelectorAll(".concept-value")
+    .forEach((input) => (totalDinamicos += parseFloat(input.value) || 0));
+
+  // Sumar Total (Desembolsos ahora SUMAN, positivo)
+  // fondoCaja ya está definido arriba
+
+  // Total Otros: Suma de todos los conceptos manuales + Vales/Desembolsos (NO incluye el fondo aquí)
+  const totalOtros =
+    totalVales + safe + totalSellos + extra + totalDinamicos + desembolsos;
+
+  // Total Tesorería: La suma total de dinero físico y vales (Excluyendo el fondo para que parta de 0)
+  const totalTesoreria = totalEfectivo + totalOtros;
+
+  // Producción (Venta): El resultado final menos el fondo de caja
+  const recaudacion = totalTesoreria - Math.abs(fondoCajaValue);
+
+  // Actualizar UI
+  updateUIValue("subtotal_billetes", totalBilletes);
+  updateUIValue("subtotal_monedas", totalMonedas);
+  updateUIValue("total_efectivo", totalEfectivo);
+  updateUIValue("subtotal_otros", totalOtros);
+  updateUIValue("total_caja", totalTesoreria);
+  updateUIValue("recaudacion_caja", recaudacion);
+
+  // --- SINCRONIZACIÓN CON VISTA DE IMPRESIÓN (NUEVO) ---
+  updateUIValue("print_total_caja_main", totalTesoreria);
+  updateUIValue("print_total_efectivo", totalEfectivo);
+  updateUIValue("print_subtotal_otros", totalOtros);
+  updateUIValue("print_recaudacion_final", recaudacion);
+
+  updateUIValue("print_vales_total", totalVales);
+  updateUIValue("print_desembolsos_total", desembolsos);
+  updateUIValue("print_sellos_total", totalSellos);
+  updateUIValue("print_safe_total", safe);
+  updateUIValue("print_fondo_total", -Math.abs(fondoCajaValue)); // Mostrar como negativo en reporte
+  updateUIValue("print_monedas_extra_total", extra);
+
+  // Generar resúmenes COMPLETOS para impresión (Incluso ceros)
+  generarResumenDineroImpresion("billetes-container", "print-billetes-summary", true);
+  generarResumenDineroImpresion("monedas-container", "print-monedas-summary", true);
+
+  // Sincronizar Conceptos Dinámicos (+ Concepto)
+  sincronizarConceptosDinamicosImpresion();
+}
+
+function sincronizarConceptosDinamicosImpresion() {
+  const target = document.getElementById('print-dynamic-concepts');
+  if (!target) return;
+
+  let html = '';
+  document.querySelectorAll('.dynamic-concept').forEach(div => {
+    const nombre = div.querySelector('.concept-name')?.value || "Varios";
+    const val = parseFloat(div.querySelector('.concept-value')?.value || 0);
+    html += `<div style="display:flex; justify-content:space-between; padding: 4px 0; border-bottom: 1px solid #eee;">
+                    <span><i class="bi bi-plus-circle me-2" style="font-size: 8pt; color: #666;"></i>${nombre}:</span>
+                    <span style="font-weight:bold;">${Utils.formatCurrency(val)}</span>
+                 </div>`;
+  });
+  target.innerHTML = html;
+}
+
+function generarResumenDineroImpresion(sourceContainerId, targetContainerId, mostrarTodos = false) {
+  const target = document.getElementById(targetContainerId);
+  if (!target) return;
+
+  let html = '<div style="font-size: 8.5pt; color: #333;">';
+  const icon = sourceContainerId.includes('billetes') ? 'bi-cash' : 'bi-coin';
+  
+  document.querySelectorAll(`#${sourceContainerId} .input-group`).forEach(row => {
+    const input = row.querySelector('input');
+    const cant = parseFloat(input?.value || 0);
+    const valor = input.dataset.valor;
+    const subtotal = parseFloat(valor) * (cant || 0);
+
+    // Si no queremos mostrar todos y está a cero, saltamos
+    if (!mostrarTodos && cant === 0) return;
+
+    html += `<div style="display:flex; justify-content:space-between; margin-bottom: 3px; ${cant === 0 ? 'color:#bbb;' : ''}">
+                    <span><i class="bi ${icon} me-1" style="font-size: 7pt; color: #999;"></i>${valor}€ x ${cant}</span>
+                    <span style="font-weight:bold;">${Utils.formatCurrency(subtotal)}</span>
+                 </div>`;
+  });
+
+  html += '</div>';
+  target.innerHTML = html;
 }
 
 function updateUIValue(id, val) {
-    const el = document.getElementById(id);
-    if (el) {
-        const texto = Utils.formatCurrency(val);
-        if (el.tagName === 'INPUT') {
-            el.value = texto;
-        } else {
-            el.textContent = texto;
-        }
-
-        if (id === 'recaudacion_caja') {
-            el.classList.remove('text-success', 'text-danger');
-            el.classList.add(val >= 0 ? 'text-success' : 'text-danger');
-        }
+  const el = document.getElementById(id);
+  if (el) {
+    const texto = Utils.formatCurrency(val);
+    if (el.tagName === "INPUT") {
+      el.value = texto;
+    } else {
+      el.textContent = texto;
     }
+
+    if (id === "recaudacion_caja" || id === "print_recaudacion_final") {
+      el.classList.remove("text-success", "text-danger");
+      el.classList.add(val >= 0 ? "text-success" : "text-danger");
+      if (id.startsWith("print")) {
+        el.style.color = val >= 0 ? "#155724" : "#721c24"; // Colores directos para impresión
+      }
+    }
+  }
 }
 
 // ============================================================================
@@ -453,269 +550,308 @@ function updateUIValue(id, val) {
 // ============================================================================
 
 async function resetearCaja() {
-    if (await window.showConfirm("¿Estás seguro de borrar todos los datos de la caja?")) {
-        const inputs = document.querySelectorAll('#caja-content input');
-        inputs.forEach(i => {
-            if (i.type === 'number' || i.type === 'text') i.value = '';
-        });
+  if (
+    await window.showConfirm(
+      "¿Estás seguro de borrar todos los datos de la caja?",
+    )
+  ) {
+    const inputs = document.querySelectorAll("#caja-content input");
+    inputs.forEach((i) => {
+      if (i.type === "number" || i.type === "text") i.value = "";
+    });
 
-        document.querySelectorAll('.dynamic-concept').forEach(el => el.remove());
-        
-        listaVales = [];
-        listaDesembolsos = [];
-        renderVales();
-        renderDesembolsos();
+    document.querySelectorAll(".dynamic-concept").forEach((el) => el.remove());
 
-        actualizarDatosAutomaticosCaja();
-        Utils.setVal('caja_sellos_precio', "1.50");
-        Utils.setVal('caja_fondo', "2000.00");
+    listaVales = [];
+    listaDesembolsos = [];
+    renderVales();
+    renderDesembolsos();
 
-        calcularCaja();
-    }
+    actualizarDatosAutomaticosCaja();
+    Utils.setVal("caja_sellos_precio", "1.50");
+    Utils.setVal("caja_fondo", "2000.00");
+
+    calcularCaja();
+  }
 }
 
 function imprimirCierreCaja() {
-    const user = sessionService.getUser();
-    if (!user) {
-        alert("⚠️ No hay usuario seleccionado. Selecciona tu nombre en el menú superior.");
-        return;
+  const user = sessionService.getUser();
+  if (!user) {
+    alert(
+      "⚠️ No hay usuario seleccionado. Selecciona tu nombre en el menú superior.",
+    );
+    return;
+  }
+
+  // Sincronizar comentarios para impresión
+  const comentarios =
+    document.getElementById("caja_comentarios_cierre")?.value || "";
+  const printDiv = document.getElementById("print-comentarios-caja");
+  if (printDiv) printDiv.innerText = comentarios;
+
+  // Sincronizar Turno Label
+  const turno = document.getElementById("caja_turno")?.value || "";
+  const turnoLabel = document.getElementById("print-turno-label");
+  if (turnoLabel) turnoLabel.textContent = turno;
+
+  // FIX IMPRESIÓN: Sincronizar valor visual con atributo DOM para que salga en papel
+  const inputs = document.querySelectorAll("#caja-content input");
+  inputs.forEach((i) => {
+    if (i.type === "number" || i.type === "text") {
+      i.setAttribute("value", i.value);
     }
+  });
 
-    // Sincronizar comentarios para impresión
-    const comentarios = document.getElementById('caja_comentarios_cierre')?.value || "";
-    const printDiv = document.getElementById('print-comentarios-caja');
-    if (printDiv) printDiv.textContent = comentarios;
-
-    // FIX IMPRESIÓN: Sincronizar valor visual con atributo DOM para que salga en papel
-    const inputs = document.querySelectorAll('#caja-content input');
-    inputs.forEach(i => {
-        if (i.type === 'number' || i.type === 'text') {
-            i.setAttribute('value', i.value);
-        }
-    });
-
-    Utils.printSection('print-date-caja', 'print-repc-nombre-caja', user);
+  Utils.printSection("print-date-caja", "print-repc-nombre-caja", user);
 }
 
 async function guardarCajaPDF() {
-    const user = sessionService.getUser();
-    if (!user) {
-        alert("⚠️ No hay usuario seleccionado.");
-        return;
+  const user = sessionService.getUser();
+  if (!user) {
+    alert("⚠️ No hay usuario seleccionado.");
+    return;
+  }
+
+  const fecha = document.getElementById("caja_fecha")?.value || "fecha";
+  const turno = document.getElementById("caja_turno")?.value || "turno";
+  const partes = fecha.split("-");
+  const fechaFormateada =
+    partes.length === 3 ? `${partes[2]}-${partes[1]}-${partes[0]}` : fecha;
+  const filename = `${fechaFormateada}-${turno}.pdf`;
+
+  // 1. Preparar CLON para manipular (Sin afectar la UI real)
+  const original = document.getElementById("caja-content");
+  const clone = original.cloneNode(true);
+
+  // 2. Crear Contenedor Temporal con clase PDF-EXPORT para forzar estilos
+  const wrapper = document.createElement("div");
+  wrapper.className = "pdf-export p-4"; // p-4 para margen interno blanco
+  wrapper.style.position = "absolute";
+  wrapper.style.left = "-9999px";
+  wrapper.style.top = "0";
+  wrapper.style.width = "210mm"; // A4 width hint
+  wrapper.appendChild(clone);
+  document.body.appendChild(wrapper);
+
+  // 3. Sincronizar Datos en el CLON
+  // Entradas de texto/numeros -> Atributos value para que salgan
+  const inputsOriginal = original.querySelectorAll("input, select, textarea");
+  const inputsClone = clone.querySelectorAll("input, select, textarea");
+
+  inputsClone.forEach((inputClone, i) => {
+    const inputOriginal = inputsOriginal[i];
+    if (inputOriginal) {
+      if (inputClone.tagName === "SELECT") {
+        try {
+          const selectedText =
+            inputOriginal.options[inputOriginal.selectedIndex]?.text ||
+            inputOriginal.value;
+          // Reemplazar select por span para mejor visualización
+          const span = document.createElement("span");
+          span.className = "fw-bold";
+          span.textContent = selectedText;
+          inputClone.parentNode.replaceChild(span, inputClone);
+        } catch (e) {}
+      } else {
+        inputClone.setAttribute("value", inputOriginal.value);
+        // Si es checkbox/radio
+        if (inputOriginal.checked)
+          inputClone.setAttribute("checked", "checked");
+      }
     }
+  });
 
-    const fecha = document.getElementById('caja_fecha')?.value || "fecha";
-    const turno = document.getElementById('caja_turno')?.value || "turno";
-    const partes = fecha.split('-');
-    const fechaFormateada = partes.length === 3 ? `${partes[2]}-${partes[1]}-${partes[0]}` : fecha;
-    const filename = `${fechaFormateada}-${turno}.pdf`;
+  // Comentarios
+  const comentariosVal =
+    document.getElementById("caja_comentarios_cierre")?.value || "";
+  const printComentarios = clone.querySelector("#print-comentarios-caja");
+  if (printComentarios) {
+    printComentarios.textContent = comentariosVal;
+    printComentarios.classList.remove("d-none"); // Asegurar visible
+  }
 
-    // 1. Preparar CLON para manipular (Sin afectar la UI real)
-    const original = document.getElementById('caja-content');
-    const clone = original.cloneNode(true);
+  // Cabeceras y Firmas (Están d-none en UI, forzar block en clon)
+  // Ya lo hace el CSS .pdf-export, pero aseguramos
+  const headerPrint = clone.querySelector(".report-header-print");
+  if (headerPrint) headerPrint.classList.remove("d-none");
 
-    // 2. Crear Contenedor Temporal con clase PDF-EXPORT para forzar estilos
-    const wrapper = document.createElement('div');
-    wrapper.className = 'pdf-export p-4'; // p-4 para margen interno blanco
-    wrapper.style.position = 'absolute';
-    wrapper.style.left = '-9999px';
-    wrapper.style.top = '0';
-    wrapper.style.width = '210mm'; // A4 width hint
-    wrapper.appendChild(clone);
-    document.body.appendChild(wrapper);
+  const signature = clone.querySelector(".signature-area");
+  if (signature) signature.classList.remove("d-none");
 
-    // 3. Sincronizar Datos en el CLON
-    // Entradas de texto/numeros -> Atributos value para que salgan
-    const inputsOriginal = original.querySelectorAll('input, select, textarea');
-    const inputsClone = clone.querySelectorAll('input, select, textarea');
-    
-    inputsClone.forEach((inputClone, i) => {
-        const inputOriginal = inputsOriginal[i];
-        if (inputOriginal) {
-           if (inputClone.tagName === 'SELECT') {
-               try {
-                  const selectedText = inputOriginal.options[inputOriginal.selectedIndex]?.text || inputOriginal.value;
-                  // Reemplazar select por span para mejor visualización
-                  const span = document.createElement('span');
-                  span.className = 'fw-bold';
-                  span.textContent = selectedText;
-                  inputClone.parentNode.replaceChild(span, inputClone);
-               } catch(e) {}
-           } else {
-               inputClone.setAttribute('value', inputOriginal.value);
-               // Si es checkbox/radio
-               if (inputOriginal.checked) inputClone.setAttribute('checked', 'checked');
-           }
-        }
-    });
+  // Vales
+  const printVales = clone.querySelector("#print-vales-details");
+  if (printVales) printVales.classList.remove("d-none");
 
-    // Comentarios
-    const comentariosVal = document.getElementById('caja_comentarios_cierre')?.value || "";
-    const printComentarios = clone.querySelector('#print-comentarios-caja');
-    if (printComentarios) {
-        printComentarios.textContent = comentariosVal;
-        printComentarios.classList.remove('d-none'); // Asegurar visible
+  // Desembolsos (Nuevo)
+  const printDesembolsos = clone.querySelector("#print-desembolsos-details");
+  if (printDesembolsos) printDesembolsos.classList.remove("d-none");
+
+  // 4. Configurar PDF
+  const opt = {
+    margin: [5, 5, 5, 5], // Márgenes pequeños, el padding lo da el wrapper
+    filename: filename,
+    image: { type: "jpeg", quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true, logging: false },
+    jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+  };
+
+  try {
+    if (window.showSaveFilePicker) {
+      const pdfBlob = await html2pdf().set(opt).from(wrapper).output("blob");
+      const handle = await window.showSaveFilePicker({
+        suggestedName: filename,
+        types: [
+          {
+            description: "PDF Document",
+            accept: { "application/pdf": [".pdf"] },
+          },
+        ],
+      });
+      const writable = await handle.createWritable();
+      await writable.write(pdfBlob);
+      await writable.close();
+      await window.showAlert(`Guardado PDF: ${filename}`, "success");
+    } else {
+      await html2pdf().set(opt).from(wrapper).save();
+      await window.showAlert(`Descargado PDF: ${filename}`, "success");
     }
-
-    // Cabeceras y Firmas (Están d-none en UI, forzar block en clon)
-    // Ya lo hace el CSS .pdf-export, pero aseguramos
-    const headerPrint = clone.querySelector('.report-header-print');
-    if (headerPrint) headerPrint.classList.remove('d-none');
-    
-    const signature = clone.querySelector('.signature-area');
-    if (signature) signature.classList.remove('d-none');
-    
-    // Vales
-    const printVales = clone.querySelector('#print-vales-details');
-    if (printVales) printVales.classList.remove('d-none');
-    
-    // Desembolsos (Nuevo)
-    const printDesembolsos = clone.querySelector('#print-desembolsos-details');
-    if (printDesembolsos) printDesembolsos.classList.remove('d-none');
-
-    // 4. Configurar PDF
-    const opt = {
-        margin: [5, 5, 5, 5], // Márgenes pequeños, el padding lo da el wrapper
-        filename: filename,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
-
-    try {
-        if (window.showSaveFilePicker) {
-            const pdfBlob = await html2pdf().set(opt).from(wrapper).output('blob');
-            const handle = await window.showSaveFilePicker({
-                suggestedName: filename,
-                types: [{ description: 'PDF Document', accept: { 'application/pdf': ['.pdf'] } }],
-            });
-            const writable = await handle.createWritable();
-            await writable.write(pdfBlob);
-            await writable.close();
-            await window.showAlert(`Guardado PDF: ${filename}`, "success");
-        } else {
-            await html2pdf().set(opt).from(wrapper).save();
-            await window.showAlert(`Descargado PDF: ${filename}`, "success");
-        }
-    } catch (err) {
-        if (err.name !== 'AbortError') {
-            console.error(err);
-            await window.showAlert("Error al generar PDF.", "error");
-        }
-    } finally {
-        // 5. Limpieza
-        document.body.removeChild(wrapper);
+  } catch (err) {
+    if (err.name !== "AbortError") {
+      console.error(err);
+      await window.showAlert("Error al generar PDF.", "error");
     }
+  } finally {
+    // 5. Limpieza
+    document.body.removeChild(wrapper);
+  }
 }
 
 async function enviarCajaEmail() {
-    const nombre = sessionService.getUser();
-    if (!nombre) {
-        alert("⚠️ No hay usuario seleccionado.");
-        return;
-    }
+  const nombre = sessionService.getUser();
+  if (!nombre) {
+    alert("⚠️ No hay usuario seleccionado.");
+    return;
+  }
 
-    const fecha = document.getElementById('caja_fecha')?.value || "";
-    const turno = document.getElementById('caja_turno')?.value || "";
-    
-    // Obtener Totales Principales del DOM
-    const totalCaja = document.getElementById('total_caja')?.innerText || "0.00€";
-    const recaudacion = document.getElementById('recaudacion_caja')?.innerText || "0.00€";
-    const efectivo = document.getElementById('total_efectivo')?.innerText || "0.00€";
-    const billetesTotal = document.getElementById('subtotal_billetes')?.innerText || "0.00€";
-    const monedasTotal = document.getElementById('subtotal_monedas')?.innerText || "0.00€";
+  const fecha = document.getElementById("caja_fecha")?.value || "";
+  const turno = document.getElementById("caja_turno")?.value || "";
 
-    // --- HELPER: Obtener Desglose Detallado ---
-    const getDesgloseDinero = (containerId) => {
-        let items = [];
-        document.querySelectorAll(`#${containerId} .input-group`).forEach(row => {
-            const input = row.querySelector('input');
-            const cant = parseFloat(input?.value || 0);
-            if (cant > 0) {
-                const valor = input.dataset.valor;
-                const total = parseFloat(valor) * cant;
-                items.push({ 
-                    desc: `${valor}€ x ${cant}`, 
-                    total: Utils.formatCurrency(total) 
-                });
-            }
+  // Obtener Totales Principales del DOM
+  const totalCaja = document.getElementById("total_caja")?.innerText || "0.00€";
+  const recaudacion =
+    document.getElementById("recaudacion_caja")?.innerText || "0.00€";
+  const efectivo =
+    document.getElementById("total_efectivo")?.innerText || "0.00€";
+  const billetesTotal =
+    document.getElementById("subtotal_billetes")?.innerText || "0.00€";
+  const monedasTotal =
+    document.getElementById("subtotal_monedas")?.innerText || "0.00€";
+
+  // --- HELPER: Obtener Desglose Detallado ---
+  const getDesgloseDinero = (containerId) => {
+    let items = [];
+    document.querySelectorAll(`#${containerId} .input-group`).forEach((row) => {
+      const input = row.querySelector("input");
+      const cant = parseFloat(input?.value || 0);
+      if (cant > 0) {
+        const valor = input.dataset.valor;
+        const total = parseFloat(valor) * cant;
+        items.push({
+          desc: `${valor}€ x ${cant}`,
+          total: Utils.formatCurrency(total),
         });
-        return items;
-    };
-
-    const periodicos = getDesgloseDinero('billetes-container');
-    const metalico = getDesgloseDinero('monedas-container');
-
-    // --- DESGLOSE VALES (SEPARADO) ---
-    const valesItems = listaVales.map(v => ({
-        desc: v.concepto,
-        total: Utils.formatCurrency(v.importe)
-    }));
-    const totalValesNum = listaVales.reduce((sum, v) => sum + v.importe, 0);
-    const totalValesStr = Utils.formatCurrency(totalValesNum);
-
-    // --- DESGLOSE DESEMBOLSOS (SEPARADO) ---
-    const desembolsosItems = listaDesembolsos.map(d => ({
-        desc: d.concepto,
-        total: Utils.formatCurrency(d.importe)
-    }));
-    const totalDesembolsosNum = listaDesembolsos.reduce((sum, d) => sum + d.importe, 0);
-    // const totalDesembolsosStr = Utils.formatCurrency(totalDesembolsosNum); // Already used?
-
-    // --- DESGLOSE OTROS (Sin Vales ni Desembolsos viejos) ---
-    let otrosItems = [];
-    let otrosSum = 0; // Suma manual para mostrar total de esta sección
-
-    const addSiExiste = (id, label, isCant = false) => {
-        const val = parseFloat(document.getElementById(id)?.value || 0);
-        if (val !== 0) {
-            let total = 0;
-            if (isCant) { // Caso especial Sellos
-                 const precio = parseFloat(document.getElementById('caja_sellos_precio')?.value || 0);
-                 total = val * precio;
-                 otrosItems.push({ desc: `${label} (${val} x ${Utils.formatCurrency(precio)})`, total: Utils.formatCurrency(total) });
-            } else {
-                 total = val;
-                 otrosItems.push({ desc: label, total: Utils.formatCurrency(total) });
-            }
-            otrosSum += total;
-        }
-    };
-    
-    addSiExiste('caja_safe', 'Safe');
-    addSiExiste('caja_sellos_cant', 'Sellos', true);
-    addSiExiste('caja_monedas_extra', 'Extra');
-    
-    // 2. Dinámicos
-    document.querySelectorAll('.dynamic-concept').forEach(div => {
-        const nombre = div.querySelector('.concept-name')?.value || "Varios";
-        const val = parseFloat(div.querySelector('.concept-value')?.value || 0);
-        if (val !== 0) {
-            otrosItems.push({ desc: nombre, total: Utils.formatCurrency(val) });
-            otrosSum += val;
-        }
+      }
     });
+    return items;
+  };
 
-    // Desembolsos ya son su propia lista, no se añaden aqui.
-    
-    const totalOtrosStr = Utils.formatCurrency(otrosSum);
+  const periodicos = getDesgloseDinero("billetes-container");
+  const metalico = getDesgloseDinero("monedas-container");
 
+  // --- DESGLOSE VALES (SEPARADO) ---
+  const valesItems = listaVales.map((v) => ({
+    desc: v.concepto,
+    total: Utils.formatCurrency(v.importe),
+  }));
+  const totalValesNum = listaVales.reduce((sum, v) => sum + v.importe, 0);
+  const totalValesStr = Utils.formatCurrency(totalValesNum);
 
-    const partes = fecha.split('-');
-    const fechaFormateada = partes.length === 3 ? `${partes[2]}-${partes[1]}-${partes[0]}` : fecha;
-    const subject = `Cierre de Caja - ${fechaFormateada} - ${turno.toUpperCase()}`;
+  // --- DESGLOSE DESEMBOLSOS (SEPARADO) ---
+  const desembolsosItems = listaDesembolsos.map((d) => ({
+    desc: d.concepto,
+    total: Utils.formatCurrency(d.importe),
+  }));
+  const totalDesembolsosNum = listaDesembolsos.reduce(
+    (sum, d) => sum + d.importe,
+    0,
+  );
+  // const totalDesembolsosStr = Utils.formatCurrency(totalDesembolsosNum); // Already used?
 
-    // --- GENERACIÓN HTML ---
-    const generateTableRows = (items) => {
-        return items.map(i => `
+  // --- DESGLOSE OTROS (Sin Vales ni Desembolsos viejos) ---
+  let otrosItems = [];
+  let otrosSum = 0; // Suma manual para mostrar total de esta sección
+
+  const addSiExiste = (id, label, isCant = false) => {
+    const val = parseFloat(document.getElementById(id)?.value || 0);
+    if (val !== 0) {
+      let total = 0;
+      if (isCant) {
+        // Caso especial Sellos
+        const precio = parseFloat(
+          document.getElementById("caja_sellos_precio")?.value || 0,
+        );
+        total = val * precio;
+        otrosItems.push({
+          desc: `${label} (${val} x ${Utils.formatCurrency(precio)})`,
+          total: Utils.formatCurrency(total),
+        });
+      } else {
+        total = val;
+        otrosItems.push({ desc: label, total: Utils.formatCurrency(total) });
+      }
+      otrosSum += total;
+    }
+  };
+
+  addSiExiste("caja_safe", "Safe");
+  addSiExiste("caja_sellos_cant", "Sellos", true);
+  addSiExiste("caja_monedas_extra", "Extra");
+
+  // 2. Dinámicos
+  document.querySelectorAll(".dynamic-concept").forEach((div) => {
+    const nombre = div.querySelector(".concept-name")?.value || "Varios";
+    const val = parseFloat(div.querySelector(".concept-value")?.value || 0);
+    if (val !== 0) {
+      otrosItems.push({ desc: nombre, total: Utils.formatCurrency(val) });
+      otrosSum += val;
+    }
+  });
+
+  // Desembolsos ya son su propia lista, no se añaden aqui.
+
+  const totalOtrosStr = Utils.formatCurrency(otrosSum);
+
+  const partes = fecha.split("-");
+  const fechaFormateada =
+    partes.length === 3 ? `${partes[2]}-${partes[1]}-${partes[0]}` : fecha;
+  const subject = `Cierre de Caja - ${fechaFormateada} - ${turno.toUpperCase()}`;
+
+  // --- GENERACIÓN HTML ---
+  const generateTableRows = (items) => {
+    return items
+      .map(
+        (i) => `
             <tr>
                 <td style="padding: 6px 10px; border-bottom: 1px solid #f0f0f0; font-size: 13px; color: #555; word-wrap: break-word; word-break: break-all; white-space: normal;">${i.desc}</td>
                 <td style="padding: 6px 10px; border-bottom: 1px solid #f0f0f0; text-align: right; font-size: 13px; white-space: nowrap; vertical-align: top;">${i.total}</td>
             </tr>
-        `).join('');
-    };
+        `,
+      )
+      .join("");
+  };
 
-    const htmlReporte = `
+  const htmlReporte = `
         <div style="font-family: 'Segoe UI', system-ui, sans-serif; color: #333; width: 100%; max-width: 600px; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; background: #fff;">
             <div style="background-color: #f8f9fa; padding: 15px 20px; border-bottom: 3px solid #0d6efd;">
                 <h2 style="color: #0d6efd; margin: 0; font-size: 20px;">CIERRE DE CAJA</h2>
@@ -728,19 +864,29 @@ async function enviarCajaEmail() {
                     <div style="font-weight: bold; color: #000; border-bottom: 2px solid #eee; padding-bottom: 5px; margin-bottom: 10px;">
                         EFECTIVO <span style="float: right;">${efectivo}</span>
                     </div>
-                    ${periodicos.length > 0 ? `
+                    ${
+                      periodicos.length > 0
+                        ? `
                         <div style="font-size: 11px; font-weight: bold; color: #888; margin-bottom: 5px;">BILLETES (${billetesTotal})</div>
                         <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px; table-layout: fixed;">${generateTableRows(periodicos)}</table>
-                    ` : ''}
+                    `
+                        : ""
+                    }
                     
-                    ${metalico.length > 0 ? `
+                    ${
+                      metalico.length > 0
+                        ? `
                         <div style="font-size: 11px; font-weight: bold; color: #888; margin-bottom: 5px;">MONEDAS (${monedasTotal})</div>
                         <table style="width: 100%; border-collapse: collapse; table-layout: fixed;">${generateTableRows(metalico)}</table>
-                    ` : ''}
+                    `
+                        : ""
+                    }
                 </div>
 
                 <!-- VALES -->
-                ${valesItems.length > 0 ? `
+                ${
+                  valesItems.length > 0
+                    ? `
                 <div style="margin-bottom: 25px;">
                     <div style="font-weight: bold; color: #d63384; border-bottom: 2px solid #eee; padding-bottom: 5px; margin-bottom: 10px;">
                         VALES <span style="float: right;">${totalValesStr}</span>
@@ -749,10 +895,14 @@ async function enviarCajaEmail() {
                          ${generateTableRows(valesItems)}
                     </table>
                 </div>
-                ` : ''}
+                `
+                    : ""
+                }
 
                 <!-- DESEMBOLSOS -->
-                ${desembolsosItems.length > 0 ? `
+                ${
+                  desembolsosItems.length > 0
+                    ? `
                 <div style="margin-bottom: 25px;">
                     <div style="font-weight: bold; color: #0d6efd; border-bottom: 2px solid #eee; padding-bottom: 5px; margin-bottom: 10px;">
                         DESEMBOLSOS <span style="float: right;">${Utils.formatCurrency(totalDesembolsosNum)}</span>
@@ -761,17 +911,23 @@ async function enviarCajaEmail() {
                          ${generateTableRows(desembolsosItems)}
                     </table>
                 </div>
-                ` : ''}
+                `
+                    : ""
+                }
 
                 <!-- OTROS CONCEPTOS -->
-                ${otrosItems.length > 0 ? `
+                ${
+                  otrosItems.length > 0
+                    ? `
                 <div style="margin-bottom: 25px;">
                     <div style="font-weight: bold; color: #fd7e14; border-bottom: 2px solid #eee; padding-bottom: 5px; margin-bottom: 10px;">
                         VARIOS <span style="float: right;">${totalOtrosStr}</span>
                     </div>
                     <table style="width: 100%; border-collapse: collapse; table-layout: fixed;">${generateTableRows(otrosItems)}</table>
                 </div>
-                ` : ''}
+                `
+                    : ""
+                }
 
                 <!-- TOTALES -->
                 <div style="background-color: #f1f8ff; padding: 15px; border-radius: 6px; margin-top: 10px;">
@@ -794,49 +950,62 @@ async function enviarCajaEmail() {
         </div>
     `;
 
-    // --- GENERACIÓN TEXTO PLANO ---
-    let textoPlano = `
+  // --- GENERACIÓN TEXTO PLANO ---
+  let textoPlano = `
 📋 CIERRE DE CAJA - ${fechaFormateada}
 =======================================
 Turno: ${turno.toUpperCase()} | Usuario: ${nombre}
 
 💵 EFECTIVO: ${efectivo}
 `;
-    if (periodicos.length) textoPlano += periodicos.map(i => `   ${i.desc.padEnd(15)} : ${i.total}`).join('\n') + '\n';
-    if (metalico.length) textoPlano += metalico.map(i => `   ${i.desc.padEnd(15)} : ${i.total}`).join('\n') + '\n';
-    
-    if (valesItems.length) {
-        textoPlano += `\n🎫 VALES: ${totalValesStr}\n`;
-        textoPlano += valesItems.map(i => `   ${i.desc} : ${i.total}`).join('\n') + '\n';
-    }
+  if (periodicos.length)
+    textoPlano +=
+      periodicos.map((i) => `   ${i.desc.padEnd(15)} : ${i.total}`).join("\n") +
+      "\n";
+  if (metalico.length)
+    textoPlano +=
+      metalico.map((i) => `   ${i.desc.padEnd(15)} : ${i.total}`).join("\n") +
+      "\n";
 
-    if (desembolsosItems.length) {
-        textoPlano += `\n🔴 DESEMBOLSOS: ${Utils.formatCurrency(totalDesembolsosNum)}\n`;
-        textoPlano += desembolsosItems.map(i => `   ${i.desc} : ${i.total}`).join('\n') + '\n';
-    }
+  if (valesItems.length) {
+    textoPlano += `\n🎫 VALES: ${totalValesStr}\n`;
+    textoPlano +=
+      valesItems.map((i) => `   ${i.desc} : ${i.total}`).join("\n") + "\n";
+  }
 
-    if (otrosItems.length) {
-        textoPlano += `\n📑 VARIOS: ${totalOtrosStr}\n`;
-        textoPlano += otrosItems.map(i => `   ${i.desc} : ${i.total}`).join('\n') + '\n';
-    }
+  if (desembolsosItems.length) {
+    textoPlano += `\n🔴 DESEMBOLSOS: ${Utils.formatCurrency(totalDesembolsosNum)}\n`;
+    textoPlano +=
+      desembolsosItems.map((i) => `   ${i.desc} : ${i.total}`).join("\n") +
+      "\n";
+  }
 
-    textoPlano += `
+  if (otrosItems.length) {
+    textoPlano += `\n📑 VARIOS: ${totalOtrosStr}\n`;
+    textoPlano +=
+      otrosItems.map((i) => `   ${i.desc} : ${i.total}`).join("\n") + "\n";
+  }
+
+  textoPlano += `
 =======================================
 💰 TOTAL TESORERÍA:  ${totalCaja}
 📈 PRODUCCIÓN:       ${recaudacion}
 =======================================
 `;
 
-    // Copiar al portapapeles
-    if (await Utils.copyToClipboard(textoPlano, htmlReporte)) {
-        await window.showAlert("📋 Reporte DETALLADO copiado. Pégalo en el correo.", "success");
-    } else {
-        await window.showAlert("Resumen copiado como texto plano.", "info");
-    }
+  // Copiar al portapapeles
+  if (await Utils.copyToClipboard(textoPlano, htmlReporte)) {
+    await window.showAlert(
+      "📋 Reporte DETALLADO copiado. Pégalo en el correo.",
+      "success",
+    );
+  } else {
+    await window.showAlert("Resumen copiado como texto plano.", "info");
+  }
 
-    // Abrir cliente de correo
-    const mailBody = `Buenos días,\n\nAdjunto le envío el detalle del cierre de caja.\n\n[PEGAR AQUÍ EL REPORTE DETALLADO]\n\nSaludos,\n${nombre}`;
-    window.location.href = `mailto:administracion@hotelgaroe.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(mailBody)}`;
+  // Abrir cliente de correo
+  const mailBody = `Buenos días,\n\nAdjunto le envío el detalle del cierre de caja.\n\n[PEGAR AQUÍ EL REPORTE DETALLADO]\n\nSaludos,\n${nombre}`;
+  window.location.href = `mailto:administracion@hotelgaroe.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(mailBody)}`;
 }
 
 // ============================================================================
@@ -851,43 +1020,58 @@ window.guardarCajaPDF = guardarCajaPDF;
 window.enviarCajaEmail = enviarCajaEmail;
 
 window.toggleLockCaja = (inputId, btn) => {
-    const input = document.getElementById(inputId);
-    if (!input) return;
+  const input = document.getElementById(inputId);
+  if (!input) return;
 
-    // Check for both readonly (inputs) and disabled (selects)
-    const isLocked = input.hasAttribute('readonly') || input.hasAttribute('disabled');
-    const icon = btn.querySelector('i');
+  // Check for both readonly (inputs) and disabled (selects)
+  const isLocked =
+    input.hasAttribute("readonly") || input.hasAttribute("disabled");
+  const icon = btn.querySelector("i");
 
-    if (isLocked) {
-        input.removeAttribute('readonly');
-        input.removeAttribute('disabled');
-        input.classList.remove('bg-light');
-        icon.className = 'bi bi-unlock-fill';
-        // Visual feedback based on color
-        if (inputId === 'caja_fecha') {
-            btn.classList.remove('btn-outline-primary', 'text-primary');
-            btn.classList.add('btn-primary', 'text-white');
-        } else {
-            btn.classList.remove('btn-outline-success', 'text-success');
-            btn.classList.add('btn-success', 'text-white');
-        }
+  if (isLocked) {
+    input.removeAttribute("readonly");
+    input.removeAttribute("disabled");
+    input.classList.remove("bg-light");
+    icon.className = "bi bi-unlock-fill";
+    // Visual feedback based on color
+    if (inputId === "caja_fecha") {
+      btn.classList.remove("btn-outline-primary", "text-primary");
+      btn.classList.add("btn-primary", "text-white");
     } else {
-        // Lock it back
-        if (input.tagName === 'SELECT') {
-            input.setAttribute('disabled', 'true');
-        } else {
-            input.setAttribute('readonly', 'true');
-        }
-        input.classList.add('bg-light');
-        icon.className = 'bi bi-lock-fill';
-        
-        // Restore visual state
-        if (inputId === 'caja_fecha') {
-            btn.classList.remove('btn-primary', 'text-white');
-            btn.classList.add('btn-outline-primary', 'text-primary');
-        } else {
-            btn.classList.remove('btn-success', 'text-white');
-            btn.classList.add('btn-outline-success', 'text-success');
-        }
+      btn.classList.remove("btn-outline-success", "text-success");
+      btn.classList.add("btn-success", "text-white");
     }
+  } else {
+    // Lock it back
+    if (input.tagName === "SELECT") {
+      input.setAttribute("disabled", "true");
+    } else {
+      input.setAttribute("readonly", "true");
+    }
+    input.classList.add("bg-light");
+    icon.className = "bi bi-lock-fill";
+
+    // Restore visual state
+    if (inputId === "caja_fecha") {
+      btn.classList.remove("btn-primary", "text-white");
+      btn.classList.add("btn-outline-primary", "text-primary");
+    } else {
+      btn.classList.remove("btn-success", "text-white");
+      btn.classList.add("btn-outline-success", "text-success");
+    }
+  }
 };
+
+// Listener para manejar cambios manuales en el fondo y formatearlo al salir
+document.addEventListener('change', (e) => {
+    if (e.target.id === 'caja_fondo') {
+        const raw = e.target.value.replace(/[^-0.9,.]/g, '').replace(',', '.');
+        fondoCajaValue = Math.abs(parseFloat(raw) || 0);
+        calcularCaja();
+    }
+});
+document.addEventListener('blur', (e) => {
+    if (e.target.id === 'caja_fondo') {
+        calcularCaja(); // Esto disparará el formateo visual ahora que no está enfocado
+    }
+}, true);

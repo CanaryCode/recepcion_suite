@@ -94,11 +94,11 @@ function renderVales() {
                     <div class="d-flex justify-content-between align-items-center border-bottom border-secondary mb-1 pb-1">
                         <h6 class="fw-bold mb-0 text-dark" style="font-size: 11px;">DESGLOSE VALES (${listaVales.length})</h6>
                     </div>
-                    <div class="d-flex flex-wrap gap-1">
+                    <div class="d-flex flex-column gap-1">
                         ${listaVales.map(v => `
-                            <div class="d-flex justify-content-between border bg-white rounded px-1" style="width: 32%; font-size: 10px; border-color: #dee2e6 !important;">
-                                <span class="text-truncate me-1" style="max-width: 70%;">${v.concepto}</span>
-                                <span class="fw-bold">${Utils.formatCurrency(v.importe)}</span>
+                            <div class="d-flex justify-content-between border-bottom py-1" style="font-size: 10px;">
+                                <span class="text-wrap me-2" style="max-width: 75%;">${v.concepto}</span>
+                                <span class="fw-bold text-primary">${Utils.formatCurrency(v.importe)}</span>
                             </div>
                         `).join('')}
                     </div>
@@ -194,11 +194,11 @@ function renderDesembolsos() {
                     <div class="d-flex justify-content-between align-items-center border-bottom border-secondary mb-1 pb-1">
                         <h6 class="fw-bold mb-0 text-dark" style="font-size: 11px;">DESGLOSE DESEMBOLSOS (${listaDesembolsos.length})</h6>
                     </div>
-                    <div class="d-flex flex-wrap gap-1">
+                    <div class="d-flex flex-column gap-1">
                         ${listaDesembolsos.map(d => `
-                            <div class="d-flex justify-content-between border bg-white rounded px-1" style="width: 32%; font-size: 10px; border-color: #dee2e6 !important;">
-                                <span class="text-truncate me-1" style="max-width: 70%;">${d.concepto}</span>
-                                <span class="fw-bold">${Utils.formatCurrency(d.importe)}</span>
+                            <div class="d-flex justify-content-between border-bottom py-1" style="font-size: 10px;">
+                                <span class="text-wrap me-2" style="max-width: 75%;">${d.concepto}</span>
+                                <span class="fw-bold text-primary">${Utils.formatCurrency(d.importe)}</span>
                             </div>
                         `).join('')}
                     </div>
@@ -322,13 +322,13 @@ function renderizarInputs(containerId, valores, iconClass, titulo) {
     container.innerHTML = `<h6 class="small text-muted fw-bold mb-2">${titulo}</h6>`;
     container.classList.add('money-grid-container');
 
-    valores.forEach(valor => {
+        valores.forEach(valor => {
         const div = document.createElement('div');
         div.className = 'input-group input-group-sm money-input-group';
         div.innerHTML = `
-            <span class="input-group-text money-label"><i class="bi ${iconClass} me-1"></i>${valor}€</span>
-            <input type="number" min="0" class="form-control input-caja" data-valor="${valor}" placeholder="0">
-            <span class="input-group-text money-total sub-caja fw-bold text-primary">0.00<span class="text-primary">€</span></span>
+            <span class="input-group-text money-label fw-bold text-primary"><i class="bi ${iconClass} me-1"></i>${valor}€</span>
+            <input type="number" min="0" class="form-control input-caja text-center" data-valor="${valor}" placeholder="0">
+            <span class="input-group-text money-total sub-caja fw-bold text-primary">0.00€</span>
         `;
         container.appendChild(div);
     });
@@ -343,7 +343,7 @@ function agregarNuevoConcepto() {
     div.innerHTML = `
         <div class="input-group input-group-sm">
             <input type="text" class="form-control concept-name text-start fw-bold" placeholder="Ej: Gasto Extra..." style="width: 45%;">
-            <input type="number" class="form-control concept-value text-end" placeholder="0.00" style="width: 35%;">
+            <input type="number" class="form-control concept-value text-center" placeholder="0.00" style="width: 35%;">
             <button class="btn btn-outline-danger d-print-none" onclick="this.closest('.dynamic-concept').remove(); calcularCaja();" style="width: 20%;" data-bs-toggle="tooltip" data-bs-title="Eliminar Concepto">
                 <i class="bi bi-trash"></i>
             </button>

@@ -40,3 +40,33 @@
     background-color: #333; /* Darker distinct color */
     box-shadow: 0 4px 6px rgba(0,0,0,0.3);
 }
+
+/* Responsive Navbar fixes */
+@media (max-width: 991px) {
+    /* Stack elements vertically on mobile/tablet */
+    #navbar-container {
+        flex-direction: column;
+        align-items: stretch !important;
+    }
+    
+    /* Center tabs */
+    #mainTabs {
+        justify-content: center;
+        width: 100%;
+        margin-bottom: 0.5rem;
+        flex-wrap: wrap; /* Allow tabs to wrap on very small screens */
+    }
+
+    /* Stack User/Search controls */
+    .d-flex.align-items-center.ms-auto.gap-3.py-1 {
+        justify-content: center;
+        width: 100%;
+        margin-left: 0 !important;
+    }
+    
+    /* Full width search on mobile */
+    .nav-search-wrapper {
+        width: 100%;
+        max-width: 300px;
+    }
+}

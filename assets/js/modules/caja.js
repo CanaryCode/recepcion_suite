@@ -2,12 +2,14 @@ import { APP_CONFIG } from '../core/Config.js';
 import { Utils } from '../core/Utils.js';
 import { sessionService } from '../services/SessionService.js';
 import { Modal } from '../core/Modal.js';
+import { safeService } from '../services/SafeService.js'; // Importado para cálculo automático
 
 // ============================================================================
 // ESTADO
 // ============================================================================
 let interfazCajaGenerada = false;
 let listaVales = []; // { id, concepto, importe }
+let listaDesembolsos = []; // { id, concepto, importe }
 
 // ... (existing helper functions)
 
@@ -91,13 +93,113 @@ function renderVales() {
             printContainer.innerHTML = `
                 <div class="border border-secondary rounded p-1 mt-1" style="background-color: #f8f9fa;">
                     <div class="d-flex justify-content-between align-items-center border-bottom border-secondary mb-1 pb-1">
-                        <h6 class="fw-bold mb-0 text-dark" style="font-size: 11px;">DESGLOSE (${listaVales.length})</h6>
+                        <h6 class="fw-bold mb-0 text-dark" style="font-size: 11px;">DESGLOSE VALES (${listaVales.length})</h6>
                     </div>
                     <div class="d-flex flex-wrap gap-1">
                         ${listaVales.map(v => `
                             <div class="d-flex justify-content-between border bg-white rounded px-1" style="width: 32%; font-size: 10px; border-color: #dee2e6 !important;">
                                 <span class="text-truncate me-1" style="max-width: 70%;">${v.concepto}</span>
                                 <span class="fw-bold">${Utils.formatCurrency(v.importe)}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        } else {
+            printContainer.innerHTML = '';
+        }
+    }
+}
+
+// ============================================================================
+// GESTIÓN DE DESEMBOLSOS (NUEVO)
+// ============================================================================
+
+window.abrirModalDesembolsos = () => {
+    const modal = new bootstrap.Modal(document.getElementById('modalDesembolsos'));
+    renderDesembolsos();
+    modal.show();
+    setTimeout(() => document.getElementById('desembolso_concepto')?.focus(), 500);
+};
+
+window.agregarDesembolso = (e) => {
+    e.preventDefault();
+    const conceptoIn = document.getElementById('desembolso_concepto');
+    const importeIn = document.getElementById('desembolso_importe');
+    
+    const concepto = conceptoIn.value.trim();
+    const importe = parseFloat(importeIn.value);
+
+    if (concepto && importe > 0) {
+        listaDesembolsos.push({
+            id: Date.now(),
+            concepto,
+            importe
+        });
+        
+        conceptoIn.value = '';
+        importeIn.value = '';
+        conceptoIn.focus();
+        
+        renderDesembolsos();
+        calcularCaja();
+    }
+};
+
+window.eliminarDesembolso = (id) => {
+    listaDesembolsos = listaDesembolsos.filter(d => d.id !== id);
+    renderDesembolsos();
+    calcularCaja();
+};
+
+function renderDesembolsos() {
+    // 1. Render en Modal
+    const container = document.getElementById('listaDesembolsos');
+    const msg = document.getElementById('noDesembolsosMsg');
+    const totalLabel = document.getElementById('modalDesembolsosTotal');
+    
+    if (container) {
+        if (listaDesembolsos.length === 0) {
+            container.innerHTML = '';
+            if (msg) msg.style.display = 'block';
+        } else {
+            if (msg) msg.style.display = 'none';
+            container.innerHTML = listaDesembolsos.map(d => `
+                <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+                    <div class="d-flex flex-column" style="min-width: 0;">
+                        <span class="fw-bold text-dark small text-break" style="word-wrap: break-word;">${d.concepto}</span>
+                    </div>
+                    <div class="d-flex align-items-center flex-shrink-0 ms-2">
+                        <span class="fw-bold text-primary me-3">${Utils.formatCurrency(d.importe)}</span>
+                        <button class="btn btn-sm btn-outline-danger border-0 p-1" onclick="eliminarDesembolso(${d.id})" data-bs-toggle="tooltip" data-bs-title="Eliminar Desembolso">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+    }
+
+    // 2. Calcular Total
+    const total = listaDesembolsos.reduce((sum, d) => sum + d.importe, 0);
+    if (totalLabel) totalLabel.innerText = Utils.formatCurrency(total);
+    
+    // 3. Render para IMPRESIÓN / PDF (Compact Grid - Ancho Completo)
+    // Para impresión, mantenemos un toque distintivo pero sutil, o lo unificamos también?
+    // User dijo "mismo color que todo", así que usaremos estilo neutro/gris similar a Vales.
+    const printContainer = document.getElementById('print-desembolsos-details');
+    if (printContainer) {
+        if (listaDesembolsos.length > 0) {
+            printContainer.innerHTML = `
+                <div class="border border-secondary rounded p-1 mt-1" style="background-color: #f8f9fa;">
+                    <div class="d-flex justify-content-between align-items-center border-bottom border-secondary mb-1 pb-1">
+                        <h6 class="fw-bold mb-0 text-dark" style="font-size: 11px;">DESGLOSE DESEMBOLSOS (${listaDesembolsos.length})</h6>
+                    </div>
+                    <div class="d-flex flex-wrap gap-1">
+                        ${listaDesembolsos.map(d => `
+                            <div class="d-flex justify-content-between border bg-white rounded px-1" style="width: 32%; font-size: 10px; border-color: #dee2e6 !important;">
+                                <span class="text-truncate me-1" style="max-width: 70%;">${d.concepto}</span>
+                                <span class="fw-bold">${Utils.formatCurrency(d.importe)}</span>
                             </div>
                         `).join('')}
                     </div>
@@ -144,6 +246,7 @@ function abrirCaja() {
     }
     generarInterfazCaja();
     actualizarDatosAutomaticosCaja(); // Force update on open
+    calcularSafeAutomatico(); // Recalcular safes al abrir (si está bloqueado)
     calcularCaja();
 }
 
@@ -206,7 +309,42 @@ function generarInterfazCaja() {
         fondoInput.value = "2000.00";
     }
 
+    // Cálculo automático de Safes
+    calcularSafeAutomatico();
+
     interfazCajaGenerada = true;
+}
+
+/**
+ * Calcula el valor de safes activos x precio diario.
+ * Solo si el campo está bloqueado (readonly).
+ */
+function calcularSafeAutomatico() {
+    const safeInput = document.getElementById('caja_safe');
+    if (!safeInput) return;
+
+    // Si no tiene readonly, es porque el usuario lo desbloqueó para editar manual. Respetamos eso.
+    if (!safeInput.hasAttribute('readonly')) return;
+
+    // Obtener alquileres activos
+    const rentals = safeService.getRentals(); // Asume que getRentals devuelve todos los vigentes
+    // Si la lógica de "activos hoy" es más compleja (por fechas), habría que filtrar.
+    // Asumiremos que si está en el array, está activo hoy.
+    
+    // Contar cuántos hay
+    const count = rentals.length;
+    
+    // Precio
+    const precio = APP_CONFIG.SAFE?.PRECIO_DIARIO || 2.00;
+    
+    // Total
+    const total = count * precio;
+    
+    safeInput.value = total.toFixed(2);
+    
+    // Forzar recálculo global de caja si es necesario, 
+    // pero cuidado con bucles infinitos si calcularCaja llama a esto. 
+    // calcularCaja NO llama a esto, así que bien.
 }
 
 // ============================================================================
@@ -226,7 +364,7 @@ function renderizarInputs(containerId, valores, iconClass, titulo) {
         div.innerHTML = `
             <span class="input-group-text money-label"><i class="bi ${iconClass} me-1"></i>${valor}€</span>
             <input type="number" min="0" class="form-control input-caja" data-valor="${valor}" placeholder="0">
-            <span class="input-group-text money-total sub-caja">0.00€</span>
+            <span class="input-group-text money-total sub-caja fw-bold text-primary">0.00<span class="text-primary">€</span></span>
         `;
         container.appendChild(div);
     });
@@ -298,17 +436,26 @@ function calcularCaja() {
     if (sellosLbl) sellosLbl.textContent = Utils.formatCurrency(totalSellos);
 
     const extra = getVal('caja_monedas_extra');
-    const desembolsos = getVal('caja_desembolsos');
+    
+    // DESEMBOLSOS (Calculado desde array)
+    const desembolsos = listaDesembolsos.reduce((sum, d) => sum + d.importe, 0);
+    const desembolsosInput = document.getElementById('caja_desembolsos');
+    if (desembolsosInput) desembolsosInput.value = Utils.formatCurrency(desembolsos);
 
     // Dinámicos
     let totalDinamicos = 0;
     document.querySelectorAll('.concept-value').forEach(input => totalDinamicos += (parseFloat(input.value) || 0));
 
-    // Sumar Total
-    const totalOtros = (totalVales + safe + totalSellos + extra + totalDinamicos) - desembolsos;
-    const totalTesoreria = totalEfectivo + totalOtros;
+    // Sumar Total (Desembolsos ahora SUMAN, positivo)
     const fondoCaja = getVal('caja_fondo');
-    const recaudacion = totalTesoreria - fondoCaja;
+    // El usuario indica que el fondo es negativo (se resta)
+    const totalOtros = (totalVales + safe + totalSellos + extra + totalDinamicos + desembolsos) - fondoCaja;
+    
+    // Total Tesorería ahora será el saldo neto (Efectivo + Vales + Extras - Fondo)
+    const totalTesoreria = totalEfectivo + totalOtros;
+    
+    // Como el fondo ya está restado en Total Tesorería, la Recaudación es igual al Total Tesorería
+    const recaudacion = totalTesoreria;
 
     // Actualizar UI
     updateUIValue('subtotal_billetes', totalBilletes);
@@ -350,7 +497,9 @@ async function resetearCaja() {
         document.querySelectorAll('.dynamic-concept').forEach(el => el.remove());
         
         listaVales = [];
+        listaDesembolsos = [];
         renderVales();
+        renderDesembolsos();
 
         actualizarDatosAutomaticosCaja();
         Utils.setVal('caja_sellos_precio', "1.50");
@@ -454,6 +603,10 @@ async function guardarCajaPDF() {
     // Vales
     const printVales = clone.querySelector('#print-vales-details');
     if (printVales) printVales.classList.remove('d-none');
+    
+    // Desembolsos (Nuevo)
+    const printDesembolsos = clone.querySelector('#print-desembolsos-details');
+    if (printDesembolsos) printDesembolsos.classList.remove('d-none');
 
     // 4. Configurar PDF
     const opt = {
@@ -536,7 +689,15 @@ async function enviarCajaEmail() {
     const totalValesNum = listaVales.reduce((sum, v) => sum + v.importe, 0);
     const totalValesStr = Utils.formatCurrency(totalValesNum);
 
-    // --- DESGLOSE OTROS (Sin Vales) ---
+    // --- DESGLOSE DESEMBOLSOS (SEPARADO) ---
+    const desembolsosItems = listaDesembolsos.map(d => ({
+        desc: d.concepto,
+        total: Utils.formatCurrency(d.importe)
+    }));
+    const totalDesembolsosNum = listaDesembolsos.reduce((sum, d) => sum + d.importe, 0);
+    // const totalDesembolsosStr = Utils.formatCurrency(totalDesembolsosNum); // Already used?
+
+    // --- DESGLOSE OTROS (Sin Vales ni Desembolsos viejos) ---
     let otrosItems = [];
     let otrosSum = 0; // Suma manual para mostrar total de esta sección
 
@@ -569,13 +730,8 @@ async function enviarCajaEmail() {
             otrosSum += val;
         }
     });
-    
-    // Desembolsos (Restan)
-    const desembolsos = parseFloat(document.getElementById('caja_desembolsos')?.value || 0);
-    if (desembolsos > 0) {
-        otrosItems.push({ desc: 'Desembolsos', total: `-${Utils.formatCurrency(desembolsos)}` });
-        otrosSum -= desembolsos;
-    }
+
+    // Desembolsos ya son su propia lista, no se añaden aqui.
     
     const totalOtrosStr = Utils.formatCurrency(otrosSum);
 
@@ -625,12 +781,19 @@ async function enviarCajaEmail() {
                         VALES <span style="float: right;">${totalValesStr}</span>
                     </div>
                     <table style="width: 100%; border-collapse: collapse; table-layout: fixed;">
-                         ${valesItems.map(i => `
-                            <tr>
-                                <td style="padding: 6px 10px; border-bottom: 1px solid #f0f0f0; font-size: 13px; color: #555; word-wrap: break-word; word-break: break-all; white-space: normal;">${i.desc}</td>
-                                <td style="padding: 6px 10px; border-bottom: 1px solid #f0f0f0; text-align: right; font-size: 13px; white-space: nowrap; vertical-align: top;">${i.total}</td>
-                            </tr>
-                        `).join('')}
+                         ${generateTableRows(valesItems)}
+                    </table>
+                </div>
+                ` : ''}
+
+                <!-- DESEMBOLSOS -->
+                ${desembolsosItems.length > 0 ? `
+                <div style="margin-bottom: 25px;">
+                    <div style="font-weight: bold; color: #0d6efd; border-bottom: 2px solid #eee; padding-bottom: 5px; margin-bottom: 10px;">
+                        DESEMBOLSOS <span style="float: right;">${Utils.formatCurrency(totalDesembolsosNum)}</span>
+                    </div>
+                    <table style="width: 100%; border-collapse: collapse; table-layout: fixed;">
+                         ${generateTableRows(desembolsosItems)}
                     </table>
                 </div>
                 ` : ''}
@@ -680,6 +843,11 @@ Turno: ${turno.toUpperCase()} | Usuario: ${nombre}
     if (valesItems.length) {
         textoPlano += `\n🎫 VALES: ${totalValesStr}\n`;
         textoPlano += valesItems.map(i => `   ${i.desc} : ${i.total}`).join('\n') + '\n';
+    }
+
+    if (desembolsosItems.length) {
+        textoPlano += `\n🔴 DESEMBOLSOS: ${Utils.formatCurrency(totalDesembolsosNum)}\n`;
+        textoPlano += desembolsosItems.map(i => `   ${i.desc} : ${i.total}`).join('\n') + '\n';
     }
 
     if (otrosItems.length) {

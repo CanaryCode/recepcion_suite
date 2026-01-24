@@ -207,64 +207,127 @@ function inicializarSesionGlobal() {
         userBtn.classList.add('btn-outline-danger');
         location.reload(); // Recargar para limpiar estados de módulos si es necesario
     };
+    // 5. Exponer Restauración de Agenda
+    // 5. Exponer Utilidad de Respaldo Forzoso
+    window.ejecutarRespaldoManual = async () => {
+        const confirmed = await Modal.showConfirm("¿Quieres forzar el envío de TODOS los datos al servidor de respaldo?<br><br><small class='text-muted'>Esto actualizará la copia de seguridad con lo que tienes en pantalla ahora mismo.</small>");
+        if (!confirmed) return;
+        
+        // Visual feedback
+        const userBtn = document.getElementById('globalUserBtn');
+        const userNameSpan = document.getElementById('globalUserName');
+        const originalText = userNameSpan.innerHTML;
+        const originalIcon = userBtn.querySelector('i').className;
+        
+        // Change Icon to Spinner
+        userBtn.querySelector('i').className = "spinner-border spinner-border-sm me-1";
+        userNameSpan.innerText = "Respaldando...";
+        userBtn.classList.add('disabled');
+
+        try {
+            // Dynamic import
+            const { backupService } = await import('./services/BackupService.js');
+            const result = await backupService.performFullBackup();
+            
+            let msg = `✅ <strong>Respaldo Completado</strong><br><br>Se han procesado ${result.success.length} módulos correctamente.`;
+            let type = 'success';
+            
+            if (result.error.length > 0) {
+                msg += `<br><br>⚠️ <strong>Atención:</strong> ${result.error.length} módulos fallaron (Mira la consola).`;
+                type = 'warning';
+            }
+            
+            await Modal.showAlert(msg, type);
+            
+        } catch (e) {
+            console.error("Backup error:", e);
+            await Modal.showAlert(`❌ <strong>Error Crítico</strong><br>${e.message}`, 'error');
+        } finally {
+            // Restore UI
+            userBtn.querySelector('i').className = originalIcon;
+            userNameSpan.innerHTML = originalText;
+            userBtn.classList.remove('disabled');
+        }
+    };
+
+    // 6. Exponer Restauración de Agenda (Corrección)
+    window.ejecutarRestauracionAgenda = async () => {
+        const confirmed = await Modal.showConfirm("¿Quieres buscar y recuperar contactos originales perdidos?<br><br>🛡️ <strong>Modo Seguro:</strong> Esto NO borrará los contactos que tú hayas añadido. Solo rellenará los huecos si falta alguno de la lista original.");
+        if (!confirmed) return;
+
+        const userBtn = document.getElementById('globalUserBtn');
+        // Simple spinner feedback (reuse logic if possible, simplified here)
+        userBtn.querySelector('i').className = "spinner-border spinner-border-sm me-1";
+        
+        try {
+            const { agendaService } = await import('./services/AgendaService.js');
+            const { RAW_AGENDA_DATA } = await import('./data/AgendaData.js'); 
+            
+            // Llamamos al método de recuperación inteligente
+            await agendaService.restaurarAgendaForzada();
+            // El propio servicio importador maneja el reload si hay exito, 
+            // pero si no hace reload (ej: lista vacia), necesitamos quitar el spinner
+            
+        } catch (e) {
+            console.error(e);
+            await Modal.showAlert(`❌ Error al recuperar: ${e.message}`, "error");
+            // location.reload(); // Quitamos reload forzoso en error para ver el mensaje
+        } finally {
+             // Restore UI (Important if no reload happens)
+             userBtn.querySelector('i').className = "bi bi-person-circle me-1";
+        }
+    };
+
+    // 6. Configuración Centralizada de Tooltips
+    window.initTooltips = (container = document.body) => {
+        const selector = '[data-bs-toggle="tooltip"], .custom-tooltip, [data-tooltip="true"]';
+        // Handle trigger itself
+        if (container.matches && container.matches(selector)) {
+             initSingleTooltip(container);
+        }
+        // Handle children
+        if (container.querySelectorAll) {
+            container.querySelectorAll(selector).forEach(el => initSingleTooltip(el));
+        }
+    };
+
+    function initSingleTooltip(el) {
+        const instance = bootstrap.Tooltip.getInstance(el);
+        const desiredDelay = { show: 700, hide: 100 };
+        
+        if (instance) {
+            // Check if delay is correct. Accessing private config is risky, 
+            // but we can just dispose and recreate to be safe if we want to enforce it strict.
+            // Or only if we suspect it's wrong. 
+            // Let's go aggressive: Dispose ensuring our config wins.
+            // But checking instance._config.delay might be possible if we needed optimization.
+            instance.dispose();
+        }
+        
+        new bootstrap.Tooltip(el, {
+            trigger: 'hover',
+            container: 'body', // Force body to avoid clipping in navbars/modals
+            delay: desiredDelay,
+            html: true,
+            placement: el.dataset.bsPlacement || 'top'
+        });
+    }
 }
 
 // Inicializar Tooltips Globalmente (Observer para contenido dinámico)
 function initGlobalTooltips() {
-    const initNode = (node) => {
-        // 1. Elementos estándar con data-bs-toggle="tooltip"
-        if (node.nodeType === 1) { 
-            if (node.matches && node.matches('[data-bs-toggle="tooltip"]')) {
-                if (!bootstrap.Tooltip.getInstance(node)) {
-                    new bootstrap.Tooltip(node, { trigger: 'hover', container: node.dataset.bsContainer || 'body' });
-                }
-            }
-            // Hijos estándar
-            if (node.querySelectorAll) {
-                node.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
-                    if (!bootstrap.Tooltip.getInstance(el)) {
-                        new bootstrap.Tooltip(el, { trigger: 'hover', container: el.dataset.bsContainer || 'body' });
-                    }
-                });
-            }
-
-            // 2. Elementos con clase .custom-tooltip (Manual Check)
-            if (node.classList && node.classList.contains('custom-tooltip')) {
-                if (!bootstrap.Tooltip.getInstance(node)) {
-                    new bootstrap.Tooltip(node, { 
-                        trigger: 'hover', 
-                        container: 'body',
-                        html: true,
-                        // Fallback si no tiene data-bs-placement
-                        placement: node.dataset.bsPlacement || 'bottom' 
-                    });
-                }
-            }
-            // Hijos custom
-            if (node.querySelectorAll) {
-                node.querySelectorAll('.custom-tooltip').forEach(el => {
-                    if (!bootstrap.Tooltip.getInstance(el)) {
-                        new bootstrap.Tooltip(el, { 
-                            trigger: 'hover', 
-                            container: 'body',
-                            html: true,
-                            customClass: 'custom-nav-tooltip', // Class from styles.css
-                            placement: el.dataset.bsPlacement || 'bottom'
-                        });
-                    }
-                });
-            }
-        }
-    };
-
     // Initial load
-    initNode(document.body);
+    window.initTooltips(document.body);
 
     // Observer
     const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
             if (mutation.type === 'childList') {
-                mutation.addedNodes.forEach(initNode);
+                mutation.addedNodes.forEach(node => {
+                    if (node.nodeType === 1) {
+                         window.initTooltips(node);
+                    }
+                });
             }
         });
     });

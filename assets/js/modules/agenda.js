@@ -250,20 +250,32 @@ function actualizarVisibilidadCampos() {
     });
 }
 
+// ============================================================================
+// ESTADO PAGINACIÓN
+// ============================================================================
+let currentFilteredContacts = [];
+let visibleCount = 50;
+const PAGE_SIZE = 50;
+
 async function mostrarContactos(filtro = "") {
     let contactos = await agendaService.getAll();
-    if (!agendaCuerpo) return;
+    try {
+        if (!contactos || !Array.isArray(contactos)) {
+            // Already handled by service but double check
+            contactos = [];
+        }
 
-    agendaCuerpo.innerHTML = '';
-    const totalEl = document.getElementById('totalContactos');
-    if (totalEl) totalEl.innerText = contactos.length;
+        contactos.sort((a, b) => {
+            if (a.favorito !== b.favorito) return b.favorito ? 1 : -1;
+            return a.nombre.localeCompare(b.nombre);
+        });
+    } catch (e) {
+        console.error("Error sorting:", e);
+        contactos = [];
+    }
 
-    contactos.sort((a, b) => {
-        if (a.favorito !== b.favorito) return b.favorito ? 1 : -1;
-        return a.nombre.localeCompare(b.nombre);
-    });
-
-    const filtrados = filtro.trim() === "" 
+    // Filter
+    currentFilteredContacts = filtro.trim() === "" 
         ? contactos 
         : contactos.filter(c =>
             c.nombre.toLowerCase().includes(filtro.toLowerCase()) ||
@@ -271,8 +283,24 @@ async function mostrarContactos(filtro = "") {
             (c.email && c.email.toLowerCase().includes(filtro.toLowerCase()))
         );
 
+    // Reset pagination on new search
+    visibleCount = PAGE_SIZE;
+    
+    // Update Counters
+    const totalEl = document.getElementById('totalContactos');
+    if (totalEl) totalEl.innerText = currentFilteredContacts.length;
+
+    renderListaContactos();
+}
+
+function renderListaContactos() {
+    if (!agendaCuerpo) return;
+    
+    const slice = currentFilteredContacts.slice(0, visibleCount);
     let html = '';
-    filtrados.forEach(c => {
+
+    slice.forEach(c => {
+        // ... (Item Rendering Logic is same, copied below for context) ...
         const favIcon = c.favorito ? '<i class="bi bi-star-fill text-warning me-1"></i>' : '';
         let telList = "";
 
@@ -320,8 +348,30 @@ async function mostrarContactos(filtro = "") {
                 </td>
             </tr>`;
     });
+
+    // LOAD MORE BUTTON ROW
+    if (visibleCount < currentFilteredContacts.length) {
+        html += `
+        <tr id="row-load-more">
+            <td colspan="5" class="text-center py-3">
+                <button class="btn btn-light text-primary fw-bold w-100" onclick="window.cargarMasContactos()">
+                    <i class="bi bi-arrow-down-circle me-2"></i>Cargar más contactos (${currentFilteredContacts.length - visibleCount} restantes)
+                </button>
+            </td>
+        </tr>`;
+    }
+
     agendaCuerpo.innerHTML = html;
+    
+    // Refresh Tooltips for new elements
+    if (window.initTooltips) window.initTooltips(agendaCuerpo);
 }
+
+// Global helper for Load More
+window.cargarMasContactos = function() {
+    visibleCount += PAGE_SIZE;
+    renderListaContactos();
+};
 
 /**
  * Carga los datos de un contacto en el formulario para editar.

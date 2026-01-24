@@ -224,8 +224,9 @@ window.toggleFilter = (category, value) => {
 
 // Add Tooltip initialization for dynamically added elements
 function initTooltips() {
-    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-    [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+    if (window.initTooltips) {
+        window.initTooltips(document.getElementById('rack-grid-container'));
+    }
 }
 
 function renderRack() {
@@ -318,7 +319,11 @@ function renderRack() {
     });
     
     // Init tooltips for new elements
-    initTooltips();
+    if (window.initTooltips) {
+        window.initTooltips(container);
+    } else {
+        // Fallback (Should be covered by observer anyway, but rack is complex)
+    }
     
     // Add Click Listeners to cards (Delegation or direct?)
     // Using onclick attribute in HTML string is easier here, but module scope is strict.

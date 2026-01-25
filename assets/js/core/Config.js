@@ -1,54 +1,41 @@
-export const APP_CONFIG = {
-    SYSTEM: {
-        USE_API: false, // Legacy flag, might be deprecated in favor of hybrid
-        USE_SYNC_SERVER: true, // Enable Background Sync
-        API_URL: "http://localhost:3000/api",
-        SYNC_INTERVAL: 10000 // Retry sync every 10 seconds
+export let APP_CONFIG = {
+    // Default fallback config just in case
+    SYSTEM: { USE_API: false, USE_SYNC_SERVER: true },
+    HOTEL: { RECEPCIONISTAS: [] }
+};
+
+export const Config = {
+    loadConfig: async () => {
+        try {
+            const response = await fetch('config.json?v=' + Date.now()); // Prevent caching
+            if (!response.ok) throw new Error("Config not found");
+            const data = await response.json();
+            
+            // Merge defaults logic could go here, but for now we replace
+            APP_CONFIG = data;
+            
+            // Check LocalStorage Overrides
+            try {
+                const localOverride = localStorage.getItem('app_config_override');
+                if (localOverride) {
+                    const localConfig = JSON.parse(localOverride);
+                    APP_CONFIG = { ...APP_CONFIG, ...localConfig };
+                    console.log("Config loaded with LocalStorage overrides");
+                }
+            } catch (e) {
+                console.warn("Error loading local config override", e);
+            }
+
+            console.log("Config configuration loaded:", APP_CONFIG);
+            return true;
+        } catch (error) {
+            console.error("Critical: Could not load config.json", error);
+            alert("Error crítico: No se pudo cargar la configuración del sistema (config.json).");
+            return false;
+        }
     },
-    HOTEL: {
-        NOMBRE: "Hotel Garoé",
-        ALARMAS_SISTEMA: [
-            { hora: "23:30", mensaje: "Realizar lecturas de las VISAS", dias: "todos" } // dias: 'todos' o [0, 6] (dom, sab)
-        ],
-        STATS_CONFIG: {
-            RANGOS: [
-                { planta: 0, min: 10, max: 28 },
-                { planta: 1, min: 101, max: 153 },
-                { planta: 2, min: 201, max: 253 },
-                { planta: 3, min: 301, max: 349 },
-                { planta: 4, min: 401, max: 416 }
-            ]
-        },
-        RECEPCIONISTAS: ["Pavel", "Javi", "Anadelia", "Marta", "Carmen", "Alberto", "Nerea", "Emiliano", "Domingo", "Antonio"]
-    },
-    AGENDA: {
-        PAISES: [
-            { c: "+34", n: "España", f: "🇪🇸" },
-            { c: "+49", n: "Alemania", f: "🇩🇪" },
-            { c: "+44", n: "Reino Unido", f: "🇬🇧" },
-            { c: "+33", n: "Francia", f: "🇫🇷" },
-            { c: "+39", n: "Italia", f: "🇮🇹" },
-            { c: "+351", n: "Portugal", f: "🇵🇹" },
-            { c: "+1", n: "EE.UU.", f: "🇺🇸" },
-            { c: "+52", n: "México", f: "🇲🇽" }
-        ]
-    },
-    NOVEDADES: {
-        DEPARTAMENTOS: [
-            "Servicio Técnico", "Recepción", "Cocina", "Administración",
-            "Dirección", "Economato", "Vigilancia", "Bar Hall",
-            "Bar Piscina", "Alimentación y Bebidas", "Restaurante",
-            "Pisos", "Jardinería", "Propiedad", "Externo"
-        ]
-    },
-    CAJA: {
-        BILLETES: [500, 200, 100, 50, 20, 10, 5],
-        MONEDAS: [2, 1, 0.50, 0.20, 0.10, 0.05, 0.02, 0.01]
-    },
-    COBRO: {
-        VALORES: [500, 200, 100, 50, 20, 10, 5, 2, 1, 0.50, 0.20, 0.10, 0.05, 0.02, 0.01]
-    },
-    SAFE: {
-        PRECIO_DIARIO: 2.00
+    
+    updateMemory: (newConfig) => {
+        APP_CONFIG = newConfig;
     }
 };

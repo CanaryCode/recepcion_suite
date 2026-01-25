@@ -15,16 +15,29 @@ import { inicializarPrecios } from './modules/precios.js';
 import { inicializarSystemAlarms } from './modules/alarms.js';
 import { inicializarSystemAlarmsUI } from './modules/system_alarms_ui.js';
 import { inicializarRack } from './modules/rack.js';
+import { inicializarConfiguracion } from './modules/configuracion.js';
 
 // Core Systems
-import { APP_CONFIG } from './core/Config.js'; // Importar APP_CONFIG
+import { APP_CONFIG, Config } from './core/Config.js'; // Importar APP_CONFIG y Config loader
 import { Modal } from './core/Modal.js';
 import { Router } from './core/Router.js';
 import { CompLoader } from './core/CompLoader.js';
 import { Search } from './core/Search.js';
 import { sessionService } from './services/SessionService.js';
+import { Utils } from './core/Utils.js';
+
+// Expose Utils globally for inline HTML events (like togglePassword)
+window.Utils = Utils;
 
 document.addEventListener('DOMContentLoaded', async () => {
+    // 0. LOAD CONFIG (CRITICAL)
+    const configLoaded = await Config.loadConfig();
+    if (!configLoaded) {
+        document.body.innerHTML = '<div style="color:red; padding:20px; text-align:center;"><h1>Error Crítico</h1><p>No se ha podido cargar la configuración (config.json).</p></div>';
+        return;
+    }
+
+    // 0. DIAGNÓSTICO DE STORAGE (CRÍTICO)
     // 0. DIAGNÓSTICO DE STORAGE (CRÍTICO)
     try {
         const testKey = '__test_storage__';
@@ -57,7 +70,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         { id: 'notas-content', path: 'assets/templates/notas_permanentes.html' },
         { id: 'precios-content', path: 'assets/templates/precios.html' },
         { id: 'system-alarms-content', path: 'assets/templates/system_alarms.html' },
-        { id: 'rack-content', path: 'assets/templates/rack.html' }
+        { id: 'rack-content', path: 'assets/templates/rack.html' },
+        { id: 'configuracion-content', path: 'assets/templates/configuracion.html' }
     ];
 
     // 3. Cargar plantillas
@@ -88,7 +102,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         { nombre: 'Ayuda', init: inicializarAyuda },
         { nombre: 'Notas Permanentes', init: inicializarNotasPermanentes },
         { nombre: 'Precios', init: inicializarPrecios },
-        { nombre: 'Rack', init: inicializarRack }
+        { nombre: 'Rack', init: inicializarRack },
+        { nombre: 'Configuración', init: inicializarConfiguracion }
     ];
 
     // Cargar prioritarios inmediatamente

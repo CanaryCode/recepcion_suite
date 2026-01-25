@@ -9,7 +9,7 @@ import { Modal } from "../core/Modal.js";
 let interfazCajaGenerada = false;
 let listaVales = []; // { id, concepto, importe }
 let listaDesembolsos = []; // { id, concepto, importe }
-let fondoCajaValue = 2000; // Valor numérico interno para evitar errores con signos visuales
+let fondoCajaValue = (APP_CONFIG.CAJA?.FONDO !== undefined) ? APP_CONFIG.CAJA.FONDO : -2000; // Valor desde Config (fallback -2000)
 
 // ... (existing helper functions)
 

@@ -130,5 +130,15 @@ export const Utils = {
     setVal: (id, value) => {
         const el = document.getElementById(id);
         if (el) el.value = value;
+    },
+
+    /**
+     * Alterna la visibilidad de un input type password
+     * @param {string} id - ID del input
+     */
+    togglePassword: (id) => {
+        const input = document.getElementById(id);
+        if(!input) return;
+        input.type = input.type === "password" ? "text" : "password";
     }
 };

@@ -155,6 +155,10 @@
                     <li><button class="dropdown-item text-secondary" onclick="window.ejecutarRestauracionAgenda()"
                                 data-tooltip="true" data-bs-placement="left" data-bs-container="body" data-bs-title="Añadir contactos originales que falten"><i
                                 class="bi bi-bandaid mb-1 me-2"></i>Recuperar Contactos Base</button></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><button class="dropdown-item" data-bs-toggle="tab" data-bs-target="#configuracion-content"
+                                data-tooltip="true" data-bs-placement="left" data-bs-container="body" data-bs-title="Editar ajustes del sistema"><i
+                                class="bi bi-gear-wide-connected me-2"></i>Configuración</button></li>
                 </ul>
             </li>
 
@@ -175,6 +179,7 @@
                 <button data-bs-toggle="tab" data-bs-target="#notas-content" id="tab-notas-content"></button>
                 <button data-bs-toggle="tab" data-bs-target="#precios-content" id="tab-precios-content"></button>
                 <button data-bs-toggle="tab" data-bs-target="#system-alarms-content" id="tab-system-alarms-content"></button>
+                <button data-bs-toggle="tab" data-bs-target="#configuracion-content" id="tab-configuracion-content"></button>
             </li>
 
             <!-- Buscador Global y Selector de Usuario -->
@@ -348,6 +353,7 @@
             <div class="tab-pane fade" id="precios-content" role="tabpanel"></div>
             <div class="tab-pane fade" id="system-alarms-content" role="tabpanel"></div>
             <div class="tab-pane fade" id="rack-content" role="tabpanel"></div>
+            <div class="tab-pane fade" id="configuracion-content" role="tabpanel"></div>
         </div>
 
     </div> <!-- END #app-layout -->

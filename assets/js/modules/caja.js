@@ -324,8 +324,9 @@ function generarInterfazCaja() {
   renderizarInputs("monedas-container", monedas, "bi-coin", "MONEDAS");
 
   // Fondo por defecto
-  const fondoInput = document.getElementById("caja_fondo");
-  if (fondoInput && !fondoInput.value) {
+  // FIX: Scope selector
+  const fondoInput = document.querySelector("#caja-content #caja_fondo");
+  if (fondoInput && fondoInput.id !== 'globalSearch' && !fondoInput.value) {
     fondoInput.value = "2000.00";
   }
 
@@ -414,8 +415,11 @@ function calcularCaja() {
   if (valesInput) valesInput.value = Utils.formatCurrency(totalVales);
 
   // FONDO (Cargar y mostrar signo si existe el elemento)
-  const fondoInput = document.getElementById("caja_fondo");
-  if (fondoInput && document.activeElement !== fondoInput) {
+  // FIX: Usar selector específico para evitar colisiones con Search Global u otros inputs
+  const fondoInput = document.querySelector("#caja-content #caja_fondo");
+  
+  // Verificación extra: Asegurar que NO es el buscador global (id specific check)
+  if (fondoInput && fondoInput.id !== 'globalSearch' && document.activeElement !== fondoInput) {
       fondoInput.value = Utils.formatCurrency(-Math.abs(fondoCajaValue));
   }
 

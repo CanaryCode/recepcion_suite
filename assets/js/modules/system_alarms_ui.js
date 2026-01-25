@@ -12,6 +12,10 @@ export function inicializarSystemAlarmsUI() {
     window.togglePeriodicidadInputs = togglePeriodicidadInputs;
     togglePeriodicidadInputs(); // Init state
 
+    // VISTAS (Trabajo vs Lista)
+    document.getElementById('btnVistaTrabajoAlarms')?.addEventListener('click', () => toggleView('trabajo'));
+    document.getElementById('btnVistaListaAlarms')?.addEventListener('click', () => toggleView('lista'));
+
     renderAlarmsList();
     
     // Helpers Globales
@@ -19,6 +23,33 @@ export function inicializarSystemAlarmsUI() {
     window.deleteSystemAlarm = deleteSystemAlarm;
     window.toggleActiveSystemAlarm = toggleActiveSystemAlarm;
     window.resetFormSystemAlarm = resetForm;
+}
+
+function toggleView(view) {
+    const btnTrabajo = document.getElementById('btnVistaTrabajoAlarms');
+    const btnLista = document.getElementById('btnVistaListaAlarms');
+    const formCol = document.querySelector('#formSystemAlarm')?.closest('.col-md-5');
+    const listCol = document.querySelector('#tableSystemAlarmsBody')?.closest('.col-md-7');
+
+    if (view === 'lista') {
+        // Vista Solo Lista
+        if(formCol) formCol.classList.add('d-none');
+        if(listCol) {
+            listCol.classList.remove('col-md-7');
+            listCol.classList.add('col-12');
+        }
+        btnTrabajo?.classList.remove('active');
+        btnLista?.classList.add('active');
+    } else {
+        // Vista Trabajo (Split)
+        if(formCol) formCol.classList.remove('d-none');
+        if(listCol) {
+            listCol.classList.remove('col-12');
+            listCol.classList.add('col-md-7');
+        }
+        btnLista?.classList.remove('active');
+        btnTrabajo?.classList.add('active');
+    }
 }
 
 function togglePeriodicidadInputs() {

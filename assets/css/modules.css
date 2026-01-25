@@ -556,20 +556,45 @@
 /* ==========================================================================
    ESTILOS PARA GUÍAS OPERATIVAS (AYUDA) - DISEÑO DOCUMENTACIÓN
    ========================================================================== */
-#agenda-content {
-    background-color: #ffffff;
-    border-radius: 16px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
-    padding: 40px;
+#agenda-content,
+#riu-trabajo,
+#estancia-trabajo,
+#cobro-content,
+#despertadores-trabajo,
+#cena-fria-trabajo,
+#atenciones-trabajo {
+    background-color: transparent !important;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 0;
     position: relative;
     overflow: visible;
-    /* Cambiado a visible para que no corte sombras ni tooltips */
-    border: 1px solid rgba(0, 0, 0, 0.05);
-    min-height: 600px;
-    margin-top: 20px;
+    border: none !important;
+    min-height: auto;
+    margin-top: 0;
 }
 
-/* Clase para paneles internos (RIU, Estancia, Novedades) */
+/* Ensure no pseudo-elements create lines */
+#agenda-content::before,
+#agenda-content::after,
+#riu-trabajo::before,
+#riu-trabajo::after,
+#estancia-trabajo::before,
+#estancia-trabajo::after,
+#cobro-content::before,
+#cobro-content::after,
+#despertadores-trabajo::before,
+#despertadores-trabajo::after,
+#cena-fria-trabajo::before,
+#cena-fria-trabajo::after,
+#atenciones-trabajo::before,
+#atenciones-trabajo::after {
+    display: none !important;
+    content: none !important;
+    border: none !important;
+}
+
+/* Clase para paneles internos */
 .content-panel {
     background-color: #ffffff;
     border-radius: 16px;
@@ -582,16 +607,8 @@
     margin-top: 20px;
 }
 
-/* Barra superior decorativa */
-#agenda-content::before,
 .content-panel::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 6px;
-    background: linear-gradient(90deg, var(--primary-color), #0dcaf0);
+    display: none !important;
 }
 
 /* Títulos dentro de la ayuda */
@@ -1036,4 +1053,30 @@
         print-color-adjust: exact;
         -webkit-print-color-adjust: exact;
     }
+}
+
+/* ==========================================================================
+   ESTILOS TÍTULOS DISCRETOS (H4)
+   ========================================================================== */
+.module-title-discrete {
+    font-weight: 700;
+    color: #344767;
+    margin-bottom: 0.5rem;
+    font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* EFECTO DINÁMICO PARA TÍTULOS Y SUBTÍTULOS */
+.module-title-discrete i,
+.sub-title-dynamic i {
+    color: var(--primary-color);
+    transition: transform 0.3s ease;
+    display: inline-block;
+}
+
+.module-title-discrete:hover i,
+.sub-title-dynamic:hover i {
+    transform: rotate(15deg) scale(1.1);
 }

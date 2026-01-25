@@ -75,27 +75,27 @@ function inyectarToolbarFlotante() {
     if (!document.getElementById('editor-toolbar')) {
         const toolbar = document.createElement('div');
         toolbar.id = 'editor-toolbar';
-        toolbar.className = 'position-absolute bg-dark text-white rounded shadow p-1 d-none align-items-center gap-1';
+        toolbar.className = 'position-absolute bg-white border border-secondary rounded shadow p-2 d-none align-items-center gap-2';
         toolbar.style.zIndex = '9999';
         toolbar.style.transition = 'opacity 0.2s, top 0.1s, left 0.1s';
         toolbar.innerHTML = `
             <div class="btn-group btn-group-sm" role="group">
-                <button type="button" class="btn btn-dark border-0" onmousedown="event.preventDefault()" onclick="aplicarFormato('bold')" data-bs-toggle="tooltip" data-bs-title="Negrita"><i class="bi bi-type-bold"></i></button>
-                <button type="button" class="btn btn-dark border-0" onmousedown="event.preventDefault()" onclick="aplicarFormato('italic')" data-bs-toggle="tooltip" data-bs-title="Cursiva"><i class="bi bi-type-italic"></i></button>
-                <button type="button" class="btn btn-dark border-0" onmousedown="event.preventDefault()" onclick="aplicarFormato('underline')" data-bs-toggle="tooltip" data-bs-title="Subrayado"><i class="bi bi-type-underline"></i></button>
-                <button type="button" class="btn btn-dark border-0" onmousedown="event.preventDefault()" onclick="aplicarFormato('strikeThrough')" data-bs-toggle="tooltip" data-bs-title="Tachado"><i class="bi bi-type-strikethrough"></i></button>
+                <button type="button" class="btn btn-light border border-secondary text-dark fw-bold" onmousedown="event.preventDefault()" onclick="aplicarFormato('bold')" data-bs-toggle="tooltip" data-bs-title="Negrita"><i class="bi bi-type-bold"></i></button>
+                <button type="button" class="btn btn-light border border-secondary text-dark fst-italic" onmousedown="event.preventDefault()" onclick="aplicarFormato('italic')" data-bs-toggle="tooltip" data-bs-title="Cursiva"><i class="bi bi-type-italic"></i></button>
+                <button type="button" class="btn btn-light border border-secondary text-dark text-decoration-underline" onmousedown="event.preventDefault()" onclick="aplicarFormato('underline')" data-bs-toggle="tooltip" data-bs-title="Subrayado"><i class="bi bi-type-underline"></i></button>
             </div>
-            <div class="vr bg-secondary mx-1 opacity-50"></div>
+            <div class="vr bg-secondary mx-1 opacity-25"></div>
             <div class="btn-group btn-group-sm" role="group">
-                <button type="button" class="btn btn-dark border-0" onmousedown="event.preventDefault()" onclick="aplicarFormato('foreColor', '#dc3545')" data-bs-toggle="tooltip" data-bs-title="Rojo"><i class="bi bi-circle-fill" style="color: #dc3545;"></i></button>
-                <button type="button" class="btn btn-dark border-0" onmousedown="event.preventDefault()" onclick="aplicarFormato('foreColor', '#0d6efd')" data-bs-toggle="tooltip" data-bs-title="Azul"><i class="bi bi-circle-fill" style="color: #0d6efd;"></i></button>
-                <button type="button" class="btn btn-dark border-0" onmousedown="event.preventDefault()" onclick="aplicarFormato('hiliteColor', '#ffc107')" data-bs-toggle="tooltip" data-bs-title="Resaltar"><i class="bi bi-highlighter" style="color: #ffc107;"></i></button>
+                <!-- COLORES SOLIDOS PARA QUE NO HAYA DUDA -->
+                <button type="button" class="btn btn-danger border-0" onmousedown="event.preventDefault()" onclick="aplicarFormato('foreColor', '#dc3545')" data-bs-toggle="tooltip" data-bs-title="Texto Rojo"><i class="bi bi-fonts"></i></button>
+                <button type="button" class="btn btn-primary border-0" onmousedown="event.preventDefault()" onclick="aplicarFormato('foreColor', '#0d6efd')" data-bs-toggle="tooltip" data-bs-title="Texto Azul"><i class="bi bi-fonts"></i></button>
+                <button type="button" class="btn btn-warning border-0 text-dark" onmousedown="event.preventDefault()" onclick="aplicarFormato('hiliteColor', '#ffc107')" data-bs-toggle="tooltip" data-bs-title="Resaltar"><i class="bi bi-highlighter"></i></button>
             </div>
-            <div class="vr bg-secondary mx-1 opacity-50"></div>
+            <div class="vr bg-secondary mx-1 opacity-25"></div>
             <div class="btn-group btn-group-sm" role="group">
-                <button type="button" class="btn btn-dark border-0" onmousedown="event.preventDefault()" onclick="insertarIcono('warning')" data-bs-toggle="tooltip" data-bs-title="Alerta"><i class="bi bi-exclamation-triangle"></i></button>
-                <button type="button" class="btn btn-dark border-0" onmousedown="event.preventDefault()" onclick="insertarIcono('info')" data-bs-toggle="tooltip" data-bs-title="Info"><i class="bi bi-info-circle"></i></button>
-                <button type="button" class="btn btn-dark border-0" onmousedown="event.preventDefault()" onclick="insertarIcono('check')" data-bs-toggle="tooltip" data-bs-title="Check"><i class="bi bi-check-lg"></i></button>
+                <button type="button" class="btn btn-warning border-0 text-dark" onmousedown="event.preventDefault()" onclick="insertarIcono('warning')" data-bs-toggle="tooltip" data-bs-title="Alerta"><i class="bi bi-exclamation-triangle-fill"></i></button>
+                <button type="button" class="btn btn-info border-0 text-white" onmousedown="event.preventDefault()" onclick="insertarIcono('info')" data-bs-toggle="tooltip" data-bs-title="Info"><i class="bi bi-info-circle-fill"></i></button>
+                <button type="button" class="btn btn-success border-0" onmousedown="event.preventDefault()" onclick="insertarIcono('check')" data-bs-toggle="tooltip" data-bs-title="Check"><i class="bi bi-check-circle-fill"></i></button>
             </div>
         `;
         document.body.appendChild(toolbar);
@@ -161,7 +161,8 @@ function renderGuia() {
             const checked = paso.hecho ? 'checked' : '';
             const textClass = paso.hecho ? 'text-decoration-line-through text-muted' : 'fw-bold text-dark lead';
             const statusClass = paso.hecho ? 'done' : 'pending';
-            const icon = paso.hecho ? '<i class="bi bi-check-circle-fill text-success fs-4"></i>' : '<i class="bi bi-circle text-muted fs-4"></i>';
+            // CAMBIO VISUAL: Usar text-primary (Azul) para pendiente en lugar de gris apagado
+            const icon = paso.hecho ? '<i class="bi bi-check-circle-fill text-success fs-4"></i>' : '<i class="bi bi-circle text-primary fs-4"></i>';
 
             itemHtml = `
                 <label class="guide-item ${statusClass} d-flex align-items-center p-3 mb-3 rounded shadow-sm cursor-pointer w-100" style="cursor: pointer;">

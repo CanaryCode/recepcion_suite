@@ -10,6 +10,8 @@
     </div>
 </div>
 
+<h4 class="module-title-discrete"><i class="bi bi-alarm-fill"></i>Reporte de Despertadores</h4>
+
 <div class="module-toolbar no-print">
     <div class="btn-group" role="group">
         <button type="button" class="btn btn-outline-primary active" id="btnVistaTrabajoDesp"
@@ -23,7 +25,7 @@
     </div>
     <div class="btn-print-wrapper">
         <!-- Selector eliminado: Se usa usuario global -->
-        <button class="btn btn-dark btn-sm fw-bold" onclick="imprimirDespertadores()"
+        <button class="btn btn-primary btn-sm fw-bold" onclick="imprimirDespertadores()"
             data-bs-toggle="tooltip" data-bs-title="Imprimir Informe de Despertadores">
             <i class="bi bi-printer me-2"></i>Imprimir Listado
         </button>
@@ -34,7 +36,7 @@
 <div id="despertadores-trabajo">
     <div class="card mb-4 shadow-sm border-0 no-print">
         <div class="card-header py-3">
-            <h6 class="mb-0 fw-bold"><i class="bi bi-alarm me-2"></i>Programar Despertador</h6>
+            <h6 class="sub-title-dynamic mb-0"><i class="bi bi-alarm"></i>Programar Despertador</h6>
         </div>
         <div class="card-body">
             <form id="formNuevoDespertador" class="row g-3 align-items-end">

@@ -1,8 +1,29 @@
 import { BaseService } from './BaseService.js';
+import { RAW_PRECIOS_DATA } from '../data/PreciosData.js';
 
 class PreciosService extends BaseService {
     constructor() {
-        super('riu_precios');
+        super('riu_precios', RAW_PRECIOS_DATA);
+        this.checkAndSeedDefaults();
+    }
+
+    checkAndSeedDefaults() {
+        // Force merge if defaults are missing in current data
+        const current = this.getPrecios();
+        let changed = false;
+
+        RAW_PRECIOS_DATA.forEach(defItem => {
+            const exists = current.some(p => p.id === defItem.id);
+            if (!exists) {
+                current.push(defItem);
+                changed = true;
+            }
+        });
+
+        if (changed) {
+            console.log("Seeding missing default products...");
+            this.savePrecios(current);
+        }
     }
 
     /**

@@ -61,7 +61,37 @@ export async function inicializarAgenda() {
     }
 
     await mostrarContactos();
+    await mostrarContactos();
     actualizarVisibilidadCampos();
+
+    // VISTAS
+    document.getElementById('btnVistaTrabajoAgenda')?.addEventListener('click', () => toggleViewAgenda('trabajo'));
+    document.getElementById('btnVistaListaAgenda')?.addEventListener('click', () => toggleViewAgenda('lista'));
+}
+
+window.toggleViewAgenda = function(view) {
+    const btnTrabajo = document.getElementById('btnVistaTrabajoAgenda');
+    const btnLista = document.getElementById('btnVistaListaAgenda');
+    const formCol = document.getElementById('formAgenda')?.closest('.col-md-4');
+    const listCol = document.getElementById('agenda-list-col');
+
+    if (view === 'lista') {
+        if(formCol) formCol.classList.add('d-none');
+        if(listCol) {
+            listCol.classList.remove('col-md-8');
+            listCol.classList.add('col-12');
+        }
+        btnTrabajo?.classList.remove('active');
+        btnLista?.classList.add('active');
+    } else {
+        if(formCol) formCol.classList.remove('d-none');
+        if(listCol) {
+            listCol.classList.remove('col-12');
+            listCol.classList.add('col-md-8');
+        }
+        btnLista?.classList.remove('active');
+        btnTrabajo?.classList.add('active');
+    }
 }
 
 function manejarBusqueda(e) {

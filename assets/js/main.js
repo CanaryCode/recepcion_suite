@@ -108,6 +108,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 7. Inicializar Tooltips
         initGlobalTooltips();
         
+        // 8. NUCLEAR FIX: Limpieza forzada del buscador
+        // Asegura que no quede rastros de "-2000" por caché o scripts rogue
+        const cleanSearch = () => {
+            const s = document.getElementById('appGlobalSearchInput'); 
+            if(s) { s.value = ''; }
+        };
+        setTimeout(cleanSearch, 200);
+        setTimeout(cleanSearch, 800);
+        setTimeout(cleanSearch, 2000);
+
         console.log("Sistema completamente inicializado.");
     }, 100);
 });

@@ -9,12 +9,23 @@
     </div>
 </div>
 
+<h4 class="module-title-discrete"><i class="bi bi-currency-exchange"></i>Cobro de Clientes</h4>
+
+<div class="module-toolbar d-flex justify-content-end align-items-center p-2 mb-3 no-print">
+    <div class="btn-print-wrapper">
+        <button class="btn btn-primary btn-sm fw-bold shadow-sm" onclick="window.print()"
+            data-bs-toggle="tooltip" data-bs-title="Imprimir Recibo">
+            <i class="bi bi-printer me-2"></i>Imprimir Recibo
+        </button>
+    </div>
+</div>
+
 <div class="row g-2">
     <!-- COLUMNA PRINCIPAL CALCULADORA (Billetes y Monedas) -->
     <div class="col-md-9">
-        <div class="card mb-3">
-            <div class="card-header d-flex justify-content-between align-items-center py-2">
-                <span class="fw-bold small"><i class="bi bi-calculator me-2"></i>Calculadora de Cambio</span>
+        <div class="card mb-3 shadow-sm border-0">
+            <div class="card-header d-flex justify-content-between align-items-center py-3 bg-white border-bottom">
+                <h6 class="sub-title-dynamic mb-0"><i class="bi bi-calculator"></i>Calculadora de Cambio</h6>
                 <button class="btn btn-sm btn-outline-primary shadow-sm fw-bold px-3 py-1" style="font-size: 0.75rem;" onclick="resetearCobro()">
                     <i class="bi bi-arrow-repeat me-1"></i>Nueva Operación
                 </button>

@@ -4,9 +4,12 @@
 
 export const Search = {
     init: () => {
-        const searchInput = document.getElementById('globalSearch');
+        const searchInput = document.getElementById('appGlobalSearchInput');
 
         if (searchInput) {
+            // FIX: Asegurar que esté vacío al iniciar (evita glitch de -2000€)
+            searchInput.value = '';
+            
             // Evento Input: Filtrar mientras se escribe
             searchInput.addEventListener('input', function (e) {
                 Search.realizarBusqueda(e.target.value);
@@ -91,7 +94,7 @@ export const Search = {
                 }
             }
         }
-        document.getElementById('globalSearch').value = '';
+        document.getElementById('appGlobalSearchInput').value = '';
         document.getElementById('searchResults').classList.add('d-none');
     }
 };

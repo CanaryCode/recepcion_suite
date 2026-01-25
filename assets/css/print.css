@@ -383,3 +383,167 @@
 
     /* Placeholder negro si hiciera falta, aunque inputs suelen tener valor */
 }
+
+/* ==========================================================================
+   OPTIMIZACIÓN COBRO CLIENTE (A4)
+   ========================================================================== */
+@media print {
+    /* 1. RESET GLOBAL Y OCULTAR LO INNECESARIO */
+    body {
+        font-family: 'Inter', sans-serif !important;
+        background: white !important;
+        color: black !important;
+    }
+
+    #cobro-content button,
+    #cobro-content .btn,
+    .no-print,
+    .module-toolbar,
+    .report-header-print {
+        display: none !important;
+    }
+
+    /* 2. CONTENEDOR PRINCIPAL "RECIBO" */
+    #cobro-content {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
+    }
+
+    /* 3. ESTRUCTURA DE COMPROBANTE COMPACTO */
+    #cobro-content .row {
+        display: block !important;
+        margin: 0 !important;
+    }
+
+    /* Ocultar el layout de columnas original para redefinirlo */
+    #cobro-content .col-md-9, 
+    #cobro-content .col-md-3 {
+        width: 100% !important;
+        float: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        flex: none !important;
+    }
+
+    /* 4. BLOQUE DE DATOS CLAVE (SUPER COMPACTO) */
+    /* Mover el bloque de totales arriba visualmente */
+    #cobro-content .col-md-3 { 
+        border-bottom: 2px dashed #000 !important;
+        padding-bottom: 10px !important;
+        margin-bottom: 10px !important;
+        order: -1 !important; /* Si usáramos flex, pero aquí forzamos bloque */
+        display: flex !important;
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+    }
+
+    /* Total a Cobrar */
+    #cobro-content .col-md-3 > div:first-child {
+        width: 48% !important;
+    }
+
+    /* Resumen Lateral (Cambio/Diferencia) */
+    #cobro-content .col-md-3 > .card {
+        width: 48% !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    #cobro_total_a_cobrar {
+        font-size: 1.5rem !important;
+        font-weight: 900 !important;
+        border: 2px solid #000 !important;
+        text-align: center !important;
+        height: auto !important;
+        padding: 5px !important;
+        background: #eee !important;
+        -webkit-print-color-adjust: exact !important;
+    }
+
+    #cobro_cambio_deber {
+        font-size: 1.2rem !important;
+        font-weight: bold !important;
+    }
+    
+    #cobro_diferencia_final {
+        font-size: 1.4rem !important;
+    }
+
+    /* 5. LISTADO DE BILLETES Y MONEDAS (Estilo Tabla densa) */
+    #cobro-content .col-md-9 .card {
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    #cobro-content .card-header {
+        display: none !important; /* Ocultar "Calculadora de Cambio" */
+    }
+
+    #cobro-content .card-body {
+        padding: 0 !important;
+    }
+    
+    /* Reorganizar en 2 columnas estrictas */
+    #cobro-content .card-body .row {
+        display: flex !important;
+        flex-direction: row !important;
+        width: 100% !important;
+    }
+
+    #cobro-content .card-body .col-md-6 {
+        width: 48% !important;
+        padding: 5px !important;
+        border: 1px solid #ddd !important;
+        margin-right: 2% !important;
+    }
+    
+    #cobro-content .card-body .col-md-6:last-child {
+        margin-right: 0 !important;
+    }
+
+    /* Títulos de secciones */
+    #cobro-content .text-success, 
+    #cobro-content .text-danger {
+        color: #000 !important;
+        border-bottom: 2px solid #000;
+        display: block;
+        margin-bottom: 5px;
+        font-size: 0.9rem !important;
+        font-weight: 800 !important;
+    }
+    
+    #cobro-content i { display: none !important; }
+
+    /* Inputs ocultos si están vacíos o a 0 */
+    #cobro-content input[value=""], 
+    #cobro-content input[value="0"],
+    #cobro-content input:not([value]) {
+        /* No podemos ocultar inputs vacíos solo con CSS fácilmente sin :placeholder-shown trick si tienen value="" */
+        /* Mejor estrategia: Hacerlos muy discretos */
+        border: none !important;
+        border-bottom: 1px dotted #ccc !important;
+        padding: 0 !important;
+        height: 18px !important;
+        font-size: 0.8rem !important;
+        text-align: right !important;
+    }
+
+    #cobro-content .input-group {
+        margin-bottom: 2px !important;
+        display: flex !important;
+        align-items: center !important;
+    }
+    
+    #cobro-content .input-group-text {
+        font-size: 0.75rem !important;
+        padding: 0 !important;
+        background: transparent !important;
+        border: none !important;
+        font-weight: bold !important;
+        width: 50px !important;
+    }
+}

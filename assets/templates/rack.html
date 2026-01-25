@@ -1,7 +1,9 @@
+<h4 class="module-title-discrete px-3"><i class="bi bi-grid-3x3-gap"></i>Rack de Habitaciones</h4>
+
 <!-- Module Toolbar (Print) -->
 <div class="module-toolbar d-flex justify-content-end align-items-center p-2 mb-3 border-bottom d-print-none">
     <div class="btn-print-wrapper gap-2">
-        <button class="btn btn-dark btn-sm fw-bold" onclick="window.print()"
+        <button class="btn btn-primary btn-sm fw-bold" onclick="window.print()"
             data-bs-toggle="tooltip" data-bs-title="Imprimir Rack">
             <i class="bi bi-printer me-2"></i>Imprimir Rack
         </button>
@@ -14,11 +16,11 @@
         
         <!-- Search Input -->
         <div class="mb-4">
-            <h5 class="fw-bold mb-3"><i class="bi bi-search me-2"></i>Buscar</h5>
+            <h6 class="sub-title-dynamic mb-3"><i class="bi bi-search"></i>Buscar</h6>
             <input type="search" id="room-search-input" class="form-control" placeholder="Buscar habitación..." autocomplete="off">
         </div>
 
-        <h5 class="fw-bold mb-3 border-top pt-3"><i class="bi bi-funnel-fill me-2"></i>Filtros</h5>
+        <h6 class="sub-title-dynamic mb-3 border-top pt-3"><i class="bi bi-funnel-fill"></i>Filtros</h6>
         
         <div class="d-grid gap-2 mb-4">
             <button class="btn btn-sm btn-outline-secondary" id="btn-reset-filters">
@@ -78,8 +80,12 @@
                 </div>
             </div>
         </div>
+        
+        <div class="px-4 pt-3 pb-0 no-print">
+            <h6 class="sub-title-dynamic mb-3"><i class="bi bi-grid-3x3-gap"></i>Estado de Habitaciones</h6>
+        </div>
 
-        <div class="p-4" id="rack-grid-container">
+        <div class="p-4 pt-0" id="rack-grid-container">
             <!-- Grid injected by JS -->
         </div>
     </div>

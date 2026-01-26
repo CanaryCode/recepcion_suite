@@ -1,3 +1,9 @@
+/**
+ * DATOS MAESTROS DE PRECIOS (PreciosData.js)
+ * ------------------------------------------
+ * Definición inicial de los servicios y productos extra del hotel.
+ * Estos datos se cargan en el primer inicio como base para el PreciosService.
+ */
 export const RAW_PRECIOS_DATA = [
     {
         id: "pack_minibar_1",

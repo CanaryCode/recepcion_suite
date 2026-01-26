@@ -2,11 +2,19 @@ import { BaseService } from "./BaseService.js";
 import { RAW_AGENDA_DATA } from "../data/AgendaData.js";
 import { Modal } from "../core/Modal.js"; // Ensure we can use Modal for critical errors
 
+/**
+ * SERVICIO DE AGENDA (AgendaService)
+ * ---------------------------------
+ * Hereda de BaseService. Gestiona miles de contactos.
+ * Incluye una lógica especial de importación "por trozos" para evitar 
+ * que el navegador se congele al cargar el archivo maestro de contactos.
+ */
 class AgendaService extends BaseService {
   constructor() {
     super("riu_agenda_contactos", []);
     this.cache = null;
-    this.importKey = "riu_agenda_v_FINAL_v4_DEBUG"; // Bump version to force re-check
+    // Clave de versión para saber si hay que forzar una actualización de datos maestros
+    this.importKey = "riu_agenda_v_FINAL_v4_DEBUG"; 
   }
 
   async getAll() {
@@ -28,23 +36,26 @@ class AgendaService extends BaseService {
     return super.save(data);
   }
 
+  /**
+   * VERIFICACIÓN INICIAL
+   * Comprueba si la agenda está vacía o dañada al arrancar.
+   * Si es así, lanza la restauración automática desde los datos maestros (Base de datos RAW).
+   */
   async verificarDatosIniciales() {
-    // Obtenemos los datos actuales
     const data = await this.getAll();
 
-    // Criterio de "Agenda Vacía o Corrupta":
-    // Si NO es array, o length < 50
+    // Si no es una lista o tiene muy pocos contactos, asumimos que algo ha fallado
     const esIncompleta = !Array.isArray(data) || data.length < 50;
 
-    // Si ya se importó antes Y tenemos datos, no hacemos nada.
+    // Si la versión ya está marcada como OK y tenemos datos, ignoramos
     if (localStorage.getItem(this.importKey) === "true" && !esIncompleta) {
       console.log("Agenda verificada: OK (" + data.length + " contactos)");
       return;
     }
 
     if (esIncompleta) {
-      console.warn("Agenda incompleta o corrupta detectada. Restaurando...");
-      await this.restaurarAgendaForzada(false); // False = Silent/Auto Mode
+      console.warn("Agenda incompleta o corrupta. Iniciando auto-reparación...");
+      await this.restaurarAgendaForzada(false); // Modo silencioso (sin avisos molestos)
     } else {
       localStorage.setItem(this.importKey, "true");
     }
@@ -66,26 +77,30 @@ class AgendaService extends BaseService {
     console.log("Recuperación completada.");
   }
 
+  /**
+   * IMPORTAR DESDE TEXTO (Proceso de Alto Rendimiento)
+   * -------------------------------------------------
+   * Este es el "cerebro" de la agenda. Convierte texto plano en contactos estructurados.
+   * Utiliza 'Chunked Processing' para procesar de 20 en 20 y dejar "respirar" al navegador.
+   */
   async importarDesdeTexto(
     textoOrArray,
-    mergeMode = false,
+    mergeMode = false, // True = Une con lo que ya existe / False = Reemplaza todo
     interactive = true,
   ) {
-    console.log(
-      `Importando/Fusionando agenda (Merge: ${mergeMode}, Interactive: ${interactive})...`,
-    );
+    console.log(`Importando agenda... (Fusión: ${mergeMode})`);
 
     let bloques = [];
     if (Array.isArray(textoOrArray)) {
       bloques = textoOrArray;
     } else if (typeof textoOrArray === "string") {
+      // Separamos los contactos por el separador de 5 guiones "-----"
       bloques = textoOrArray
         .split("-----")
         .map((b) => b.trim())
         .filter((b) => b.length > 0);
     }
 
-    // Obtenemos contactos actuales para no duplicar (y saneamos si es null/obj)
     let contactosActuales = await this.getAll();
     if (!Array.isArray(contactosActuales)) contactosActuales = [];
 
@@ -96,53 +111,36 @@ class AgendaService extends BaseService {
     const nuevosContactos = [];
     let idCounter = Date.now();
 
-    // CHUNKED PROCESSING CONFIG
-    const CHUNK_SIZE = 20; // Reduced from 50 to prevent hang
+    // CONFIGURACIÓN DE PROCESAMIENTO POR LOTES (Anti-Bloqueo)
+    const CHUNK_SIZE = 20; // Procesamos 20 a la vez
 
-    // Helper function to process a single chunk
     const processChunk = async (startIndex) => {
       return new Promise(async (resolve) => {
         const endIndex = Math.min(startIndex + CHUNK_SIZE, bloques.length);
 
         for (let i = startIndex; i < endIndex; i++) {
           const bloque = bloques[i];
-          // Robust split
-          const lineas = bloque
-            .split(/\r?\n/)
-            .map((l) => l.trim())
-            .filter((l) => l.length > 0);
+          const lineas = bloque.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.length > 0);
           if (lineas.length === 0) continue;
 
-          const lineaNombre = lineas[0];
-          let nombre = lineaNombre.trim();
+          const nombre = lineas[0];
+          if (mergeMode && mapNombres.has(nombre.toLowerCase())) continue;
 
-          if (mergeMode && mapNombres.has(nombre.toLowerCase())) {
-            continue;
-          }
-
-          // Extract phones
           const telefonos = [];
           const extraLines = [];
           
-          // CRITICAL: Inner loop time-slicing protection
           for (let j = 1; j < lineas.length; j++) {
-            // Safety Yield: Every 500 lines or if blocking too long (optional)
-            // We force a yield every 200 lines to guarantee UI responsiveness
-            if (j % 200 === 0) {
-                await new Promise((r) => setTimeout(r, 0));
-            }
+            // Si el bloque es gigante, cedemos el control al navegador para que no se cuelgue
+            if (j % 200 === 0) await new Promise((r) => setTimeout(r, 0));
 
             const linea = lineas[j];
-
-            // OPTIMIZATION 1: Check for digit BEFORE running expensive regex
-            // If no digit, it cannot be a phone number.
+            // Si la línea no tiene números, no puede ser un teléfono (optimización rápida)
             if (!/[0-9]/.test(linea)) {
                 extraLines.push(linea);
                 continue;
             }
 
             const posibleTel = linea.match(/[0-9\.\-\s\+]{6,}/);
-            // OPTIMIZATION 2: Ensure it has meaningful digits (redundant but safe)
             if (posibleTel) {
               let tipo = linea.toLowerCase().includes("ext") ? "Ext" : "Tel";
               telefonos.push({ tipo, prefijo: "", numero: linea, flag: "" });
@@ -155,34 +153,22 @@ class AgendaService extends BaseService {
             id: idCounter++,
             nombre: nombre,
             telefonos,
-            email: "",
-            web: "",
-            direccion: {},
-            vinculo: "Otro",
+             vinculo: "Otro",
             categoria: "Información",
             comentarios: extraLines.join(". "),
             favorito: false,
           });
         }
 
-        // Allow UI to breathe (increased to 15ms)
-        setTimeout(
-          () => resolve(endIndex < bloques.length ? endIndex : null),
-          15,
-        );
+        // Dejamos 15ms de margen para que el navegador dibuje la pantalla (barra de carga, etc.)
+        setTimeout(() => resolve(endIndex < bloques.length ? endIndex : null), 15);
       });
     };
 
-    // Execution Loop
+    // Bucle de ejecución escalonada
     let currentIndex = 0;
-    console.log(
-      `[AgendaService] Iniciando procesamiento de ${bloques.length} bloques...`,
-    );
-
     while (currentIndex !== null) {
-      // Log progress every 10 chunks (200 items) to avoid spam
-      if (currentIndex % 200 === 0)
-        console.log(`[AgendaService] Procesando índice ${currentIndex}...`);
+      if (currentIndex % 200 === 0) console.log(`Agenda: Procesando ${currentIndex}...`);
       currentIndex = await processChunk(currentIndex);
     }
 

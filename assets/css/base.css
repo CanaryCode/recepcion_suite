@@ -1,3 +1,13 @@
+/* 
+   ESTILOS BASE COMPLETOS (base.css)
+   ---------------------------------
+   Este archivo define la base visual del proyecto, incluyendo:
+   - Variables de color y diseño (Design Tokens).
+   - Tipografía principal (Inter) y ajustes de legibilidad.
+   - Fixes críticos de comportamiento del DOM (Modales, Pestañas).
+   - Estilos fundamentales del Rack de Habitaciones.
+*/
+
 :root {
     --primary-color: #0d6efd;
     --secondary-color: #6c757d;

@@ -1,9 +1,12 @@
-import { APP_CONFIG } from '../core/Config.js';
-import { Utils } from '../core/Utils.js';
-import { transfersService } from '../services/TransfersService.js';
-import { Modal } from '../core/Modal.js'; // Assuming Modal helper exists or using standard alerts
+/**
+ * MÓDULO DE LOGÍSTICA DE TRANSFERS (transfers.js)
+ * ----------------------------------------------
+ * Gestiona las reservas de taxis, buses o transporte privado para clientes.
+ * Permite emitir tickets impresos para el cliente y sincroniza las salidas 
+ * del día con el panel de control (Dashboard).
+ */
 
-let transferParaImprimir = null;
+let transferParaImprimir = null; // Objeto temporal para el ticket
 
 // ============================================================================
 // INICIALIZACIÓN
@@ -124,6 +127,10 @@ function manejarSubmitTransfer(e) {
 // RENDER
 // ============================================================================
 
+/**
+ * RENDER LISTADO DE TRANSFERS
+ * Muestra las reservas de transporte, destacando en color azul las de HOY.
+ */
 function mostrarTransfers() {
     const contenedor = document.getElementById('tablaTransfersCuerpo');
     const emptyState = document.getElementById('transfers-empty-state');
@@ -234,6 +241,8 @@ function actualizarDashboardTransfers() {
             </tr>
         `;
     });
+
+    if (window.checkDailySummaryVisibility) window.checkDailySummaryVisibility();
 }
 
 function getIconoTipo(tipo) {
@@ -271,6 +280,10 @@ window.eliminarTransfer = async (id) => {
     }
 };
 
+/**
+ * IMPRIMIR TICKET DE CLIENTE
+ * Genera el documento que se entrega al huésped con los detalles de su reserva.
+ */
 window.imprimirTransferTicket = (id) => {
     const item = transfersService.getById(id);
     if (!item) return;

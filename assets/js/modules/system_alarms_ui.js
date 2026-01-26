@@ -1,5 +1,10 @@
-import { systemAlarmsService } from '../services/SystemAlarmsService.js';
-import { Utils } from '../core/Utils.js';
+/**
+ * MÓDULO DE INTERFAZ DE ALARMAS (system_alarms_ui.js)
+ * --------------------------------------------------
+ * Gestiona el formulario y la lista visual de alarmas recurrentes.
+ * Permite configurar avisos diarios, por fecha específica o por días de la semana,
+ * actuando como puente entre el usuario y el servicio de alarmas del sistema.
+ */
 
 export function inicializarSystemAlarmsUI() {
     const form = document.getElementById('formSystemAlarm');
@@ -52,6 +57,11 @@ function toggleView(view) {
     }
 }
 
+/**
+ * CONFIGURAR VISIBILIDAD DE INPUTS
+ * Muestra u oculta los selectores de fecha o días de la semana según el 
+ * tipo de periodicidad seleccionado (diaria, semanal o fecha fija).
+ */
 function togglePeriodicidadInputs() {
     const type = document.getElementById('sys_alarm_type').value;
     const groupDate = document.getElementById('group-date');

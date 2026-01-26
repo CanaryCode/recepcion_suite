@@ -1,17 +1,25 @@
 import { BaseService } from './BaseService.js';
 
+/**
+ * SERVICIO DE DESPERTADORES (DespertadorService)
+ * --------------------------------------------
+ * Gestiona el listado de llamadas de despertador solicitadas por los clientes.
+ * Permite anotar la habitación, la hora y observaciones especiales.
+ */
 class DespertadorService extends BaseService {
     constructor() {
         super('riu_despertadores');
     }
 
     /**
-     * Obtiene todos los despertadores
-     * @returns {Object[]} Array de despertadores
+     * OBTENER TODOS LOS DESPERTADORES
+     * Incluye una lógica de migración para convertir el antiguo formato de objeto 
+     * al nuevo formato de lista (Array), que es más flexible para filtros.
      */
     getDespertadores() {
         const data = this.getAll();
-        // Migración automática de Objeto a Array si detectamos el formato antiguo
+        
+        // MIGRACIÓN: Si los datos vienen como objeto { "101": {...} }, los pasamos a lista.
         if (data && !Array.isArray(data) && typeof data === 'object') {
             const asArray = Object.keys(data).map(hab => ({
                 habitacion: hab,
@@ -24,16 +32,15 @@ class DespertadorService extends BaseService {
     }
 
     /**
-     * Guarda la lista de despertadores
-     * @param {Object[]} list Array de despertadores
+     * GUARDAR LISTA COMPLETA
      */
     saveDespertadores(list) {
         this.saveAll(list);
     }
 
     /**
-     * Añade o actualiza un despertador
-     * @param {Object} item Objeto despertador
+     * GUARDAR O ACTUALIZAR DESPERTADOR
+     * Si la habitación ya tiene una hora anotada, la sobrecribe.
      */
     saveDespertador(item) {
         let list = this.getDespertadores();
@@ -49,8 +56,7 @@ class DespertadorService extends BaseService {
     }
 
     /**
-     * Elimina un despertador
-     * @param {string} habNum 
+     * ELIMINAR DESPERTADOR
      */
     removeDespertador(habNum) {
         const list = this.getDespertadores().filter(d => d.habitacion !== habNum);
@@ -58,16 +64,14 @@ class DespertadorService extends BaseService {
     }
 
     /**
-     * Obtiene despertador por habitación
-     * @param {string} habNum 
-     * @returns {Object|undefined}
+     * BUSCAR POR HABITACIÓN
      */
     getDespertadorByHab(habNum) {
         return this.getDespertadores().find(d => d.habitacion === habNum);
     }
 
     /**
-     * Limpia todos los despertadores
+     * LIMPIAR TODA LA LISTA (Reset diario)
      */
     clearAll() {
         this.clear();

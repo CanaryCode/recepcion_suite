@@ -1,3 +1,15 @@
+/* 
+   SISTEMA DE COMPONENTES DE INTERFAZ (components.css)
+   ---------------------------------------------------
+   Contiene los elementos reutilizables de la UI diseñados bajo una estética premium.
+   Incluye:
+   - Tarjetas (Cards) con efectos de elevación.
+   - Sistema de navegación por pestañas (Nav-Tabs) centrado y estilo cristal.
+   - Menús desplegables animados.
+   - El Header principal del sistema (App Header Panel).
+   - La barra de herramientas unificada para todos los módulos.
+*/
+
 .card {
     border: 1px solid rgba(0, 0, 0, 0.05) !important;
     background: #ffffff !important;

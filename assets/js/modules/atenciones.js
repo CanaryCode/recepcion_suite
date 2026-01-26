@@ -1,7 +1,10 @@
-import { APP_CONFIG } from '../core/Config.js';
-import { Utils } from '../core/Utils.js';
-import { atencionesService } from '../services/AtencionesService.js';
-import { sessionService } from '../services/SessionService.js';
+/**
+ * MÓDULO DE GESTIÓN DE ATENCIONES VIP (atenciones.js)
+ * --------------------------------------------------
+ * Controla el registro y visualización de servicios especiales para habitaciones
+ * (Fruta, Cava, Flores, etc.). Permite gestionar los pedidos pendientes y 
+ * visualizarlos de forma gráfica en un rack dedicado para el departamento de pisos.
+ */
 
 const ICONOS_ATENCION = {
     "Fruta": "bi-apple", "Fruta Especial": "bi-basket2", "Cava": "bi-cup-straw",
@@ -60,6 +63,11 @@ function cambiarVistaAtenciones(vista) {
 // HANDLERS
 // ============================================================================
 
+/**
+ * REGISTRO DE ATENCIÓN
+ * Captura las selecciones de iconos y el comentario, persistiendo los datos
+ * a través del servicio de Atenciones.
+ */
 async function manejarSubmitAtencion(e) {
     e.preventDefault();
     const habNum = document.getElementById('atencion_hab').value.trim().padStart(3, '0');
@@ -100,9 +108,26 @@ async function mostrarAtenciones() {
     const atenciones = await atencionesService.getAtenciones();
 
     const dashCol = document.getElementById('dash-col-atenciones');
+    const dashTabla = document.getElementById('dash-tabla-atenciones');
+    const dashCount = document.getElementById('dash-count-atenciones');
+
     if (dashCol) {
-        const tieneDatos = Object.keys(atenciones).length > 0;
-        dashCol.classList.toggle('d-none', !tieneDatos);
+        const numAtenciones = Object.keys(atenciones).length;
+        dashCol.classList.toggle('d-none', numAtenciones === 0);
+        if (dashCount) dashCount.innerText = numAtenciones;
+        
+        if (dashTabla) {
+            dashTabla.innerHTML = '';
+            Object.keys(atenciones).sort().forEach(hab => {
+                const data = atenciones[hab];
+                const lista = Array.isArray(data) ? data : (data.tipos || []);
+                dashTabla.innerHTML += `
+                    <tr onclick="navegarA('#atenciones-content')" style="cursor: pointer;">
+                        <td class="fw-bold text-primary">${hab}</td>
+                        <td class="text-end small">${lista.length} ítems</td>
+                    </tr>`;
+            });
+        }
     }
 
     let html = '';
@@ -113,8 +138,15 @@ async function mostrarAtenciones() {
         html += `<tr><td class="fw-bold text-primary">${hab}</td><td>${lista.map(a => `<span class="badge bg-info text-dark me-1"><i class="bi ${ICONOS_ATENCION[a] || 'bi-tag'} me-1"></i>${a}</span>`).join('')}</td><td class="small text-muted">${comentario}</td><td class="text-end"><button onclick="prepararEdicionAtencion('${hab}')" class="btn btn-sm btn-outline-primary border-0 me-1"><i class="bi bi-pencil"></i></button><button onclick="eliminarAtencionHab('${hab}')" class="btn btn-sm btn-outline-danger border-0"><i class="bi bi-trash"></i></button></td></tr>`;
     });
     tabla.innerHTML = html;
+
+    if (window.checkDailySummaryVisibility) window.checkDailySummaryVisibility();
 }
 
+/**
+ * VISTA RACK DE ATENCIONES
+ * Renderiza el estado del hotel coloreando las habitaciones con atenciones 
+ * pendientes. Incluye tooltips con el desglose de productos.
+ */
 async function renderVistaRack() {
     const rackCont = document.getElementById('rack-habitaciones');
     const statsCont = document.getElementById('atenciones-stats');

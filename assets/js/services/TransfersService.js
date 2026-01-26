@@ -2,6 +2,12 @@ import { APP_CONFIG } from '../core/Config.js';
 import { Utils } from '../core/Utils.js';
 import { syncManager } from '../core/SyncManager.js';
 
+/**
+ * SERVICIO DE TRASLADOS (TransfersService)
+ * ---------------------------------------
+ * Gestiona la agenda de llegadas y salidas de clientes que requieren transfer.
+ * Nota: Este servicio NO hereda de BaseService (es independiente), pero usa SyncManager.
+ */
 class TransfersService {
     constructor() {
         this.STORAGE_KEY = 'app_transfers_data';
@@ -9,29 +15,39 @@ class TransfersService {
         this.load();
     }
 
+    /**
+     * CARGAR DATOS
+     */
     load() {
         const stored = localStorage.getItem(this.STORAGE_KEY);
         if (stored) {
             try {
                 this.items = JSON.parse(stored);
             } catch (e) {
-                console.error("Error parsing transfers data", e);
+                console.error("Error al leer datos de transfers:", e);
                 this.items = [];
             }
         }
     }
 
+    /**
+     * GUARDAR Y SINCRONIZAR
+     */
     save(data) {
         if (data) this.items = data;
         localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.items));
-        // Integrate with SyncManager for backup
+        
+        // Sincronizar con el servidor para que el resto de recepcionistas vean el transfer
         if (window.syncManager) {
             window.syncManager.updateModule('transfers', this.items);
         }
     }
 
+    /**
+     * OBTENER TODOS LOS TRASLADOS
+     * Los devuelve ordenados por fecha y hora para que los más cercanos aparezcan primero.
+     */
     getAll() {
-        // Return sorted by date/time ascending
         return [...this.items].sort((a, b) => {
             const dateA = new Date(`${a.fecha}T${a.hora}`);
             const dateB = new Date(`${b.fecha}T${b.hora}`);
@@ -63,7 +79,10 @@ class TransfersService {
         this.save();
     }
     
-    // Cleanup old transfers (optional helper)
+    /**
+     * LIMPIEZA DE HISTORIAL
+     * Borra automáticamente los transfers de hace más de una semana para no saturar la memoria.
+     */
     cleanupOld(daysToKeep = 7) {
         const cutoff = new Date();
         cutoff.setDate(cutoff.getDate() - daysToKeep);

@@ -1,11 +1,19 @@
-
 import { Modal } from '../core/Modal.js';
 
+/**
+ * SELECTOR DE ICONOS (IconSelector)
+ * --------------------------------
+ * Este módulo permite al usuario elegir un icono de la librería Bootstrap Icons
+ * para personalizar los lanzadores de aplicaciones en la configuración.
+ */
 export const IconSelector = {
-    targetInputId: null,
+    targetInputId: null, // ID del campo de texto donde se escribirá el nombre del icono elegido
 
+    /**
+     * INICIALIZACIÓN
+     * Crea el modal del selector si aún no existe en el documento.
+     */
     init() {
-        // Create modal DOM if not exists
         if (!document.getElementById('iconSelectorModal')) {
             const modalHtml = `
             <div class="modal fade" id="iconSelectorModal" tabindex="-1" aria-hidden="true">
@@ -18,7 +26,7 @@ export const IconSelector = {
                         <div class="modal-body bg-light">
                             <input type="text" id="iconSearchInput" class="form-control mb-3" placeholder="Buscar icono (ej: user, file, arrow)...">
                             <div id="iconGrid" class="d-flex flex-wrap gap-2 justify-content-center" style="max-height: 400px; overflow-y: auto;">
-                                <!-- Icons injected here -->
+                                <!-- Los iconos se inyectan aquí dinámicamente -->
                             </div>
                         </div>
                     </div>
@@ -26,17 +34,21 @@ export const IconSelector = {
             </div>`;
             document.body.insertAdjacentHTML('beforeend', modalHtml);
             
-            // Bind search
+            // Vincular el buscador de iconos para que filtre mientras escribes
             document.getElementById('iconSearchInput').addEventListener('input', (e) => {
                 this.filterIcons(e.target.value);
             });
         }
     },
 
+    /**
+     * ABRIR EL SELECTOR
+     * @param {string} inputId - El ID del input donde volcaremos el resultado.
+     */
     open(inputId) {
         this.targetInputId = inputId;
         this.init();
-        this.renderIcons();
+        this.renderIcons(); // Dibujar todos los iconos iniciales
         
         const modal = new bootstrap.Modal(document.getElementById('iconSelectorModal'));
         modal.show();
@@ -48,6 +60,10 @@ export const IconSelector = {
         if(modal) modal.hide();
     },
 
+    /**
+     * DIBUJAR ICONOS
+     * Genera los botones de iconos en el grid.
+     */
     renderIcons() {
         const grid = document.getElementById('iconGrid');
         grid.innerHTML = this.commonIcons.map(icon => `
@@ -57,6 +73,10 @@ export const IconSelector = {
         `).join('');
     },
 
+    /**
+     * FILTRAR ICONOS
+     * Busca por nombre dentro de la lista de iconos disponibles.
+     */
     filterIcons(query) {
         const lower = query.toLowerCase();
         const grid = document.getElementById('iconGrid');
@@ -67,6 +87,10 @@ export const IconSelector = {
         `).join('');
     },
 
+    /**
+     * SELECCIONAR
+     * Cuando el usuario hace click en un icono, guardamos su nombre y cerramos.
+     */
     select(icon) {
         if (this.targetInputId) {
             document.getElementById(this.targetInputId).value = icon;
@@ -74,7 +98,10 @@ export const IconSelector = {
         this.close();
     },
 
-    // Curated list of useful bootstrap icons
+    /**
+     * LISTA CURADA DE ICONOS ÚTILES
+     * Una selección de los iconos más comunes para que el usuario no se pierda entre miles.
+     */
     commonIcons: [
         'calculator', 'calendar-check', 'camera', 'chat', 'chat-dots', 'chat-square-text', 
         'clipboard', 'clipboard-check', 'clipboard-data', 'clock', 'cloud', 'cloud-arrow-up', 
@@ -99,5 +126,5 @@ export const IconSelector = {
     ]
 };
 
-// Expose globally
+// Exponer globalmente para onclicks de HTML
 window.IconSelector = IconSelector;

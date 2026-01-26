@@ -4,8 +4,12 @@ import { Modal } from '../core/Modal.js';
 import { IconSelector } from '../core/IconSelector.js';
 
 let moduloInicializado = false;
-let tempConfig = null;
+let tempConfig = null; // Copia de trabajo de la configuración para no alterar la real hasta guardar
 
+/**
+ * INICIALIZACIÓN DEL MÓDULO
+ * Renderiza la interfaz con los valores actuales y prepara los eventos.
+ */
 export function inicializarConfiguracion() {
     console.log("Inicializando módulo Configuración...");
     renderizarInterfaz();
@@ -225,17 +229,25 @@ function configurarEventos() {
         IconSelector.open(targetId);
     };
 
-    // === WEB FILE BROWSER LOGIC ===
+    // === LÓGICA DEL EXPLORADOR DE ARCHIVOS WEB (v4.0) ===
+    /**
+     * Objeto FileBrowser: Gestiona la navegación por carpetas del PC
+     * sin necesidad de diálogos nativos de Windows (que fallaban).
+     */
     const FileBrowser = {
-        currentPath: "C:\\",
+        currentPath: "C:\\", // Ruta inicial por defecto
         
         async open() {
             const modalEl = document.getElementById('modalFileBrowser');
             const modal = new bootstrap.Modal(modalEl);
             modal.show();
-            await this.loadPath("C:\\");
+            await this.loadPath("C:\\"); // Cargar raíz al abrir
         },
 
+        /**
+         * Cargar una ruta específica
+         * Pide al servidor Node.js que le diga qué hay en esa carpeta.
+         */
         async loadPath(targetPath) {
             this.currentPath = targetPath;
             document.getElementById('fb-current-path').value = this.currentPath;
@@ -243,7 +255,7 @@ function configurarEventos() {
             container.innerHTML = '<div class="text-center p-4"><div class="spinner-border text-primary"></div></div>';
 
             try {
-                const res = await fetch('http://localhost:3000/api/system/list-files', {
+                const res = await fetch('/api/system/list-files', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ currentPath: this.currentPath })
@@ -252,7 +264,7 @@ function configurarEventos() {
                 if (!res.ok) throw new Error("Error leyendo carpeta");
 
                 const data = await res.json();
-                this.renderItems(data.items);
+                this.renderItems(data.items); // Mostrar archivos y carpetas
 
             } catch (e) {
                 container.innerHTML = `<div class="text-danger p-3"><i class="bi bi-exclamation-triangle me-2"></i>Error: ${e.message}</div>`;
@@ -387,31 +399,44 @@ function configurarEventos() {
         renderFiltros(type, (type === 'TIPOS' ? 'list-filtros-tipos' : (type === 'VISTAS' ? 'list-filtros-vistas' : 'list-filtros-carac')));
     };
 
-    // === SAVE / EXPORT ===
-    // === SAVE / EXPORT ===
+    // === GUARDADO DE CONFIGURACIÓN ===
+    /**
+     * saveConfigLocal: Envía la configuración temporal al servidor.
+     * Incluye una mejora de UX para añadir lanzadores olvidados.
+     */
     window.saveConfigLocal = async () => {
         try {
-            // UX FIX: Auto-add pending Launcher if inputs are filled
+            // MEJORA DE UX: Si el usuario rellenó los campos de Nombre/Ruta de una app 
+            // pero olvidó darle al botón "+ AÑADIR", lo hacemos automáticamente.
             const pendingLabel = document.getElementById('newLauncherLabel')?.value.trim();
             const pendingPath = document.getElementById('newLauncherPath')?.value.trim();
             
             if (pendingLabel && pendingPath) {
-                // User forgot to click "+ Añadir", so we do it for them
-                console.log("Auto-adding pending launcher...");
-                window.addAppLauncher(true); // true = silent/no alert
+                console.log("Auto-añadiendo lanzador pendiente antes de guardar...");
+                window.addAppLauncher(true); // Modo silencioso (sin alertas)
             }
 
+            // Actualizar el objeto temporal con los valores del formulario
             updateTempFromInputs();
-            const response = await fetch('http://localhost:3000/api/storage/config', {
+
+            // Guardar físicamente en el servidor (storage/config.json)
+            const response = await fetch('/api/storage/config', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(tempConfig) 
             });
-            if (!response.ok) throw new Error('Failed to save to server');
+
+            if (!response.ok) throw new Error('Error al guardar en el servidor');
+
+            // Actualizar la configuración activa en memoria
             Config.updateMemory(tempConfig);
-            localStorage.removeItem('app_config_override');
+            localStorage.removeItem('app_config_override'); // Limpiar caché local
+
             await Modal.showAlert("✅ Configuración guardada correctamente.", "success");
+            
+            // Recargar para aplicar todos los cambios de iconos y menús
             setTimeout(() => location.reload(), 1500);
+
         } catch (e) {
             console.error(e);
             Modal.showAlert("❌ Error al guardar en servidor (asegúrate de que está corriendo).", "warning");

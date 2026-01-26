@@ -1,40 +1,42 @@
 import { BaseService } from './BaseService.js';
 
+/**
+ * SERVICIO DE NOVEDADES (NovedadesService)
+ * ---------------------------------------
+ * Gestiona el libro de relevos o bitácora diaria donde los recepcionistas 
+ * anotan lo ocurrido durante su turno.
+ */
 class NovedadesService extends BaseService {
     constructor() {
         super('riu_novedades');
     }
 
     /**
-     * Obtiene todas las novedades
-     * @returns {Object[]} Array de novedades
+     * OBTENER NOVEDADES
      */
     getNovedades() {
         return this.getAll();
     }
 
     /**
-     * Guarda la lista de novedades
-     * @param {Object[]} novedades 
+     * GUARDAR LISTA
      */
     saveNovedades(novedades) {
         this.saveAll(novedades);
     }
 
     /**
-     * Añade una nueva novedad
-     * @param {Object} novedad 
+     * REGISTRAR NUEVA NOVEDAD
+     * Se añade al principio de la lista para mostrar lo más reciente primero.
      */
     addNovedad(novedad) {
-        // Usar unshift para que sea cronológico inverso (como en el original)
         const current = this.getNovedades();
         current.unshift(novedad);
         this.saveNovedades(current);
     }
 
     /**
-     * Actualiza una novedad existente
-     * @param {Object} novedadActualizada 
+     * EDITAR NOVEDAD
      */
     updateNovedad(novedadActualizada) {
         const current = this.getNovedades().map(n =>
@@ -44,8 +46,7 @@ class NovedadesService extends BaseService {
     }
 
     /**
-     * Elimina una novedad por ID
-     * @param {number|string} id 
+     * ELIMINAR REGISTRO
      */
     removeNovedad(id) {
         const current = this.getNovedades().filter(n => n.id !== id);
@@ -53,9 +54,7 @@ class NovedadesService extends BaseService {
     }
 
     /**
-     * Obtiene una novedad por ID
-     * @param {number|string} id 
-     * @returns {Object|undefined}
+     * BUSCAR POR ID
      */
     getNovedadById(id) {
         return this.getNovedades().find(n => n.id === id);

@@ -1,3 +1,14 @@
+/* 
+   ESTILOS ESPECÍFICOS DE MÓDULOS (modules.css)
+   -------------------------------------------
+   Contiene la lógica visual avanzada para las funcionalidades operativas:
+   - Caja y Cobro: Grids de billetes, monedas y resaltes de foco.
+   - Rack de Habitaciones: Cajas interactivas y estados visuales.
+   - Dashboard: Accesos directos (Tiles) con efectos hover dinámicos.
+   - Notas Permanentes: Estilo Post-it con rotación y colores vibrantes.
+   - Otros: Paneles de contenido, tarjetas de precios y guías operativas.
+*/
+
 /* Estilos para la calculadora de caja y cobro */
 .sub-caja {
   min-width: 70px;

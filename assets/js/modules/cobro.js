@@ -1,5 +1,10 @@
-import { APP_CONFIG } from '../core/Config.js';
-import { Utils } from '../core/Utils.js';
+/**
+ * MÓDULO DE CALCULADORA DE COBROS (cobro.js)
+ * ----------------------------------------
+ * Facilita el cálculo de cambio para el recepcionista.
+ * Permite introducir el total a cobrar, desglosar el dinero recibido y 
+ * sugiere el cambio óptimo (billetes y monedas) a entregar al cliente.
+ */
 
 export function inicializarCobro() {
     const valores = APP_CONFIG.COBRO.VALORES;
@@ -52,6 +57,11 @@ export function inicializarCobro() {
     calcularCobro();
 }
 
+/**
+ * CÁLCULO DE ARQUEO RÁPIDO
+ * Compara lo recibido con lo entregado y determina si falta dinero o si el 
+ * cambio es correcto.
+ */
 function calcularCobro() {
     const totalACobrar = parseFloat(document.getElementById('cobro_total_a_cobrar').value) || 0;
 

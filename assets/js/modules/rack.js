@@ -1,14 +1,27 @@
 import { rackService } from '../services/RackService.js';
 import { APP_CONFIG } from '../core/Config.js';
 
+/**
+ * MÓDULO DE RACK INTERACTIVO (rack.js)
+ * -----------------------------------
+ * Representa visualmente el estado del hotel habitación por habitación.
+ * Permite filtrar por tipo, estado (Limpia/Sucia/Bloqueada), vistas y extras.
+ * Incluye un sistema de seguridad por PIN para modificar estados críticos.
+ */
+
 let currentFilters = {
     tipos: new Set(),
-    states: new Set(), // mapped from 'estados'
+    states: new Set(),
     vistas: new Set(),
     extras: new Set(),
-    searchTerm: '' // New Search Term
+    searchTerm: '' // Término de búsqueda por número de habitación
 };
 
+/**
+ * INICIALIZACIÓN
+ * Configura los buscadores, botones de reset y la delegación de eventos 
+ * para el desbloqueo de seguridad y cambios de extras.
+ */
 export function inicializarRack() {
     renderFilters();
     renderRack();
@@ -91,31 +104,35 @@ export function inicializarRack() {
 let roomDetailsModal = null;
 let currentEditingRoom = null;
 
+/**
+ * DETALLES DE HABITACIÓN (Modal)
+ * Abre la ficha técnica de la habitación. Por seguridad, los campos de edición
+ * aparecen bloqueados hasta que se introduce el PIN correcto.
+ */
 function openRoomDetails(roomNum) {
     currentEditingRoom = roomNum;
     const room = rackService.getRoomsWithDetails().find(r => r.num === roomNum);
     if (!room) return;
 
-    // Init Bootstrap Modal if first time
     if (!roomDetailsModal) {
         roomDetailsModal = new bootstrap.Modal(document.getElementById('roomDetailsModal'));
     }
 
-    // Populate Fields
+    // Rellenar campos del modal
     document.getElementById('modal-room-number').innerText = room.num;
     document.getElementById('modal-room-type').value = room.tipo;
     document.getElementById('modal-room-view').value = room.vista;
     document.getElementById('modal-room-status').value = room.status || 'DISPONIBLE';
     document.getElementById('modal-room-comments').value = room.comments || '';
 
-    // Populate Overrides
+    // Rellenar extras (Sofa, Sofa Cama, etc)
     document.getElementById('check-sofa').checked = !!room.extras.sofa;
     document.getElementById('check-sofaCama').checked = !!room.extras.sofaCama;
     document.getElementById('check-cheslong').checked = !!room.extras.cheslong;
     document.getElementById('check-ruidosa').checked = !!room.extras.ruidosa;
     document.getElementById('check-tranquila').checked = !!room.extras.tranquila;
 
-    // Reset Security State
+    // Resetear estado de seguridad al abrir
     document.getElementById('room-details-fieldset').disabled = true;
     document.getElementById('security-check-container').classList.remove('d-none');
     document.getElementById('btn-save-room-details').disabled = true;
@@ -123,7 +140,7 @@ function openRoomDetails(roomNum) {
     
     roomDetailsModal.show();
     
-    // Focus PIN input for convenience
+    // Enfocar PIN automáticamente
     setTimeout(() => document.getElementById('security-pin-input').focus(), 500);
 }
 

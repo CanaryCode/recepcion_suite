@@ -4,8 +4,11 @@ import { Utils } from '../core/Utils.js';
 import { sessionService } from '../services/SessionService.js';
 
 /**
- * Módulo de Gestión RIU Class
- * Permite administrar clientes RIU Class, control de estancias y reportes.
+ * MÓDULO DE GESTIÓN RIU CLASS (riu.js)
+ * -----------------------------------
+ * Administra el programa de fidelización RIU Class dentro del hotel.
+ * Permite registrar clientes, visualizar su ubicación en rack y generar 
+ * reportes visuales (HTML rico) para enviar por email a dirección.
  */
 
 let editId = null;
@@ -172,6 +175,11 @@ export async function mostrarClientes() {
     actualizarEstadisticas(clientes);
 }
 
+/**
+ * RENDER VISTA RACK RIU
+ * Muestra el hotel planta por planta, coloreando las habitaciones según el tipo
+ * de tarjeta (Class, Oro, Diamante) del cliente alojado.
+ */
 async function renderVistaRackRiu() {
     const rackCont = document.getElementById('rack-riu-habitaciones');
     if (!rackCont) return;
@@ -328,6 +336,11 @@ export async function limpiarSalidasHoyManual() {
     }
 }
 
+/**
+ * REPORTE EMAIL (Copiado Rico)
+ * Genera un reporte formateado con tablas y colores, lo copia al portapapeles 
+ * como HTML y abre el cliente de correo predeterminado del sistema.
+ */
 export async function enviarEmailDirecto() {
     const clientes = riuService.getClientes();
     const rangos = APP_CONFIG.HOTEL.STATS_CONFIG.RANGOS;

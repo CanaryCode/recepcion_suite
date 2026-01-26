@@ -1,17 +1,25 @@
 import { BaseService } from './BaseService.js';
 
+/**
+ * SERVICIO DE CAJAS FUERTES (SafeService)
+ * --------------------------------------
+ * Gestiona el alquiler de las cajas de seguridad de las habitaciones.
+ * Controla la fecha de activación, los días contratados y el autor.
+ */
 class SafeService extends BaseService {
     constructor() {
         super('riu_safe_rentals');
     }
 
     /**
-     * Obtiene todos los alquileres activos
-     * @returns {Object[]} Array de alquileres
+     * OBTENER ALQUILERES ACTIVOS
+     * Incluye una lógica de migración por si el usuario viene de versiones muy antiguas.
      */
     getRentals() {
         const data = this.getAll();
-        // Migración automática de Objeto a Array si detectamos el formato antiguo
+        
+        // MIGRACIÓN: Antiguamente se guardaba como un objeto { "Hab": {...} }.
+        // Ahora usamos una lista de objetos [{ habitacion: "Hab", ... }].
         if (data && !Array.isArray(data) && typeof data === 'object') {
             const asArray = Object.keys(data).map(hab => ({
                 habitacion: hab,
@@ -24,25 +32,21 @@ class SafeService extends BaseService {
     }
 
     /**
-     * Guarda la lista de alquileres
-     * @param {Object[]} rentals Array de alquileres
+     * GUARDAR LISTA COMPLETA
      */
     saveRentals(rentals) {
         this.saveAll(rentals);
     }
 
     /**
-     * Busca un alquiler por número de habitación
-     * @param {string} habNum Número de habitación
-     * @returns {Object|undefined}
+     * BUSCAR POR HABITACIÓN
      */
     getRentalByHab(habNum) {
         return this.getRentals().find(r => r.habitacion === habNum);
     }
 
     /**
-     * Añade o actualiza un alquiler
-     * @param {Object} rental Objeto alquiler
+     * GUARDAR O ACTUALIZAR ALQUILER
      */
     saveRental(rental) {
         let rentals = this.getRentals();
@@ -58,8 +62,7 @@ class SafeService extends BaseService {
     }
 
     /**
-     * Elimina un alquiler
-     * @param {string} habNum 
+     * FINALIZAR ALQUILER
      */
     removeRental(habNum) {
         const rentals = this.getRentals().filter(r => r.habitacion !== habNum);

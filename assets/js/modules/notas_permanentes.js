@@ -2,12 +2,15 @@ import { notasService } from '../services/NotasService.js';
 import { Utils } from '../core/Utils.js';
 
 /**
- * Módulo de Notas Permanentes (Post-its)
- * Gestiona la creación, edición y visualización de notas rápidas.
+ * MÓDULO DE NOTAS PERMANENTES (NOTAS ADHESIVAS / POST-ITS)
+ * --------------------------------------------------------
+ * Permite a los recepcionistas dejar notas rápidas fijadas en el muro.
+ * Las notas tienen colores configurables y una rotación visual aleatoria.
+ * Soporta protección por contraseña para evitar ediciones no autorizadas.
  */
 
-let notaEnEdicionId = null;
-let modoEdicion = false;
+let notaEnEdicionId = null;  // ID de la nota que se abre en el modal
+let modoEdicion = false;     // Si es falso, las notas el muro son solo lectura
 const PASSWORD_EDICION = "1234";
 
 // ==========================================
@@ -146,16 +149,18 @@ export async function eliminarNota(id) {
 // 3. RENDERIZADO
 // ==========================================
 
+/**
+ * DIBUJAR MURO DE NOTAS
+ * Renderiza todos los post-its con su inclinación (--rotation) y color específico.
+ */
 function renderNotas() {
     const grid = document.getElementById('grid-notas');
     if (!grid) return;
 
-    // Actualizar estados visuales
     actualizarEstadoBotonLock();
-
     const notas = notasService.getNotas();
 
-    // Filtrar notas
+    // Filtrar por término de búsqueda (Input superior)
     const searchInput = document.getElementById('searchNotas');
     const filtro = searchInput ? searchInput.value.toLowerCase().trim() : "";
     const notasFiltradas = filtro ? notas.filter(n =>
@@ -178,7 +183,7 @@ function renderNotas() {
         const rotacion = nota.rotacion || (Math.random() * 4 - 2).toFixed(1);
         const visibilityClass = modoEdicion ? '' : 'd-none';
 
-        // Atributos para Drag & Drop
+        // Gestión de Drag & Drop (Solo si está desbloqueado)
         const dragAttrs = modoEdicion ? `draggable="true" ondragstart="handleDragStart(event, ${nota.id})" ondragover="handleDragOver(event)" ondrop="handleDrop(event, ${nota.id})" ondragenter="handleDragEnter(event)" ondragleave="handleDragLeave(event)"` : '';
         const cursorStyle = modoEdicion ? 'cursor: grab;' : '';
 
@@ -199,8 +204,8 @@ function renderNotas() {
                             </div>
                         </div>
                         <p class="card-text flex-grow-1" style="white-space: pre-wrap; font-size: 0.95rem; line-height: 1.5;">${nota.contenido}</p>
-                        <div class="mt-3 pt-2 border-top border-dark border-opacity-10 d-flex justify-content-between align-items-center">
-                            <small class="text-muted" style="font-size: 0.75rem;">${nota.fecha}</small>
+                        <div class="mt-2 text-end">
+                            <small class="text-muted opacity-50" style="font-size: 0.7rem;">${nota.fecha}</small>
                         </div>
                     </div>
                 </div>

@@ -1,19 +1,10 @@
-import { agendaService } from './AgendaService.js';
-import { notasService } from './NotasService.js';
-import { novedadesService } from './NovedadesService.js';
-import { atencionesService } from './AtencionesService.js';
-import { desayunoService } from './DesayunoService.js';
-import { despertadorService } from './DespertadorService.js';
-import { estanciaService } from './EstanciaService.js';
-import { preciosService } from './PreciosService.js';
-import { safeService } from './SafeService.js';
-import { systemAlarmsService } from './SystemAlarmsService.js';
-import { ayudaService } from './AyudaService.js';
-import { riuService } from './RiuService.js';
-import { transfersService } from './TransfersService.js';
-import { cenaFriaService } from './CenaFriaService.js';
-import { rackService } from './RackService.js';
-
+/**
+ * SERVICIO DE COPIAS DE SEGURIDAD (BackupService)
+ * ---------------------------------------------
+ * Se encarga de coordinar la persistencia de todos los módulos del sistema.
+ * Su función principal es recolectar los datos de cada servicio y forzar su 
+ * sincronización/guardado, actuando como un seguro contra pérdida de información.
+ */
 class BackupService {
     constructor() {
         this.services = [
@@ -35,8 +26,13 @@ class BackupService {
         ];
     }
 
+    /**
+     * EJECUTAR BACKUP COMPLETO
+     * Recorre todos los servicios registrados, extrae sus datos actuales y 
+     * activa el mecanismo de guardado de cada uno para asegurar la persistencia.
+     */
     async performFullBackup() {
-        console.log("Starting Full Backup...");
+        console.log("Iniciando copia de seguridad integral...");
         const results = { success: [], error: [] };
 
         for (const item of this.services) {

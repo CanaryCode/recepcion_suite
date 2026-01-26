@@ -3,19 +3,25 @@ import { Utils } from "../core/Utils.js";
 import { sessionService } from "../services/SessionService.js";
 import { Modal } from "../core/Modal.js";
 
-// ============================================================================
-// ESTADO
-// ============================================================================
-let interfazCajaGenerada = false;
-let listaVales = []; // { id, concepto, importe }
-let listaDesembolsos = []; // { id, concepto, importe }
-let fondoCajaValue = (APP_CONFIG.CAJA?.FONDO !== undefined) ? APP_CONFIG.CAJA.FONDO : -2000; // Valor desde Config (fallback -2000)
+/**
+ * MÓDULO DE GESTIÓN DE CAJA (caja.js)
+ * ----------------------------------
+ * Maneja el arqueo diario del hotel: recuento de efectivo, gestión de vales,
+ * desembolsos de caja y generación de informes de cierre (PDF y Email).
+ */
+
+let interfazCajaGenerada = false; // Flag para evitar duplicar inputs monetarios
+let listaVales = [];             // { id, concepto, importe } - IOUs (Pagos pendientes)
+let listaDesembolsos = [];       // { id, concepto, importe } - Pagos directos desde caja
+let fondoCajaValue = (APP_CONFIG.CAJA?.FONDO !== undefined) ? APP_CONFIG.CAJA.FONDO : -2000;
 
 // ... (existing helper functions)
 
-// ============================================================================
-// GESTIÓN DE VALES
-// ============================================================================
+/**
+ * GESTIÓN DE VALES
+ * Los vales representan dinero que el hotel debe (o entregó) a un empleado/servicio
+ * y que se resta de la recaudación final.
+ */
 
 window.abrirModalVales = () => {
   const modal = new bootstrap.Modal(document.getElementById("modalVales"));
@@ -119,9 +125,10 @@ function renderVales() {
   }
 }
 
-// ============================================================================
-// GESTIÓN DE DESEMBOLSOS (NUEVO)
-// ============================================================================
+/**
+ * GESTIÓN DE DESEMBOLSOS
+ * Pagos directos realizados desde la caja para compras rápidas o reparaciones.
+ */
 
 window.abrirModalDesembolsos = () => {
   const modal = new bootstrap.Modal(
@@ -232,13 +239,9 @@ function renderDesembolsos() {
   }
 }
 
-// ============================================================================
-// INICIALIZACIÓN
-// ============================================================================
-
 /**
- * Inicializa el módulo de Caja.
- * Genera la interfaz, configura listeners y realiza el cálculo inicial.
+ * INICIALIZACIÓN
+ * Prepara la interfaz monetaria y configura los cálculos automáticos de turno y fecha.
  */
 export function inicializarCaja() {
   generarInterfazCaja();
@@ -375,10 +378,11 @@ function agregarNuevoConcepto() {
   div.querySelector(".concept-name").focus();
 }
 
-// ============================================================================
-// CÁLCULO
-// ============================================================================
-
+/**
+ * LÓGICA DE CÁLCULO
+ * Recorre todos los inputs de billetes y monedas, suma los vales/desembolsos 
+ * y calcula la recaudación final restando el fondo de caja configurado.
+ */
 function calcularCaja() {
   let totalBilletes = 0,
     totalMonedas = 0;
@@ -610,6 +614,11 @@ function imprimirCierreCaja() {
   Utils.printSection("print-date-caja", "print-repc-nombre-caja", user);
 }
 
+/**
+ * EXPORTAR PDF (html2pdf)
+ * Crea un clon oculto de la interfaz, lo formatea para tamaño A4 y genera un PDF 
+ * con el arqueo completo, preservando valores e incluso firmas.
+ */
 async function guardarCajaPDF() {
   const user = sessionService.getUser();
   if (!user) {
@@ -731,6 +740,12 @@ async function guardarCajaPDF() {
   }
 }
 
+/**
+ * REPORTE EMAIL (HTML Rico)
+ * Genera una plantilla visual con tablas de desglose detallado.
+ * Al copiar al portapapeles, se inyecta tanto texto como HTML para que al pegar 
+ * en Outlook/Gmail se mantenga el formato profesional.
+ */
 async function enviarCajaEmail() {
   const nombre = sessionService.getUser();
   if (!nombre) {

@@ -1,6 +1,13 @@
-/* ==========================================================================
-   SISTEMA DE IMPRESIÓN - VERSIÓN "NUCLEAR" CORREGIDA
-   ========================================================================== */
+/* 
+   SISTEMA DE IMPRESIÓN "NUCLEAR" (print.css)
+   ------------------------------------------
+   Diseñado para forzar un formato de reporte profesional en papel A4.
+   - Elimina elementos de interfaz (Navbar, botones, fondos de pantalla).
+   - Fuerza visibilidad de colores e imágenes de fondo (badges, iconos).
+   - Redefine layouts complejos para que encajen en el ancho de página.
+   - Optimiza específicamente el "Cierre de Caja" y "Comprobantes de Cobro".
+*/
+
 @media print {
   /* 1. RESET DE PÁGINA */
   @page {

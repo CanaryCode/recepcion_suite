@@ -2,13 +2,17 @@ import { APP_CONFIG } from './Config.js';
 import { sessionService } from '../services/SessionService.js';
 
 /**
- * Utilidades Generales del Sistema
+ * UTILIDADES GENERALES DEL SISTEMA (Utils)
+ * ---------------------------------------
+ * Este módulo contiene funciones de apoyo que se usan en toda la aplicación,
+ * desde formatear dinero hasta validar quién está usando el programa.
  */
 
 export const Utils = {
     /**
-     * Genera la lista de habitaciones basada en la configuración.
-     * @returns {Array<{num: string, planta: number}>}
+     * GENERAR LISTA DE HABITACIONES
+     * Basándose en la configuración de plantas y números, crea una lista de objetos.
+     * Ejemplo: { num: "101", planta: 1 }
      */
     getHabitaciones: () => {
         const lista = [];
@@ -21,10 +25,10 @@ export const Utils = {
         }
         return lista;
     },
+
     /**
-     * Formatea un número como moneda (Euro)
-     * @param {number|string} amount - Cantidad a formatear
-     * @returns {string} Cadena formateada (ej: "1,234.56€")
+     * FORMATEAR DINERO (Euros)
+     * Convierte un número en una cadena legible: "5" -> "5.00€"
      */
     formatCurrency: (amount) => {
         const num = parseFloat(amount);
@@ -34,25 +38,21 @@ export const Utils = {
     },
 
     /**
-     * Obtiene la fecha actual en formato ISO (YYYY-MM-DD)
-     * @returns {string}
+     * OBTENER FECHA HOY (ISO)
+     * Devuelve la fecha actual como "YYYY-MM-DD", ideal para campos de tipo date.
      */
     getTodayISO: () => {
         return new Date().toISOString().split('T')[0];
     },
 
     /**
-     * Formatea una fecha YYYY-MM-DD a DD/MM/YYYY
-     * @param {string} dateStr 
-     * @returns {string}
+     * FORMATEAR FECHA PARA LEER
+     * Convierte "2024-05-20" en "20/05/2024" para que sea más humano.
      */
     formatDate: (dateStr) => {
         if (!dateStr) return "";
         try {
-            // Manejar si viene como objeto Date
             if (dateStr instanceof Date) return dateStr.toLocaleDateString();
-
-            // Si es ISO YYYY-MM-DD
             const parts = dateStr.split('-');
             if (parts.length === 3) {
                 return `${parts[2]}/${parts[1]}/${parts[0]}`;
@@ -64,9 +64,8 @@ export const Utils = {
     },
 
     /**
-     * Copia texto al portapapeles de forma segura
-     * @param {string} text - Texto plano
-     * @param {string} html - (Opcional) Contenido HTML rico
+     * COPIAR AL PORTAPAPELES
+     * Permite copiar texto (o HTML) para pegarlo luego en Word o Excel.
      */
     copyToClipboard: async (text, html = null) => {
         try {
@@ -84,10 +83,10 @@ export const Utils = {
             return false;
         }
     },
+
     /**
-     * Valida si hay un usuario seleccionado en la sesión global.
-     * Muestra una alerta si no hay nadie logueado.
-     * @returns {string|null} Nombre del usuario o null si no hay sesión.
+     * VALIDAR USUARIO (Recepción)
+     * Comprueba que haya alguien identificado antes de permitir guardar cambios.
      */
     validateUser: () => {
         const user = sessionService.getUser();
@@ -99,11 +98,8 @@ export const Utils = {
     },
 
     /**
-     * Función auxiliar para imprimir una sección específica.
-     * Gestiona la fecha, el usuario y la llamada a window.print().
-     * @param {string} dateElementId - ID del elemento donde poner la fecha (opcional)
-     * @param {string} userElementId - ID del elemento donde poner el usuario (opcional)
-     * @param {string} userName - Nombre del usuario actual
+     * FUNCIÓN DE IMPRESIÓN
+     * Prepara una sección y abre la ventana de impresión del navegador.
      */
     printSection: (dateElementId, userElementId, userName) => {
         const now = new Date();
@@ -123,9 +119,8 @@ export const Utils = {
     },
 
     /**
-     * Asigna valor a un input de forma segura (verifica si existe).
-     * @param {string} id - ID del elemento
-     * @param {any} value - Valor a asignar
+     * ASIGNAR VALOR A INPUT
+     * Forma segura de cambiar el contenido de un campo de texto comprobando si existe.
      */
     setVal: (id, value) => {
         const el = document.getElementById(id);
@@ -133,8 +128,8 @@ export const Utils = {
     },
 
     /**
-     * Alterna la visibilidad de un input type password
-     * @param {string} id - ID del input
+     * MOSTRAR/OCULTAR CONTRASEÑA
+     * Cambia entre 'password' (puntos) y 'text' (letras) para ver una clave.
      */
     togglePassword: (id) => {
         const input = document.getElementById(id);

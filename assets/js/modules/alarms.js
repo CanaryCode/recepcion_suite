@@ -1,6 +1,10 @@
-import { APP_CONFIG } from '../core/Config.js';
-import { Utils } from '../core/Utils.js';
-import { systemAlarmsService } from '../services/SystemAlarmsService.js';
+/**
+ * MÓDULO DE ALARMAS DE SISTEMA (alarms.js)
+ * ---------------------------------------
+ * Gestiona los avisos recurrentes automáticos (Ej: Comprobar pH piscina, rondas).
+ * A diferencia de los despertadores, estas alarmas son configurables para días
+ * específicos y emiten un sonido de "Beep" sintetizado vía AudioContext.
+ */
 
 let audioCtx = null;
 let beepInterval = null;
@@ -136,15 +140,18 @@ function triggerAlarm(alarm) {
     updateBellStatus(true);
 }
 
+/**
+ * REPRODUCIR BEEP (Sintetizador Web Audio)
+ * Genera una señal cuadrada que sube de frecuencia para alertar al recepcionista.
+ * Se repite cada segundo hasta que el usuario acepta el modal.
+ */
 function playBeep() {
-    stopBeep(); // Clear existing
+    stopBeep(); 
     
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     
-    // Resume context if suspended (common in browsers)
     if (audioCtx.state === 'suspended') audioCtx.resume();
 
-    // Function to play a single tone
     const beep = () => {
         if (!audioCtx) return;
         const osc = audioCtx.createOscillator();
@@ -154,7 +161,7 @@ function playBeep() {
         gain.connect(audioCtx.destination);
         
         osc.type = 'square';
-        osc.frequency.setValueAtTime(440, audioCtx.currentTime); // A4
+        osc.frequency.setValueAtTime(440, audioCtx.currentTime); // La 440
         osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.1);
         
         gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
@@ -164,8 +171,8 @@ function playBeep() {
         osc.stop(audioCtx.currentTime + 0.5);
     };
 
-    beep(); // First immediate beep
-    beepInterval = setInterval(beep, 1000); // Loop every second
+    beep(); 
+    beepInterval = setInterval(beep, 1000); 
 }
 
 function stopBeep() {
@@ -196,6 +203,10 @@ function showAlarmModal(alarm) {
     modal.show();
 }
 
+/**
+ * POSPONER ALARMA
+ * Crea una alarma temporal de un solo uso programada para dentro de 10 minutos.
+ */
 function snoozeAlarm(originalAlarm) {
     // Calcular nueva hora (+10 min)
     const now = new Date();

@@ -1,46 +1,58 @@
 /**
- * Sistema de Enrutamiento y Navegación
- * Gestiona la navegación por pestañas y "Deep Linking" simple.
+ * SISTEMA DE ENRUTAMIENTO Y NAVEGACIÓN
+ * -----------------------------------
+ * Este módulo se encarga de cambiar entre las diferentes pestañas de la aplicación
+ * (Inicio, Operaciones, Administración, etc.) sin recargar la página.
  */
 
 export const Router = {
+    /**
+     * inicialización.
+     * Registra la función navegarA globalmente para que pueda ser llamada
+     * desde cualquier botón del HTML con onclick="navegarA(...)".
+     */
     init: () => {
-        // Exponer globalmente para compatibilidad con onclick HTML
         window.navegarA = Router.navegarA;
-        Router.setupGlobalSearch(); // Vincula eventos de búsqueda si existen
     },
 
+    /**
+     * MÉTODO PRINCIPAL DE NAVEGACIÓN
+     * @param {string} targetId - El ID del panel al que queremos ir (ej: '#riu-content')
+     * 
+     * Este método hace un cambio "limpio" de pestaña asegurándose de que:
+     * 1. Se oculte todo lo anterior.
+     * 2. Se desmarque el menú activo antiguo.
+     * 3. Se active el nuevo panel visualmente.
+     */
     navegarA: (targetId) => {
-        // 1. Normalizar el ID
+        // Normalizar entrada: Asegurar que el ID empieza por '#'
         const selector = targetId.startsWith('#') ? targetId : '#' + targetId;
         const cleanId = selector.replace('#', '');
 
-        // 2. Buscar el disparador oculto (tab-...) para evitar que el menú se abra
+        // El sistema usa botones ocultos (ID 'tab-...') para activar pestañas de Bootstrap
+        // sin que el menú principal tenga que estar abierto.
         const triggerEl = document.getElementById('tab-' + cleanId);
 
         if (triggerEl) {
-            // 1. FUERZA BRUTA: Ocultar todos los paneles activos manualmente
+            // Pasos de limpieza visual:
+            // -------------------------
+            // 1. Ocultar todos los paneles (tab-pane) activos
             document.querySelectorAll('.tab-pane').forEach(pane => {
                 pane.classList.remove('show', 'active');
             });
 
-            // 2. Desactivar botones del menú principal
+            // 2. Quitar el color azul (active) de los botones del menú superior
             document.querySelectorAll('#mainTabs .nav-link, #mainTabs .dropdown-item').forEach(btn => {
                 btn.classList.remove('active');
             });
 
-            // 3. Activar la pestaña deseada usando Bootstrap
+            // 3. Activar la nueva pestaña a través de Bootstrap
             const tab = bootstrap.Tab.getOrCreateInstance(triggerEl);
             tab.show();
 
-            // 4. Refuerzo: Asegurar que el panel destino tenga las clases (por si Bootstrap falla)
+            // 4. Refuerzo manual: Asegurar que el panel se ve (Bootstrap a veces falla en cascada)
             const targetPane = document.querySelector(selector);
             if (targetPane) targetPane.classList.add('show', 'active');
         }
-    },
-
-    setupGlobalSearch: () => {
-        // Lógica de búsqueda movida a Search.js pero referenciada si es necesario,
-        // o mantenida aquí si es simple. Por ahora la moveremos a Search.js según el plan.
     }
 };

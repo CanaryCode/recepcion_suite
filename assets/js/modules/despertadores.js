@@ -4,16 +4,27 @@ import { despertadorService } from '../services/DespertadorService.js';
 import { sessionService } from '../services/SessionService.js';
 import { systemAlarmsService } from '../services/SystemAlarmsService.js';
 
-let checkInterval = null;
-let ultimoMinutoProcesado = "";
-// Pre-cargamos el audio una sola vez al inicio
+/**
+ * MÓDULO DE DESPERTADORES Y ALARMAS (despertadores.js)
+ * ---------------------------------------------------
+ * Gestiona las llamadas de despertador solicitadas por los clientes.
+ * Incluye un sistema de verificación en tiempo real (cada 15s) que lanza 
+ * un modal visual y una alarma sonora cuando llega la hora.
+ */
+
+let checkInterval = null;            // Intervalo de comprobación (15s)
+let ultimoMinutoProcesado = "";      // Anti-repetición para no alarmar varias veces el mismo minuto
 const alarmaAudio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-alarmaAudio.loop = true;
+alarmaAudio.loop = true;             // Sonará en bucle hasta que se cierre el modal
 
 // ============================================================================
 // INICIALIZACIÓN
 // ============================================================================
 
+/**
+ * INICIALIZACIÓN
+ * Configura el formulario, inyecta el modal de alarma y activa el verificador.
+ */
 export function inicializarDespertadores() {
     const form = document.getElementById('formNuevoDespertador');
     if (form) {
@@ -21,22 +32,18 @@ export function inicializarDespertadores() {
         form.addEventListener('submit', manejarSubmitDespertador);
     }
 
-    // Inyectar modal de alarma
     if (!document.getElementById('modalAlarmaDespertador')) {
         crearModalAlarma();
     }
 
-    // Configurar vistas
+    // Configuración de visualización (Trabajo vs Rack)
     document.getElementById('despertadores-trabajo')?.classList.add('content-panel');
     document.getElementById('despertadores-rack')?.classList.add('content-panel');
 
     document.getElementById('btnVistaTrabajoDesp')?.addEventListener('click', () => cambiarVistaDespertadores('trabajo'));
     document.getElementById('btnVistaRackDesp')?.addEventListener('click', () => cambiarVistaDespertadores('rack'));
 
-    // Navegar a despertadores al pulsar la campana (MODIFICADO: Abrir visor manual)
-    // Evento de Campana ELIMINADO de aquí. Ahora lo gestiona alarms.js
-
-    // Poblar datalist de habitaciones
+    // Rellenar buscador de habitaciones
     const datalist = document.getElementById('lista-habs-desp');
     if (datalist) {
         datalist.innerHTML = '';
@@ -49,15 +56,18 @@ export function inicializarDespertadores() {
 
     mostrarDespertadores();
 
-    // "Desbloquear" el audio
+    /**
+     * "DESBLOQUEO" DE AUDIO
+     * Los navegadores modernos prohíben el audio automático. 
+     * Al primer click del recepcionista en cualquier sitio, activamos el permiso.
+     */
     document.addEventListener('click', () => {
         alarmaAudio.play().then(() => {
             alarmaAudio.pause();
             alarmaAudio.currentTime = 0;
-        }).catch(e => { /* Ignorar error de reproducción automática */ });
+        }).catch(e => { });
     }, { once: true });
 
-    // Iniciar verificador
     if (!checkInterval) {
         checkInterval = setInterval(verificarAlarmas, 15000);
     }
@@ -206,6 +216,8 @@ function mostrarDespertadores() {
             </td>
         </tr>`;
     });
+
+    if (window.checkDailySummaryVisibility) window.checkDailySummaryVisibility();
 }
 
 function renderVistaRackDespertadores() {
@@ -245,18 +257,18 @@ function renderVistaRackDespertadores() {
     </div>`;
 }
 
+/**
+ * VERIFICADOR DE ALARMAS
+ * Se ejecuta en segundo plano cada 15 segundos para comprobar si hay despertadores
+ * cuya hora coincida con el minuto actual.
+ */
 function verificarAlarmas() {
     try {
         const ahora = new Date();
         const horaActual = `${ahora.getHours().toString().padStart(2, '0')}:${ahora.getMinutes().toString().padStart(2, '0')}`;
 
-        if (horaActual === ultimoMinutoProcesado) {
-             actualizarEstadoCampana(ahora); 
-             return;
-        }
+        if (horaActual === ultimoMinutoProcesado) return;
         
-        actualizarEstadoCampana(ahora); 
-
         const despertadores = despertadorService.getDespertadores();
         const alertas = [];
 
@@ -271,14 +283,12 @@ function verificarAlarmas() {
             }
         });
 
-        // SYSTEM ALARMS REMOVED FROM HERE
-
         if (alertas.length > 0) {
             ultimoMinutoProcesado = horaActual;
             lanzarAlarma(alertas, horaActual, true); // Play sound = true
         }
     } catch (error) {
-        console.error("Error silencioso en el verificador de alarmas:", error);
+        console.error("Error en el verificador:", error);
     }
 }
 

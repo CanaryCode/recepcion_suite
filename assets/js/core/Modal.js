@@ -1,11 +1,12 @@
 /**
- * Sistema Global de Modales (Estilo Alarma)
- * Reemplaza los alerts nativos con un diseño moderno usando Bootstrap Modal.
+ * SISTEMA GLOBAL DE MODALES (Estilo Alarma)
+ * -----------------------------------------
+ * Este módulo sustituye los "alert()" feos del navegador por ventanas 
+ * de diseño moderno basadas en Bootstrap. 
+ * Permite mostrar mensajes de Éxito, Error, Advertencia o Confirmación.
  */
 
-/* ==========================================================================
-   CONFIGURACIÓN Y ESTILOS
-   ========================================================================== */
+// Configuración de colores e iconos según el tipo de mensaje
 const modalStyles = {
     error: { color: 'danger', icon: 'bi-exclamation-octagon-fill', title: 'ERROR' },
     success: { color: 'success', icon: 'bi-check-circle-fill', title: 'ÉXITO' },
@@ -14,11 +15,9 @@ const modalStyles = {
     question: { color: 'primary', icon: 'bi-question-circle-fill', title: 'CONFIRMACIÓN' }
 };
 
-let systemModalInstance = null;
+let systemModalInstance = null; // Instancia única del modal en el sistema
 
-/* ==========================================================================
-   HTML DEL MODAL
-   ========================================================================== */
+// HTML base que se inyectará en la página al arrancar
 const modalHTML = `
 <div class="modal fade" id="globalSystemModal" tabindex="-1" style="z-index: 10060;" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered">
@@ -38,9 +37,9 @@ const modalHTML = `
     </div>
 </div>`;
 
-/* ==========================================================================
-   MÉTODOS PRIVADOS
-   ========================================================================== */
+/**
+ * Función interna para asegurar que el HTML del modal existe en el body del documento.
+ */
 function ensureModalExists() {
     if (!document.getElementById('globalSystemModal')) {
         document.body.insertAdjacentHTML('beforeend', modalHTML);
@@ -51,42 +50,45 @@ function ensureModalExists() {
     return systemModalInstance;
 }
 
+/**
+ * Configura la apariencia del modal (icono, color, texto) antes de mostrarlo.
+ */
 function setupModalUI(type, msg) {
     const style = modalStyles[type] || modalStyles.info;
     const header = document.getElementById('globalModalHeader');
 
-    // Reset clases
+    // Cambiar colores y clases
     header.className = `modal-header text-white border-0 py-2 bg-${style.color}`;
     document.getElementById('globalModalIcon').className = `display-1 mb-3 text-${style.color}`;
 
     document.getElementById('globalModalTitle').innerText = style.title;
     document.getElementById('globalModalIcon').innerHTML = `<i class="bi ${style.icon}"></i>`;
-    document.getElementById('globalModalMessage').innerHTML = msg; // Permite HTML
+    document.getElementById('globalModalMessage').innerHTML = msg; // Soporta HTML para negritas, etc.
     document.getElementById('globalModalInputContainer').classList.add('d-none');
     document.getElementById('globalModalFooter').innerHTML = '';
 }
 
-/* ==========================================================================
-   MÉTODOS PÚBLICOS
-   ========================================================================== */
-
 export const Modal = {
     /**
-     * Inicializa el sistema de modales inyectando el HTML si no existe
+     * INICIALIZACIÓN
+     * Prepara el modal y sobrescribe el alert() nativo de JavaScript.
      */
     init: () => {
         ensureModalExists();
-        // Exponer instancia globalmente para casos extremos donde se necesite acceso directo
         window.systemModal = systemModalInstance;
 
-        // Sobrescribir alert nativo
+        // Ahora, cada vez que el código use alert("hola"), saldrá nuestro modal bonito.
         window.alert = (msg) => Modal.showAlert(msg, 'error');
-        // Exponer helpers globalmente para compatibilidad
+        
+        // Exponer helpers globalmente
         window.showAlert = Modal.showAlert;
         window.showConfirm = Modal.showConfirm;
         window.showPrompt = Modal.showPrompt;
     },
 
+    /**
+     * MUESTRA UNA ALERTA SIMPLE
+     */
     showAlert: (msg, type = 'error') => {
         return new Promise(resolve => {
             ensureModalExists();
@@ -105,6 +107,9 @@ export const Modal = {
         });
     },
 
+    /**
+     * MUESTRA UNA VENTANA DE CONFIRMACIÓN (SÍ/NO)
+     */
     showConfirm: (msg) => {
         return new Promise(resolve => {
             ensureModalExists();
@@ -119,10 +124,8 @@ export const Modal = {
             const el = document.getElementById('globalSystemModal');
             let result = false;
 
-            // Capturar clic en botones mediante delegación o asignación directa
             const btns = footer.querySelectorAll('button');
             btns.forEach(b => b.addEventListener('click', (e) => {
-                // Aseguramos que tomamos el dataset del botón
                 result = e.currentTarget.dataset.res === 'true';
             }));
 
@@ -135,6 +138,9 @@ export const Modal = {
         });
     },
 
+    /**
+     * MUESTRA UN CAMPO PARA INTRODUCIR TEXTO
+     */
     showPrompt: (msg, inputType = 'text') => {
         return new Promise(resolve => {
             ensureModalExists();
@@ -162,7 +168,7 @@ export const Modal = {
             btns[0].onclick = cancel;
             btns[1].onclick = submit;
 
-            // Enter en input
+            // Enviar con la tecla Enter
             input.onkeydown = (e) => { if (e.key === 'Enter') submit(); };
 
             const onHide = () => {
@@ -172,7 +178,7 @@ export const Modal = {
             };
             el.addEventListener('hidden.bs.modal', onHide);
 
-            // Enfocar input al mostrar
+            // Poner el foco en el campo de texto automáticamente al abrir
             el.addEventListener('shown.bs.modal', () => input.focus(), { once: true });
             systemModalInstance.show();
         });

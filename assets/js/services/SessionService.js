@@ -1,21 +1,28 @@
 import { LocalStorage } from '../core/LocalStorage.js';
 
+/**
+ * SERVICIO DE SESIÓN (SessionService)
+ * ----------------------------------
+ * Gestiona qué recepcionista está utilizando el programa en este momento.
+ * El nombre del usuario se guarda en el PC para que no haya que elegirlo 
+ * cada vez que se refresca la página.
+ */
 class SessionService {
     constructor() {
-        this.STORAGE_KEY = 'app_current_user';
+        this.STORAGE_KEY = 'app_current_user'; // Clave bajo la que se guarda el nombre en el navegador
     }
 
     /**
-     * Obtiene el usuario actual logueado
-     * @returns {string|null} Nombre del usuario o null si no hay nadie
+     * OBTENER USUARIO ACTUAL
+     * @returns {string|null} El nombre del recepcionista o null si nadie se ha identificado.
      */
     getUser() {
         return LocalStorage.get(this.STORAGE_KEY, null);
     }
 
     /**
-     * Establece el usuario actual
-     * @param {string} username 
+     * ESTABLECER USUARIO
+     * Guarda el nombre del nuevo recepcionista que entra al turno.
      */
     setUser(username) {
         if (username) {
@@ -26,19 +33,21 @@ class SessionService {
     }
 
     /**
-     * Cierra la sesión (borra el usuario)
+     * CERRAR SESIÓN
+     * Borra el nombre del usuario actual del sistema.
      */
     logout() {
         LocalStorage.remove(this.STORAGE_KEY);
     }
 
     /**
-     * Verifica si hay una sesión activa
-     * @returns {boolean}
+     * ¿ESTÁ IDENTIFICADO?
+     * @returns {boolean} Verdadero si hay alguien logueado.
      */
     isAuthenticated() {
         return !!this.getUser();
     }
 }
 
+// Exportamos una única instancia para asegurar que todos usen la misma sesión
 export const sessionService = new SessionService();

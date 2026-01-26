@@ -3,6 +3,13 @@ import { Utils } from '../core/Utils.js';
 import { novedadesService } from '../services/NovedadesService.js';
 import { sessionService } from '../services/SessionService.js';
 
+/**
+ * MÓDULO DE NOVEDADES Y COMUNICACIÓN (novedades.js)
+ * -----------------------------------------------
+ * Registra eventos, averías o avisos destinados a otros departamentos o turnos.
+ * Soporta prioridades, estados de gestión (Pendiente/Terminada) y multiselección de departamentos.
+ */
+
 // ============================================================================
 // INICIALIZACIÓN
 // ============================================================================
@@ -30,6 +37,11 @@ export function inicializarNovedades() {
     mostrarNovedades();
 }
 
+/**
+ * GENERAR DEPARTAMENTOS
+ * Crea dinámicamente los checkboxes basados en APP_CONFIG.
+ * Incluye la opción "Otro" con campo de texto libre.
+ */
 function generarCheckboxesDepartamentos() {
     const deptsCont = document.getElementById('nov_depts_container');
     if (!deptsCont) return;
@@ -87,6 +99,10 @@ function cambiarVistaNovedades(vista) {
 // HANDLERS
 // ============================================================================
 
+/**
+ * GUARDAR NOVEDAD
+ * Valida los campos, detecta si es una edición o nueva inserción y actualiza la lista.
+ */
 function manejarSubmitNovedad(e) {
     e.preventDefault();
     const now = new Date();
@@ -181,6 +197,11 @@ function manejarSubmitNovedad(e) {
 // RENDERIZADO
 // ============================================================================
 
+/**
+ * RENDERIZADO DE NOVEDADES
+ * Actualiza tanto el mini-resumen del Dashboard como la tabla principal de gestión.
+ * Aplica estilos visuales según prioridad (Urgente = Rojo).
+ */
 function mostrarNovedades() {
     const novedades = novedadesService.getNovedades();
 
@@ -244,6 +265,8 @@ function mostrarNovedades() {
             </td>
         </tr>`;
     });
+
+    if (window.checkDailySummaryVisibility) window.checkDailySummaryVisibility();
 }
 
 // ============================================================================
@@ -273,6 +296,10 @@ window.eliminarNovedad = async (id) => {
     }
 };
 
+/**
+ * EDITAR NOVEDAD
+ * Carga los datos de una novedad existente en el formulario para su modificación.
+ */
 window.prepararEdicionNovedad = (id) => {
     const n = novedadesService.getNovedadById(id);
     if (n) {

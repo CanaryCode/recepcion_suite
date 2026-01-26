@@ -3,12 +3,15 @@ import { sessionService } from '../services/SessionService.js';
 import { Utils } from '../core/Utils.js';
 
 /**
- * Módulo de Gestión de Lista de Precios
- * Permite visualizar, buscar y editar (admin) los precios de productos.
+ * MÓDULO DE LISTA DE PRECIOS (precios.js)
+ * --------------------------------------
+ * Gestiona el catálogo de productos y servicios del hotel (Bebidas, Comida, etc).
+ * Incluye un buscador en tiempo real, sistema de favoritos y un modo de edición 
+ * protegido por contraseña para administradores.
  */
 
-let modoEdicionPrecios = false;
-let targetInputId = null; // ID del input o del producto que se está editando
+let modoEdicionPrecios = false;  // Flag para habilitar/deshabilitar cambios
+let targetInputId = null;        // Referencia para el selector de iconos
 const PASSWORD_EDICION = "1234";
 
 // ==========================================
@@ -35,6 +38,11 @@ export function inicializarPrecios() {
 // 2. HANDLERS & ACCIONES
 // ==========================================
 
+/**
+ * MODO EDICIÓN
+ * Permite desbloquear el grid de precios para realizar cambios directos.
+ * Requiere contraseña de administrador.
+ */
 export async function toggleEdicionPrecios() {
     if (modoEdicionPrecios) {
         modoEdicionPrecios = false;
@@ -95,6 +103,11 @@ export function guardarPrecio(id, campo, valor) {
 // 3. RENDERIZADO
 // ==========================================
 
+/**
+ * DIBUJAR LISTA DE PRECIOS
+ * Renderiza el catálogo ordenado (favoritos primero).
+ * Si el modo edición está activo, habilita 'contenteditable' en los campos.
+ */
 function renderPrecios(filtro = "") {
     const container = document.getElementById('lista-precios-container');
     const formAdd = document.getElementById('form-add-precio-container');

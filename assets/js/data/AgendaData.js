@@ -1,3 +1,9 @@
+/**
+ * DATOS MAESTROS DE AGENDA (AgendaData.js)
+ * -----------------------------------------
+ * Listado estático de contactos, teléfonos y notas recopilados durante años.
+ * Se utiliza como base de datos inicial para el buscador de la Agenda.
+ */
 export const RAW_AGENDA_DATA = [
 `SPA RAQUEL (HOTEL NIVARIA LA LAGUNA)
 662646510`,

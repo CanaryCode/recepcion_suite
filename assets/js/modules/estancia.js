@@ -3,12 +3,15 @@ import { Utils } from '../core/Utils.js';
 import { estanciaService } from '../services/EstanciaService.js';
 import { sessionService } from '../services/SessionService.js';
 
-const MESES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
-let chartEstancia = null;
+/**
+ * MÓDULO DE CONTROL DE ESTANCIA (OCUPACIÓN)
+ * ----------------------------------------
+ * Registra diariamente cuántas habitaciones están ocupadas para generar estadísticas.
+ * Permite visualizar la evolución mediante gráficas de Chart.js y exportar datos a Excel.
+ */
 
-// ============================================================================
-// INICIALIZACIÓN
-// ============================================================================
+const MESES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+let chartEstancia = null; // Instancia de la gráfica actual
 
 export function inicializarEstancia() {
     const form = document.getElementById('formEstancia');
@@ -50,6 +53,11 @@ export function inicializarEstancia() {
     mostrarEstancia();
 }
 
+/**
+ * BLOQUEO DE FECHA
+ * Por seguridad, la fecha siempre es la de hoy. Este botón permite "desbloquearla" 
+ * para introducir datos de días pasados que se olvidaron registrar.
+ */
 function toggleLockFecha() {
     const input = document.getElementById('estancia_fecha');
     const icon = document.getElementById('iconLockFecha');
@@ -85,6 +93,10 @@ function cambiarVistaEstancia(vista) {
 // HANDLERS
 // ============================================================================
 
+/**
+ * GUARDAR REGISTRO
+ * Calcula habitaciones vacías restando del total y guarda en el servicio.
+ */
 function manejarSubmitEstancia(e) {
     e.preventDefault();
     const fecha = document.getElementById('estancia_fecha').value;
@@ -94,20 +106,14 @@ function manejarSubmitEstancia(e) {
     const totalHab = rangos.reduce((acc, r) => acc + (r.max - r.min + 1), 0);
     const vacias = totalHab - ocupadas;
 
-    // Guardar vía servicio
-    estanciaService.saveRegistro({
-        fecha,
-        ocupadas,
-        vacias,
-        totalHab
-    });
+    estanciaService.saveRegistro({ fecha, ocupadas, vacias, totalHab });
 
     window.showAlert("Registro guardado correctamente.", "success");
 
     mostrarEstancia();
     e.target.reset();
 
-    // Resetear bloqueo y fecha
+    // Resetear bloqueo y fecha a hoy por seguridad
     document.getElementById('estancia_fecha').value = new Date().toISOString().split('T')[0];
     document.getElementById('estancia_fecha').setAttribute('readonly', true);
     const icon = document.getElementById('iconLockFecha');
@@ -118,6 +124,10 @@ function manejarSubmitEstancia(e) {
 // RENDERIZADO
 // ============================================================================
 
+/**
+ * RENDERIZAR TABLA MENSUAL
+ * Muestra el listado de todos los días del mes y sus porcentajes de ocupación.
+ */
 function mostrarEstancia() {
     const tabla = document.getElementById('tablaEstanciaCuerpo');
     const pie = document.getElementById('tablaEstanciaPie');
@@ -185,6 +195,10 @@ function mostrarEstancia() {
     }
 }
 
+/**
+ * WIDGETS DE ESTADÍSTICAS
+ * Renderiza el resumen visual con ocupación media y pernoctaciones totales.
+ */
 function renderStatsAnual(year, promMes, totalPernoctaciones, dias) {
     const statsCont = document.getElementById('estancia_anual_stats');
     if (!statsCont) return;
@@ -205,6 +219,10 @@ function renderStatsAnual(year, promMes, totalPernoctaciones, dias) {
         </div>`;
 }
 
+/**
+ * DIBUJAR GRÁFICA EVOLUTIVA
+ * Usa Chart.js para mostrar una línea con la ocupación del mes seleccionado.
+ */
 function renderGraficaEstancia() {
     const ctx = document.getElementById('chartEstanciaEvolucion')?.getContext('2d');
     if (!ctx) return;

@@ -274,12 +274,12 @@
                 </div>
 
                 <!-- Sección de Resumen del Día Centrada -->
-                <div class="row g-3 justify-content-center mt-2">
+                <div class="row g-3 justify-content-center mt-2 d-none" id="dashboard-resumen-seccion">
                     <div class="col-md-12">
                         <h4 class="fw-bold text-secondary mb-2">Resumen del Día</h4>
                     </div>
 
-                    <div class="col-md-6 col-xl-3" id="dash-col-despertadores">
+                    <div class="col-md-6 col-xl-3 d-none" id="dash-col-despertadores">
                         <div class="card border-0 shadow-sm h-100" style="cursor: pointer;"
                             onclick="navegarA('#despertadores-content')"
                             data-bs-toggle="tooltip" data-bs-title="Ver Despertadores Pendientes">
@@ -297,7 +297,7 @@
                         </div>
                     </div>
 
-                    <div class="col-md-6 col-xl-3" id="dash-col-novedades">
+                    <div class="col-md-6 col-xl-3 d-none" id="dash-col-novedades">
                         <div class="card border-0 shadow-sm h-100" style="cursor: pointer;"
                             onclick="navegarA('#novedades-content')"
                             data-bs-toggle="tooltip" data-bs-title="Ver Novedades del Día">
@@ -315,7 +315,7 @@
                         </div>
                     </div>
 
-                    <div class="col-md-6 col-xl-3" id="dash-col-cenas">
+                    <div class="col-md-6 col-xl-3 d-none" id="dash-col-cenas">
                         <div class="card border-0 shadow-sm h-100" style="cursor: pointer;"
                             onclick="navegarA('#cena-fria-content')"
                             data-bs-toggle="tooltip" data-bs-title="Ver Cenas Frías">
@@ -334,7 +334,7 @@
                         </div>
                     </div>
 
-                    <div class="col-md-6 col-xl-3" id="dash-col-desayunos">
+                    <div class="col-md-6 col-xl-3 d-none" id="dash-col-desayunos">
                         <div class="card border-0 shadow-sm h-100" style="cursor: pointer;"
                             onclick="navegarA('#desayuno-content')"
                             data-bs-toggle="tooltip" data-bs-title="Ver Desayunos Tempranos">
@@ -352,8 +352,7 @@
                         </div>
                     </div>
 
-                    <!-- WIDGET TRANSFERS (NUEVO) -->
-                    <div class="col-md-6 col-xl-3" id="dash-col-transfers">
+                    <div class="col-md-6 col-xl-3 d-none" id="dash-col-transfers">
                         <div class="card border-0 shadow-sm h-100" style="cursor: pointer;"
                             onclick="navegarA('#transfers-content')"
                             data-bs-toggle="tooltip" data-bs-title="Ver Transfers y Taxis">
@@ -366,6 +365,25 @@
                             <div class="card-body p-0 overflow-auto" style="max-height: 200px;">
                                 <table class="table table-sm table-hover mb-0" style="font-size: 0.8rem;">
                                     <tbody id="dash-tabla-transfers"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- WIDGET ATENCIONES -->
+                    <div class="col-md-6 col-xl-3 d-none" id="dash-col-atenciones">
+                        <div class="card border-0 shadow-sm h-100" style="cursor: pointer;"
+                            onclick="navegarA('#atenciones-content')"
+                            data-bs-toggle="tooltip" data-bs-title="Ver Atenciones VIP">
+                            <div class="card-header border-0 py-2 d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0 fw-bold"><i class="bi bi-gift me-2"></i>Atenciones</h6>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-info text-dark" id="dash-count-atenciones">0</span>
+                                </div>
+                            </div>
+                            <div class="card-body p-0 overflow-auto" style="max-height: 200px;">
+                                <table class="table table-sm table-hover mb-0" style="font-size: 0.8rem;">
+                                    <tbody id="dash-tabla-atenciones"></tbody>
                                 </table>
                             </div>
                         </div>

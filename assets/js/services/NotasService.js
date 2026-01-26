@@ -1,29 +1,34 @@
 import { BaseService } from './BaseService.js';
 
+/**
+ * SERVICIO DE NOTAS PERMANENTES (NotasService)
+ * -------------------------------------------
+ * Gestiona el tablón de anuncios o notas que no caducan cada día 
+ * (ej: "Código de la puerta cambiado", "Recordar pedir llaves al 104").
+ */
 class NotasService extends BaseService {
     constructor() {
         super('riu_notas_permanentes');
     }
 
     /**
-     * Obtiene todas las notas
-     * @returns {Object[]} Array de notas
+     * OBTENER TODAS LAS NOTAS
+     * @returns {Object[]} Lista de notas guardadas.
      */
     getNotas() {
         return this.getAll();
     }
 
     /**
-     * Guarda la lista de notas
-     * @param {Object[]} notas 
+     * GUARDAR CAMBIOS
      */
     saveNotas(notas) {
         this.saveAll(notas);
     }
 
     /**
-     * Añade una nueva nota
-     * @param {Object} nota 
+     * AÑADIR NOTA
+     * Coloca la nota al principio de la lista (lo más nuevo arriba).
      */
     addNota(nota) {
         const current = this.getNotas();
@@ -32,8 +37,7 @@ class NotasService extends BaseService {
     }
 
     /**
-     * Actualiza una nota existente
-     * @param {Object} notaActualizada 
+     * ACTUALIZAR NOTA
      */
     updateNota(notaActualizada) {
         const current = this.getNotas().map(n =>
@@ -43,8 +47,7 @@ class NotasService extends BaseService {
     }
 
     /**
-     * Elimina una nota por ID
-     * @param {number|string} id 
+     * ELIMINAR NOTA
      */
     removeNota(id) {
         const current = this.getNotas().filter(n => n.id !== id);
@@ -52,9 +55,7 @@ class NotasService extends BaseService {
     }
 
     /**
-     * Obtiene una nota por ID
-     * @param {number|string} id 
-     * @returns {Object|undefined}
+     * BUSCAR POR ID
      */
     getNotaById(id) {
         return this.getNotas().find(n => n.id === id);

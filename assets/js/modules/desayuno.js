@@ -1,7 +1,10 @@
-import { APP_CONFIG } from '../core/Config.js';
-import { Utils } from '../core/Utils.js';
-import { desayunoService } from '../services/DesayunoService.js';
-import { sessionService } from '../services/SessionService.js';
+/**
+ * MÓDULO DE DESAYUNOS TEMPRANOS (desayuno.js)
+ * ------------------------------------------
+ * Gestiona las peticiones de desayuno antes de la apertura del comedor.
+ * Permite registrar la hora específica y el número de comensales, 
+ * sincronizando esta información con el dashboard y el rack visual.
+ */
 
 // ============================================================================
 // INICIALIZACIÓN
@@ -82,6 +85,11 @@ function manejarSubmitDesayuno(e) {
 // RENDERIZADO
 // ============================================================================
 
+/**
+ * RENDER TABLA PRINCIPAL
+ * Muestra el listado de desayunos ordenados por hora, facilitando el control
+ * operativo para el turno de noche/mañana.
+ */
 function mostrarDesayunos() {
     const desayunos = desayunoService.getDesayunos();
 
@@ -110,6 +118,8 @@ function mostrarDesayunos() {
         });
     }
 
+    if (window.checkDailySummaryVisibility) window.checkDailySummaryVisibility();
+
     // Tabla Principal
     const tabla = document.getElementById('tablaDesayunoActivos');
     if (!tabla) return;
@@ -135,6 +145,11 @@ function mostrarDesayunos() {
     });
 }
 
+/**
+ * VISTA RACK DE DESAYUNOS
+ * Muestra el hotel con las habitaciones coloreadas en verde si tienen 
+ * un desayuno programado para la mañana siguiente.
+ */
 function renderVistaRackDesayuno() {
     const rackCont = document.getElementById('rack-desayuno-habitaciones');
     const statsCont = document.getElementById('desayuno-stats');

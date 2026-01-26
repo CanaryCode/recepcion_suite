@@ -1,3 +1,5 @@
+// --- IMPORTACIÓN DE MÓDULOS OPERATIVOS ---
+// Cada módulo gestiona una funcionalidad específica (Agenda, Caja, etc.)
 import { inicializarAgenda } from './modules/agenda.js';
 import { inicializarCaja } from './modules/caja.js';
 import { inicializarCobro } from './modules/cobro.js';
@@ -18,41 +20,45 @@ import { inicializarSystemAlarmsUI } from './modules/system_alarms_ui.js';
 import { inicializarRack } from './modules/rack.js';
 import { inicializarConfiguracion } from './modules/configuracion.js';
 
-// Core Systems
-import { APP_CONFIG, Config } from './core/Config.js'; // Importar APP_CONFIG y Config loader
-import { Modal } from './core/Modal.js';
-import { Router } from './core/Router.js';
-import { CompLoader } from './core/CompLoader.js';
-import { Search } from './core/Search.js';
-import { sessionService } from './services/SessionService.js';
-import { Utils } from './core/Utils.js';
+// --- SISTEMAS CORE (NÚCLEO) ---
+import { APP_CONFIG, Config } from './core/Config.js'; // Cargador de configuración
+import { Modal } from './core/Modal.js';              // Gestor de ventanas modales
+import { Router } from './core/Router.js';            // Gestor de navegación entre pestañas
+import { CompLoader } from './core/CompLoader.js';    // Cargador dinámico de plantillas HTML
+import { Search } from './core/Search.js';            // Buscador global de módulos
+import { sessionService } from './services/SessionService.js'; // Gestor de usuario logueado
+import { Utils } from './core/Utils.js';              // Utilidades generales (formateo, etc.)
 
 // Expose Utils globally for inline HTML events (like togglePassword)
 window.Utils = Utils;
 
+/**
+ * PUNTO DE ENTRADA PRINCIPAL (DOMContentLoaded)
+ * Se ejecuta cuando el navegador termina de cargar el HTML básico.
+ */
 document.addEventListener('DOMContentLoaded', async () => {
-    // 0. LOAD CONFIG (CRITICAL)
+    // 0. CARGAR CONFIGURACIÓN (CRÍTICO)
+    // El sistema no puede arrancar sin saber la URL de la API o la configuración del hotel.
     const configLoaded = await Config.loadConfig();
     if (!configLoaded) {
         document.body.innerHTML = '<div style="color:red; padding:20px; text-align:center;"><h1>Error Crítico</h1><p>No se ha podido cargar la configuración (config.json).</p></div>';
         return;
     }
 
-    // 0. DIAGNÓSTICO DE STORAGE (CRÍTICO)
-    // 0. DIAGNÓSTICO DE STORAGE (CRÍTICO)
+    // Diagnóstico de Almacenamiento Local (Evita fallos silenciosos en navegadores bloqueados)
     try {
         const testKey = '__test_storage__';
         localStorage.setItem(testKey, testKey);
         localStorage.removeItem(testKey);
     } catch (e) {
         console.error("Critical Storage Error:", e);
-        alert("\u26A0\uFE0F ERROR CR\u00CDTICO: El sistema no puede guardar datos.\n\nEsto ocurre si:\n1. Est\u00E1s abriendo el archivo directamente (doble clic) en un navegador seguro como Chrome.\n2. Est\u00E1s en modo 'Inc\u00F3gnito' estricto.\n3. El almacenamiento est\u00E1 lleno.\n\nSOLUCI\u00D3N: Usa Microsoft Edge, Firefox, o instala la extensi\u00F3n 'Live Server' en VSCode.");
+        alert("⚠️ ERROR CRÍTICO: El sistema no puede guardar datos locales.");
     }
 
-    // 1. Inicializar Sistemas Core
-    Modal.init();
-    Router.init();
-    Search.init();
+    // 1. Inicializar Sistemas Base
+    Modal.init();  // Activa el soporte para ventanas modales personalizadas
+    Router.init(); // Activa la detección de cambios en las pestañas
+    Search.init(); // Activa el buscador de módulos
 
     // 2. Definir componentes a cargar
     const componentes = [
@@ -83,7 +89,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Se ha movido la lógica específica a los módulos correspondientes (Estancia, RIU, etc)
     // para mantener main.js limpio y agnóstico.
 
-    // 5. Inicialización Escalonada para mayor rapidez inicial
+    // 5. Inicialización Escalonada para mayor velocidad percibida
+    // Cargamos lo más urgente (Alarmas, Despertadores) primero.
     const modulosPrioritarios = [
         { nombre: 'Despertadores', init: inicializarDespertadores },
         { nombre: 'Novedades', init: inicializarNovedades },
@@ -100,7 +107,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         { nombre: 'Safe', init: inicializarSafe },
         { nombre: 'Estancia', init: inicializarEstancia },
         { nombre: 'Atenciones', init: inicializarAtenciones },
-        { nombre: 'Transfers', init: inicializarTransfers }, // Added Transfers here
+        { nombre: 'Transfers', init: inicializarTransfers },
         { nombre: 'Riu', init: inicializarRiu },
         { nombre: 'Ayuda', init: inicializarAyuda },
         { nombre: 'Notas Permanentes', init: inicializarNotasPermanentes },
@@ -114,43 +121,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         try { m.init(); } catch (e) { console.error(`Error en ${m.nombre}:`, e); }
     });
 
-    // Cargar secundarios en el siguiente tick
+    // Cargar secundarios después de 100ms para no bloquear el navegador
     setTimeout(() => {
         modulosSecundarios.forEach(m => {
             try { m.init(); } catch (e) { console.error(`Error en ${m.nombre}:`, e); }
         });
         
-        // 6. Inicializar Gestión de Sesión Global
-        inicializarSesionGlobal();
+        inicializarSesionGlobal(); // Inicia el selector de usuario (Recepción)
+        initGlobalTooltips();      // Activa las ayudas flotantes (Tooltips)
         
-        // 7. Inicializar Tooltips
-        initGlobalTooltips();
-        
-        // 8. NUCLEAR FIX: Limpieza forzada del buscador
-        // Asegura que no quede rastros de "-2000" por caché o scripts rogue
-        const cleanSearch = () => {
-            const s = document.getElementById('appGlobalSearchInput'); 
-            if(s) { s.value = ''; }
-        };
-        setTimeout(cleanSearch, 200);
-        setTimeout(cleanSearch, 800);
-        setTimeout(cleanSearch, 2000);
-
-        // 9. Init Tooltips (Clean slate)
-        const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-        [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
-
         console.log("Sistema completamente inicializado.");
     }, 100);
 });
 
 // MODAL LAUNCHER FUNCTION
+/**
+ * LANZADOR DE APLICACIONES (LaunchPad)
+ * Genera dinámicamente el modal con los iconos de las herramientas externas (Word, Excel, etc.)
+ */
 window.openLaunchPad = () => {
     const container = document.getElementById('launchPadGrid');
     if (!container) return;
     
     container.innerHTML = '';
-    
     const apps = APP_CONFIG.SYSTEM?.LAUNCHERS || [];
     
     if (apps.length === 0) {
@@ -174,23 +167,24 @@ window.openLaunchPad = () => {
 };
 
 // Global Launcher Function
+/**
+ * EJECUTAR APP EXTERNA
+ * Se comunica con el servidor local para pedirle que abra un programa en Windows.
+ */
 window.launchExternalApp = async (command) => {
     try {
-        const response = await fetch('http://localhost:3000/api/launch', {
+        const response = await fetch('/api/launch', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ command })
         });
         
         if (!response.ok) throw new Error('Server error');
-        
-        // Visual feedback
-        // Maybe a small toast? For now just log
-        console.log("App launched:", command);
+        console.log("Programa iniciado:", command);
         
     } catch (e) {
-        console.error("Launch failed:", e);
-        alert("Error al lanzar aplicación. Asegúrate de que el servidor Node.js está corriendo.");
+        console.error("Fallo al lanzar:", e);
+        alert("Error al lanzar aplicación. El servidor Node.js no responde.");
     }
 };
 
@@ -442,5 +436,32 @@ window.navegarA = (tabSelector) => {
             // This is a rough fallback, better to use the trigger
             tabPane.classList.add('show', 'active');
         }
+    }
+};
+
+/**
+ * CONTROL DE VISIBILIDAD DEL DASHBOARD
+ * Verifica si alguno de los módulos del "Resumen del Día" tiene registros activos.
+ * Si todos están vacíos (u ocultos), esconde la sección completa para limpiar la UI.
+ */
+window.checkDailySummaryVisibility = () => {
+    const section = document.getElementById('dashboard-resumen-seccion');
+    if (!section) return;
+
+    // Buscamos todas las columnas de resumen (dash-col-*)
+    const modules = section.querySelectorAll('[id^="dash-col-"]');
+    let hasVisibleData = false;
+
+    modules.forEach(mod => {
+        if (!mod.classList.contains('d-none')) {
+            hasVisibleData = true;
+        }
+    });
+
+    // Mostramos u ocultamos la sección principal
+    if (hasVisibleData) {
+        section.classList.remove('d-none');
+    } else {
+        section.classList.add('d-none');
     }
 };

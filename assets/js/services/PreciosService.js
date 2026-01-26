@@ -1,14 +1,25 @@
 import { BaseService } from './BaseService.js';
 import { RAW_PRECIOS_DATA } from '../data/PreciosData.js';
 
+/**
+ * SERVICIO DE TARIFAS Y PRECIOS (PreciosService)
+ * ---------------------------------------------
+ * Gestiona el listado de cargos extra que se pueden aplicar 
+ * (ej: Parking, Perros, Suplementos, etc.).
+ */
 class PreciosService extends BaseService {
     constructor() {
+        // Al arrancar, si no hay datos, carga los "maestros" desde RAW_PRECIOS_DATA
         super('riu_precios', RAW_PRECIOS_DATA);
         this.checkAndSeedDefaults();
     }
 
+    /**
+     * VERIFICACIÓN DE DATOS MAESTROS
+     * Comprueba que todos los productos obligatorios del hotel estén en la lista.
+     * Si falta alguno nuevo que se haya añadido al código, lo inyecta automáticamente.
+     */
     checkAndSeedDefaults() {
-        // Force merge if defaults are missing in current data
         const current = this.getPrecios();
         let changed = false;
 
@@ -21,30 +32,27 @@ class PreciosService extends BaseService {
         });
 
         if (changed) {
-            console.log("Seeding missing default products...");
+            console.log("Actualizando lista de precios con nuevos servicios maestros...");
             this.savePrecios(current);
         }
     }
 
     /**
-     * Obtiene todos los precios
-     * @returns {Object[]} Array de precios
+     * OBTENER TODOS LOS PRECIOS
      */
     getPrecios() {
         return this.getAll();
     }
 
     /**
-     * Guarda la lista de precios
-     * @param {Object[]} precios 
+     * GUARDAR LISTA
      */
     savePrecios(precios) {
         this.saveAll(precios);
     }
 
     /**
-     * Añade un nuevo precio
-     * @param {Object} precio 
+     * AÑADIR NUEVO CARGO
      */
     addPrecio(precio) {
         const current = this.getPrecios();
@@ -53,8 +61,7 @@ class PreciosService extends BaseService {
     }
 
     /**
-     * Actualiza un precio existente
-     * @param {Object} precioActualizado 
+     * ACTUALIZAR CARGO
      */
     updatePrecio(precioActualizado) {
         const current = this.getPrecios().map(p =>
@@ -64,8 +71,7 @@ class PreciosService extends BaseService {
     }
 
     /**
-     * Elimina un precio por ID
-     * @param {number|string} id 
+     * ELIMINAR CARGO
      */
     removePrecio(id) {
         const current = this.getPrecios().filter(p => p.id !== id);
@@ -73,17 +79,15 @@ class PreciosService extends BaseService {
     }
 
     /**
-     * Obtiene un precio por ID
-     * @param {number|string} id 
-     * @returns {Object|undefined}
+     * BUSCAR POR ID
      */
     getPrecioById(id) {
         return this.getPrecios().find(p => p.id === id);
     }
 
     /**
-     * Alterna el estado de favorito de un precio
-     * @param {number|string} id 
+     * MARCAR/DESMARCAR FAVORITO
+     * Los favoritos aparecen destacados en el teclado de facturación rápida.
      */
     toggleFavorito(id) {
         const current = this.getPrecios().map(p =>

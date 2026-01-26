@@ -1,7 +1,10 @@
-import { APP_CONFIG } from '../core/Config.js';
-import { Utils } from '../core/Utils.js';
-import { sessionService } from '../services/SessionService.js';
-import { cenaFriaService } from '../services/CenaFriaService.js';
+/**
+ * MÓDULO DE CENAS FRÍAS (cena_fria.js)
+ * -----------------------------------
+ * Gestiona los pedidos de picnic o cena embolsada para clientes que llegan tarde
+ * o salen temprano. Sincroniza los datos con el servicio de persistencia y 
+ * permite la visualización rápida por habitación.
+ */
 
 // ============================================================================
 // INICIALIZACIÓN
@@ -57,6 +60,10 @@ function cambiarVistaCenaFria(vista) {
 // HANDLERS
 // ============================================================================
 
+/**
+ * REGISTRO DE CENA FRÍA
+ * Valida la habitación y el usuario antes de guardar el pedido en el servicio.
+ */
 function manejarSubmitCenaFria(e) {
     e.preventDefault();
     const habNum = document.getElementById('cena_hab').value.trim().padStart(3, '0');
@@ -114,6 +121,8 @@ function mostrarCenasFrias() {
         });
     }
 
+    if (window.checkDailySummaryVisibility) window.checkDailySummaryVisibility();
+
     const tabla = document.getElementById('tablaCenaActivos');
     if (!tabla) return;
     tabla.innerHTML = '';
@@ -138,6 +147,11 @@ function mostrarCenasFrias() {
     });
 }
 
+/**
+ * VISTA RACK DE CENAS FRÍAS
+ * Muestra el hotel planta por planta, destacando en color púrpura las habitaciones 
+ * que tienen pendiente la entrega de una cena fría.
+ */
 function renderVistaRackCenaFria() {
     const rackCont = document.getElementById('rack-cena-habitaciones');
     const statsCont = document.getElementById('cena-stats');

@@ -3,7 +3,15 @@ import { Utils } from '../core/Utils.js';
 import { safeService } from '../services/SafeService.js';
 import { sessionService } from '../services/SessionService.js';
 
-let safeChartInstance = null;
+/**
+ * MÓDULO DE ALQUILER DE CAJAS FUERTES (safe.js)
+ * --------------------------------------------
+ * Gestiona los contratos de alquiler de cajas fuertes de las habitaciones.
+ * Calcula automáticamente la recaudación estimada basada en los días transcurridos
+ * y el precio diario configurado.
+ */
+
+let safeChartInstance = null; // Instancia de la gráfica de ocupación de cajas
 
 // ============================================================================
 // INICIALIZACIÓN
@@ -100,6 +108,10 @@ function manejarSubmitSafe(e) {
 // RENDERIZADO
 // ============================================================================
 
+/**
+ * CÁLCULO DE DÍAS Y COSTES
+ * Calcula la diferencia en días desde la fecha de inicio hasta hoy.
+ */
 function calcularDias(fechaInicio) {
     const inicio = new Date(fechaInicio);
     const hoy = new Date();
@@ -141,6 +153,11 @@ function mostrarSafeRentals() {
     });
 }
 
+/**
+ * VISTA RACK DE CAJAS FUERTES
+ * Muestra el hotel planta por planta, marcando en azul las habitaciones que 
+ * tienen el servicio de caja fuerte activo en el momento.
+ */
 function renderVistaRackSafe() {
     const rackCont = document.getElementById('rack-safe-habitaciones');
     const statsCont = document.getElementById('safe-stats');

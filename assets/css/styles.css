@@ -1,7 +1,18 @@
+/* 
+   ORQUESTADOR GLOBAL DE ESTILOS (styles.css)
+   ------------------------------------------
+   Punto de entrada único que importa y organiza la jerarquía de estilos.
+   Estructura:
+   1. Google Fonts: Tipografía Inter.
+   2. base.css: Fundamentos y variables.
+   3. components.css: Elementos UI reutilizables.
+   4. modules.css: Lógica visual operativa.
+   5. Fixes Locales: Ajustes específicos de Layout y Responsive.
+*/
+
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
-/* === ORQUESTADOR DE ESTILOS === */
-/* Importamos los módulos en orden específico */
+/* === IMPORTACIÓN DE HOJAS DE ESTILO === */
 
 @import 'base.css';
 /* Variables, Reset y Tipografía */

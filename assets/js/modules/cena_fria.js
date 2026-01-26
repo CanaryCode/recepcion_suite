@@ -1,6 +1,7 @@
 import { APP_CONFIG } from '../core/Config.js';
 import { Utils } from '../core/Utils.js';
 import { sessionService } from '../services/SessionService.js';
+import { cenaFriaService } from '../services/CenaFriaService.js';
 
 // ============================================================================
 // INICIALIZACIÓN
@@ -70,10 +71,10 @@ function manejarSubmitCenaFria(e) {
     const validHabs = Utils.getHabitaciones().map(h => h.num);
     if (!validHabs.includes(habNum)) { alert(`Error: La habitación ${habNum} no existe.`); return; }
 
-    // 3. Guardar (LocalStorage directo por ahora, idealmente Service)
-    const cenas = JSON.parse(localStorage.getItem('riu_cenas_frias')) || {};
+    // 3. Guardar con Servicio (Persistence + Backup)
+    const cenas = cenaFriaService.getCenas();
     cenas[habNum] = { pax, obs, autor };
-    localStorage.setItem('riu_cenas_frias', JSON.stringify(cenas));
+    cenaFriaService.saveCenas(cenas);
 
     e.target.reset();
     const btnSubmit = e.target.querySelector('button[type="submit"]');
@@ -87,7 +88,7 @@ function manejarSubmitCenaFria(e) {
 // ============================================================================
 
 function mostrarCenasFrias() {
-    const cenas = JSON.parse(localStorage.getItem('riu_cenas_frias')) || {};
+    const cenas = cenaFriaService.getCenas();
 
     // Actualizar Dashboard
     const dashCol = document.getElementById('dash-col-cenas');
@@ -142,7 +143,7 @@ function renderVistaRackCenaFria() {
     const statsCont = document.getElementById('cena-stats');
     if (!rackCont || !statsCont) return;
 
-    const cenas = JSON.parse(localStorage.getItem('riu_cenas_frias')) || {};
+    const cenas = cenaFriaService.getCenas();
     const rangos = APP_CONFIG.HOTEL.STATS_CONFIG.RANGOS;
     let totalPax = 0;
 
@@ -197,7 +198,7 @@ function imprimirCenasFrias() {
 }
 
 window.prepararEdicionCenaFria = (hab) => {
-    const cenas = JSON.parse(localStorage.getItem('riu_cenas_frias')) || {};
+    const cenas = cenaFriaService.getCenas();
     const data = cenas[hab];
     if (data) {
         document.getElementById('cena_hab').value = hab;
@@ -211,9 +212,9 @@ window.prepararEdicionCenaFria = (hab) => {
 };
 
 window.eliminarCenaFria = (hab) => {
-    const cenas = JSON.parse(localStorage.getItem('riu_cenas_frias')) || {};
+    const cenas = cenaFriaService.getCenas();
     delete cenas[hab];
-    localStorage.setItem('riu_cenas_frias', JSON.stringify(cenas));
+    cenaFriaService.saveCenas(cenas);
     mostrarCenasFrias();
 };
 
@@ -232,7 +233,7 @@ window.irACenaFria = (hab) => {
 
 window.limpiarCenasFrias = async () => {
     if (await window.showConfirm("¿Deseas borrar todos los pedidos de cena fría?")) {
-        localStorage.removeItem('riu_cenas_frias');
+        cenaFriaService.clearCenas();
         mostrarCenasFrias();
     }
 };

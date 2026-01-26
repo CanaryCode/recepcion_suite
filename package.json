@@ -1,0 +1,13 @@
+{
+  "name": "recepcion-suite-v2",
+  "version": "4.0.0",
+  "description": "Sistema de Gestión Hotelera - Recepción Suite",
+  "main": "server/app.js",
+  "scripts": {
+    "start": "node server/app.js",
+    "dev": "node --watch server/app.js"
+  },
+  "author": "A. Jesús",
+  "license": "Private",
+  "dependencies": {}
+}

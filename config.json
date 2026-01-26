@@ -3,7 +3,8 @@
     "USE_API": false,
     "USE_SYNC_SERVER": true,
     "API_URL": "http://localhost:3000/api",
-    "SYNC_INTERVAL": 10000
+    "SYNC_INTERVAL": 10000,
+    "LAUNCHERS": []
   },
   "HOTEL": {
     "NOMBRE": "Hotel Garoé",
@@ -78,5 +79,8 @@
   },
   "SAFE": {
     "PRECIO_DIARIO": 2.0
+  },
+  "TRANSFERS": {
+    "DESTINOS": ["Aeropuerto Norte", "Aeropuerto Sur"]
   }
 }

@@ -63,6 +63,70 @@
             </div>
         </div>
 
+        <!-- 1.1 Transfers & Destinos -->
+        <div class="card mb-4 shadow-sm border-0">
+            <div class="card-header py-3 bg-white">
+                <h6 class="mb-0 fw-bold text-primary">
+                    <i class="bi bi-airplane-engines-fill me-2"></i>Transfers & Destinos
+                </h6>
+            </div>
+            <div class="card-body">
+                <p class="small text-muted mb-3">Destinos habituales para mostrar en las opciones de "Transfers".</p>
+                <div id="list-destinos-transfers" class="d-flex flex-wrap gap-2 mb-3"></div>
+                
+                <div class="input-group input-group-sm" style="max-width: 400px;">
+                    <input type="text" id="newDestinoTransfer" class="form-control" placeholder="Nuevo destino (ej: Aeropuerto)...">
+                    <button class="btn btn-outline-primary" type="button" onclick="addDestinoTransfer()">
+                        <i class="bi bi-plus-lg"></i> Añadir
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 1.2 Ejecutables / Apps Externas -->
+        <div class="card mb-4 shadow-sm border-0">
+            <div class="card-header py-3 bg-white">
+                <h6 class="mb-0 fw-bold text-primary">
+                    <i class="bi bi-app-indicator me-2"></i>Accesos Rápidos (Apps)
+                </h6>
+            </div>
+            <div class="card-body">
+                <p class="small text-muted mb-3">Botones para lanzar aplicaciones externas desde el dashboard. (Requiere servidor Node.js local).</p>
+                
+                <div id="list-app-launchers" class="row g-2 mb-3"></div>
+                
+                <div class="row g-2 align-items-end p-3 bg-light rounded border">
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold">Nombre Botón</label>
+                        <input type="text" id="newLauncherLabel" class="form-control form-control-sm" placeholder="Ej: Word">
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label small fw-bold">Ruta Ejecutable (.exe)</label>
+                        <div class="input-group input-group-sm">
+                            <input type="text" id="newLauncherPath" class="form-control" placeholder="Ej: C:\Windows\System32\notepad.exe">
+                            <button class="btn btn-outline-secondary" type="button" onclick="pickLauncherFile()">
+                                <i class="bi bi-folder2-open"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-bold">Icono</label>
+                        <div class="input-group input-group-sm">
+                            <input type="text" id="newLauncherIcon" class="form-control" placeholder="Ej: box-arrow-up-right">
+                            <button class="btn btn-outline-secondary" type="button" onclick="openIconSelector('newLauncherIcon')">
+                                <i class="bi bi-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-primary btn-sm w-100 fw-bold" type="button" onclick="addAppLauncher()">
+                            <i class="bi bi-plus-lg"></i> Añadir
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- 2. Hotel & Sistema -->
         <div class="card mb-4 shadow-sm border-0">
             <div class="card-header py-3 bg-white">
@@ -191,4 +255,30 @@
         </div>
         
     </form>
+    </form>
+</div>
+
+<!-- MODAL NAVEGADOR DE ARCHIVOS WEB (Replazo del nativo) -->
+<div class="modal fade" id="modalFileBrowser" tabindex="-1" aria-hidden="true" style="z-index: 10060;">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-dark text-white py-2">
+                <h6 class="modal-title fw-bold"><i class="bi bi-folder2-open me-2"></i>Explorador del Sistema</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="bg-light p-2 border-bottom d-flex gap-2 align-items-center">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="FileBrowser.up()"><i class="bi bi-arrow-up"></i></button>
+                    <input type="text" id="fb-current-path" class="form-control form-control-sm fw-bold" readonly value="C:\">
+                </div>
+                <div id="fb-list" class="list-group list-group-flush overflow-auto" style="height: 350px;">
+                    <!-- Items -->
+                </div>
+            </div>
+            <div class="modal-footer py-1 bg-light">
+                <small class="text-muted me-auto">Selecciona un archivo .exe</small>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+            </div>
+        </div>
+    </div>
 </div>

@@ -39,22 +39,21 @@
     gap: 5px;
     /* Reducir gap */
     margin-bottom: 2rem !important;
-    /* justify-content: center; -- ELIMINADO para ganar espacio */
-    /* Centrar el menú para mayor elegancia */
     position: relative;
-    /* Necesario para z-index */
-    /* Padding derecho eliminado para usar Flexbox correctamente */
     z-index: 9999;
-    flex-wrap: nowrap;
-    /* IMPEDIR que baje de línea */
-    overflow: visible;
-    /* IMPORTANTE: Permitir que los dropdowns salgan del contenedor */
-    padding-right: 10px;
-    /* Pequeño margen final */
-    align-items: center;
-    /* Alinear verticalmente todo */
-    scrollbar-width: none;
-    /* Ocultar scrollbar en Firefox */
+    justify-content: center !important; /* CENTRADO DE MENÚ */
+    flex-wrap: nowrap; /* IMPEDIR que baje de línea */
+    overflow: visible; /* IMPORTANTE: Permitir que los dropdowns salgan del contenedor */
+    padding-right: 10px; /* Pequeño margen final */
+    align-items: center; /* Alinear verticalmente todo */
+    scrollbar-width: none; /* Ocultar scrollbar en Firefox */
+}
+
+/* FIX: Contenedor centrado globalmente (App centrada) */
+.container {
+    max-width: 96% !important; /* Ancho cómodo */
+    margin-left: auto !important;
+    margin-right: auto !important; /* Centrado estándar */
 }
 
 .nav-link {

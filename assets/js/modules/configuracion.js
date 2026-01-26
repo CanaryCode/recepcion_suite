@@ -1,26 +1,21 @@
 import { APP_CONFIG, Config } from '../core/Config.js';
 import { Utils } from '../core/Utils.js';
 import { Modal } from '../core/Modal.js';
+import { IconSelector } from '../core/IconSelector.js';
 
 let moduloInicializado = false;
-let tempConfig = null; // Copia local para editar
+let tempConfig = null;
 
 export function inicializarConfiguracion() {
     console.log("Inicializando módulo Configuración...");
-    // Siempre recargar al abrir para asegurar frescura
     renderizarInterfaz();
     
-    if (moduloInicializado) {
-        console.log("Módulo ya inicializado (eventos ok).");
-        return;
-    }
+    if (moduloInicializado) return;
     configurarEventos();
     moduloInicializado = true;
 }
 
 function renderizarInterfaz() {
-    console.log("Renderizando interfaz config...");
-    // Clonar config actual para no modificar APP_CONFIG directamente hasta guardar
     try {
         tempConfig = JSON.parse(JSON.stringify(APP_CONFIG));
     } catch (e) {
@@ -34,92 +29,95 @@ function renderizarInterfaz() {
     if (!tempConfig.CAJA) tempConfig.CAJA = {};
     if (!tempConfig.HOTEL.STATS_CONFIG) tempConfig.HOTEL.STATS_CONFIG = { RANGOS: [], FILTROS: {} };
     if (!tempConfig.HOTEL.STATS_CONFIG.FILTROS) tempConfig.HOTEL.STATS_CONFIG.FILTROS = {};
+    if (!tempConfig.SYSTEM) tempConfig.SYSTEM = {}; // Ensure System exists
 
-    console.log("Config loaded for edit:", tempConfig);
+    // Defaults for Filters if empty
+    if (!tempConfig.HOTEL.STATS_CONFIG.FILTROS.TIPOS || tempConfig.HOTEL.STATS_CONFIG.FILTROS.TIPOS.length === 0) {
+        tempConfig.HOTEL.STATS_CONFIG.FILTROS.TIPOS = [
+            { label: "Estándar", icon: "🛏️" }, { label: "Doble Superior", icon: "🌟" }, 
+            { label: "Suite Estándar", icon: "🛋️" }, { label: "Master Suite", icon: "👑" }
+        ];
+    }
+    if (!tempConfig.HOTEL.STATS_CONFIG.FILTROS.VISTAS || tempConfig.HOTEL.STATS_CONFIG.FILTROS.VISTAS.length === 0) {
+        tempConfig.HOTEL.STATS_CONFIG.FILTROS.VISTAS = [
+            { label: "Vista Mar", icon: "🌊" }, { label: "Vista Piscina", icon: "🏊" }, { label: "Vista Calle", icon: "🏙️" }
+        ];
+    }
+    if (!tempConfig.HOTEL.STATS_CONFIG.FILTROS.CARACTERISTICAS || tempConfig.HOTEL.STATS_CONFIG.FILTROS.CARACTERISTICAS.length === 0) {
+        tempConfig.HOTEL.STATS_CONFIG.FILTROS.CARACTERISTICAS = [
+            { label: "Sofá Cama", icon: "🛋️" }, { label: "Cheslong", icon: "🛋️" }, 
+            { label: "Sofá Estándar", icon: "🛋️" }, { label: "Adaptada", icon: "♿" }, 
+            { label: "Comunicada", icon: "↔️" }, { label: "Ruidosa", icon: "🔊" }, { label: "Tranquila", icon: "🔇" }
+        ];
+    }
 
-    // ==========================================
-    // MIGRATION / BOOTSTRAP LOGIC
-    // ==========================================
+    // Helper migration for string->object
     const migrate = (list, defaultIcon) => {
         if (!list) return [];
         return list.map(item => (typeof item === 'string' ? { label: item, icon: defaultIcon } : item));
     };
+    tempConfig.HOTEL.STATS_CONFIG.FILTROS.TIPOS = migrate(tempConfig.HOTEL.STATS_CONFIG.FILTROS.TIPOS, "🛏️");
+    tempConfig.HOTEL.STATS_CONFIG.FILTROS.VISTAS = migrate(tempConfig.HOTEL.STATS_CONFIG.FILTROS.VISTAS, "👁️");
+    tempConfig.HOTEL.STATS_CONFIG.FILTROS.CARACTERISTICAS = migrate(tempConfig.HOTEL.STATS_CONFIG.FILTROS.CARACTERISTICAS, "✨");
 
-    // 1. Tipos
-    if (!tempConfig.HOTEL.STATS_CONFIG.FILTROS.TIPOS || tempConfig.HOTEL.STATS_CONFIG.FILTROS.TIPOS.length === 0) {
-        tempConfig.HOTEL.STATS_CONFIG.FILTROS.TIPOS = [
-            { label: "Estándar", icon: "🛏️" }, 
-            { label: "Doble Superior", icon: "🌟" }, 
-            { label: "Suite Estándar", icon: "🛋️" }, 
-            { label: "Master Suite", icon: "👑" }
-        ];
-    } else {
-        tempConfig.HOTEL.STATS_CONFIG.FILTROS.TIPOS = migrate(tempConfig.HOTEL.STATS_CONFIG.FILTROS.TIPOS, "🛏️");
-    }
 
-    // 2. Vistas
-    if (!tempConfig.HOTEL.STATS_CONFIG.FILTROS.VISTAS || tempConfig.HOTEL.STATS_CONFIG.FILTROS.VISTAS.length === 0) {
-        tempConfig.HOTEL.STATS_CONFIG.FILTROS.VISTAS = [
-            { label: "Vista Mar", icon: "🌊" }, 
-            { label: "Vista Piscina", icon: "🏊" }, 
-            { label: "Vista Calle", icon: "🏙️" }
-        ];
-    } else {
-        tempConfig.HOTEL.STATS_CONFIG.FILTROS.VISTAS = migrate(tempConfig.HOTEL.STATS_CONFIG.FILTROS.VISTAS, "👁️");
-    }
-
-    // 3. Características
-    if (!tempConfig.HOTEL.STATS_CONFIG.FILTROS.CARACTERISTICAS || tempConfig.HOTEL.STATS_CONFIG.FILTROS.CARACTERISTICAS.length === 0) {
-        tempConfig.HOTEL.STATS_CONFIG.FILTROS.CARACTERISTICAS = [
-            { label: "Sofá Cama", icon: "🛋️" }, 
-            { label: "Cheslong", icon: "🛋️" }, 
-            { label: "Sofá Estándar", icon: "🛋️" }, 
-            { label: "Adaptada", icon: "♿" }, 
-            { label: "Comunicada", icon: "↔️" }, 
-            { label: "Ruidosa", icon: "🔊" }, 
-            { label: "Tranquila", icon: "🔇" }
-        ];
-    } else {
-        tempConfig.HOTEL.STATS_CONFIG.FILTROS.CARACTERISTICAS = migrate(tempConfig.HOTEL.STATS_CONFIG.FILTROS.CARACTERISTICAS, "✨");
-    }
-
-    // 1. Recepcionistas (Render)
+    // Render steps
     renderRecepcionistas();
-
-    // 2. Hotel
+    
     Utils.setVal('conf_hotel_nombre', tempConfig.HOTEL?.NOMBRE || '');
     Utils.setVal('conf_api_url', tempConfig.SYSTEM?.API_URL || '');
-    Utils.setVal('conf_admin_pass', tempConfig.SYSTEM?.ADMIN_PASSWORD || ''); // Password
+    Utils.setVal('conf_admin_pass', tempConfig.SYSTEM?.ADMIN_PASSWORD || '');
     Utils.setVal('conf_safe_precio', tempConfig.SAFE?.PRECIO_DIARIO || 2.00);
-
-    // 3. Caja
-    Utils.setVal('conf_caja_fondo', tempConfig.CAJA?.FONDO !== undefined ? tempConfig.CAJA.FONDO : -2000.00); // Fondo Caja
-
-    // 4. Habitaciones
-    if (!tempConfig.HOTEL.STATS_CONFIG) tempConfig.HOTEL.STATS_CONFIG = { RANGOS: [], FILTROS: {} };
-    if (!tempConfig.HOTEL.STATS_CONFIG.FILTROS) tempConfig.HOTEL.STATS_CONFIG.FILTROS = {};
-
-    // Defaults if empty (Bootstraping from RackService logic)
-    if (!tempConfig.HOTEL.STATS_CONFIG.FILTROS.TIPOS || tempConfig.HOTEL.STATS_CONFIG.FILTROS.TIPOS.length === 0) {
-        tempConfig.HOTEL.STATS_CONFIG.FILTROS.TIPOS = ["Estándar", "Doble Superior", "Suite Estándar", "Master Suite"];
-    }
-    if (!tempConfig.HOTEL.STATS_CONFIG.FILTROS.VISTAS || tempConfig.HOTEL.STATS_CONFIG.FILTROS.VISTAS.length === 0) {
-        tempConfig.HOTEL.STATS_CONFIG.FILTROS.VISTAS = ["Vista Mar", "Vista Piscina", "Vista Calle"];
-    }
-    if (!tempConfig.HOTEL.STATS_CONFIG.FILTROS.CARACTERISTICAS || tempConfig.HOTEL.STATS_CONFIG.FILTROS.CARACTERISTICAS.length === 0) {
-        tempConfig.HOTEL.STATS_CONFIG.FILTROS.CARACTERISTICAS = ["Sofá Cama", "Cheslong", "Sofá Estándar", "Adaptada", "Comunicada", "Ruidosa", "Tranquila"];
-    }
+    Utils.setVal('conf_caja_fondo', tempConfig.CAJA?.FONDO !== undefined ? tempConfig.CAJA.FONDO : -2000.00);
 
     renderRangos();
     renderFiltros('TIPOS', 'list-filtros-tipos');
     renderFiltros('VISTAS', 'list-filtros-vistas');
     renderFiltros('CARACTERISTICAS', 'list-filtros-carac');
+    renderDestinosTransfers();
+    renderAppLaunchers();
+}
+
+function renderAppLaunchers() {
+    const container = document.getElementById('list-app-launchers');
+    if (!container) return;
+    if (!tempConfig.SYSTEM.LAUNCHERS) tempConfig.SYSTEM.LAUNCHERS = [];
+
+    container.innerHTML = tempConfig.SYSTEM.LAUNCHERS.map((l, index) => `
+        <div class="col-md-6">
+            <div class="border rounded p-2 d-flex align-items-center justify-content-between bg-white">
+                <div class="d-flex align-items-center text-truncate">
+                    <i class="bi bi-${l.icon} fs-4 me-2 text-primary"></i>
+                    <div class="text-truncate">
+                        <div class="fw-bold small">${l.label}</div>
+                        <div class="text-muted" style="font-size: 0.65rem;">${l.path}</div>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-danger border-0" 
+                    onclick="removeAppLauncher(${index})"><i class="bi bi-trash"></i></button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function renderDestinosTransfers() {
+    const container = document.getElementById('list-destinos-transfers');
+    if (!container) return;
+    if (!tempConfig.TRANSFERS) tempConfig.TRANSFERS = { DESTINOS: [] };
+    if (!tempConfig.TRANSFERS.DESTINOS) tempConfig.TRANSFERS.DESTINOS = [];
+
+    container.innerHTML = tempConfig.TRANSFERS.DESTINOS.map(d => `
+        <div class="badge bg-light text-dark border p-2 d-flex align-items-center">
+            <span class="fs-6 me-2">${d}</span>
+            <button type="button" class="btn-close" style="width: 0.5em; height: 0.5em;" 
+                onclick="removeDestinoTransfer('${d}')"></button>
+        </div>
+    `).join('');
 }
 
 function renderRecepcionistas() {
     const list = document.getElementById('config-recepcionistas-list');
     if (!list) return;
-
     list.innerHTML = (tempConfig.HOTEL.RECEPCIONISTAS || []).map(nombre => `
         <div class="badge bg-light text-dark border p-2 d-flex align-items-center">
             <span class="fs-6">${nombre}</span>
@@ -129,112 +127,14 @@ function renderRecepcionistas() {
     `).join('');
 }
 
-function configurarEventos() {
-    // Exponer funciones globales para el HTML
-    window.addRecepcionista = () => {
-        const input = document.getElementById('newRecepcionista');
-        const nombre = input.value.trim();
-        if (!tempConfig.HOTEL) tempConfig.HOTEL = { RECEPCIONISTAS: [] };
-        if (!tempConfig.HOTEL.RECEPCIONISTAS) tempConfig.HOTEL.RECEPCIONISTAS = [];
-
-        if (nombre && !tempConfig.HOTEL.RECEPCIONISTAS.includes(nombre)) {
-            tempConfig.HOTEL.RECEPCIONISTAS.push(nombre);
-            renderRecepcionistas();
-            input.value = '';
-            input.focus();
-        }
-    };
-
-    window.removeRecepcionista = (nombre) => {
-        tempConfig.HOTEL.RECEPCIONISTAS = tempConfig.HOTEL.RECEPCIONISTAS.filter(n => n !== nombre);
-        renderRecepcionistas();
-    };
-
-    window.saveConfigLocal = async () => {
-        try {
-            updateTempFromInputs();
-            
-            // Guardar en LocalStorage (Persistencia navegador)
-            localStorage.setItem('app_config_override', JSON.stringify(tempConfig));
-            
-            // Actualizar memoria viva
-            Config.updateMemory(tempConfig);
-            
-            await Modal.showAlert("✅ Configuración guardada en este navegador.<br>Para que sea permanente en todos los equipos, descarga el archivo JSON.", "success");
-            
-            // Recargar para aplicar cambios globales (ej: menús)
-            setTimeout(() => location.reload(), 1500);
-            
-        } catch (e) {
-            console.error(e);
-            Modal.showAlert("Error al guardar configuración", "error");
-        }
-    };
-
-    window.exportConfig = () => {
-        updateTempFromInputs();
-        const jsonString = JSON.stringify(tempConfig, null, 4);
-        const blob = new Blob([jsonString], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = "config.json";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        
-        Modal.showAlert("📂 Archivo <b>config.json</b> descargado.<br><br>Copia este archivo a la carpeta raíz de la aplicación para hacer los cambios permanentes.", "info");
-    };
-
-    window.resetConfigToDefault = async () => {
-        if (await Modal.showConfirm("¿Estás seguro? Se borrarán tus personalizaciones locales.")) {
-            localStorage.removeItem('app_config_override');
-            location.reload();
-        }
-    };
-}
-
-function updateTempFromInputs() {
-    // Hotel & System
-    if(!tempConfig.HOTEL) tempConfig.HOTEL = {};
-    tempConfig.HOTEL.NOMBRE = document.getElementById('conf_hotel_nombre').value;
-    
-    if(!tempConfig.SYSTEM) tempConfig.SYSTEM = {};
-    tempConfig.SYSTEM.API_URL = document.getElementById('conf_api_url').value;
-    tempConfig.SYSTEM.ADMIN_PASSWORD = document.getElementById('conf_admin_pass').value; // Nueva Clave
-    
-    if(!tempConfig.SAFE) tempConfig.SAFE = {};
-    tempConfig.SAFE.PRECIO_DIARIO = parseFloat(document.getElementById('conf_safe_precio').value) || 0;
-
-    // Caja
-    if(!tempConfig.CAJA) tempConfig.CAJA = {};
-    const fondoElement = document.getElementById('conf_caja_fondo');
-    if (fondoElement) {
-        tempConfig.CAJA.FONDO = parseFloat(fondoElement.value) || 0;
-    }
-
-    renderRangos();
-    renderFiltros('TIPOS', 'list-filtros-tipos');
-    renderFiltros('VISTAS', 'list-filtros-vistas');
-    renderFiltros('CARACTERISTICAS', 'list-filtros-carac');
-}
-
-// ==========================================
-// LOGICA DE HABITACIONES (RANGOS & FILTROS)
-// ==========================================
-
 function renderRangos() {
     const tbody = document.getElementById('config-rangos-table');
     if (!tbody) return;
-
     const rangos = tempConfig.HOTEL?.STATS_CONFIG?.RANGOS || [];
     let totalRooms = 0;
 
     tbody.innerHTML = rangos.map((r, index) => {
-        const count = (r.max - r.min) + 1;
-        totalRooms += count;
+        totalRooms += (r.max - r.min) + 1;
         return `
         <tr>
             <td>PB ${r.planta}</td>
@@ -245,11 +145,9 @@ function renderRangos() {
                     <i class="bi bi-trash"></i>
                 </button>
             </td>
-        </tr>
-        `;
+        </tr>`;
     }).join('');
 
-    // Update total count display
     const totalDisplay = document.getElementById('total-rooms-count');
     if(totalDisplay) totalDisplay.textContent = totalRooms;
 }
@@ -257,12 +155,10 @@ function renderRangos() {
 function renderFiltros(type, containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
-
     if (!tempConfig.HOTEL.STATS_CONFIG.FILTROS) tempConfig.HOTEL.STATS_CONFIG.FILTROS = {};
     const list = tempConfig.HOTEL.STATS_CONFIG.FILTROS[type] || [];
 
     container.innerHTML = list.map(item => {
-        // Handle migration gracefully if item is string
         const label = item.label || item;
         const icon = item.icon || '';
         return `
@@ -271,79 +167,302 @@ function renderFiltros(type, containerId) {
             <span class="me-2">${label}</span>
             <button type="button" class="btn-close" style="width: 0.4em; height: 0.4em;" 
                 onclick="removeFilter('${type}', '${label}')"></button>
-        </div>
-        `;
+        </div>`;
     }).join('');
 }
 
-// Event hooks for Rooms
-window.addRango = () => {
-    const planta = parseInt(document.getElementById('newRangePlanta').value);
-    const min = parseInt(document.getElementById('newRangeMin').value);
-    const max = parseInt(document.getElementById('newRangeMax').value);
-
-    if (isNaN(planta) || isNaN(min) || isNaN(max)) return;
-
-    if (!tempConfig.HOTEL.STATS_CONFIG) tempConfig.HOTEL.STATS_CONFIG = { RANGOS: [] };
-    if (!tempConfig.HOTEL.STATS_CONFIG.RANGOS) tempConfig.HOTEL.STATS_CONFIG.RANGOS = [];
-
-    tempConfig.HOTEL.STATS_CONFIG.RANGOS.push({ planta, min, max });
+function updateTempFromInputs() {
+    if(!tempConfig.HOTEL) tempConfig.HOTEL = {};
+    tempConfig.HOTEL.NOMBRE = document.getElementById('conf_hotel_nombre').value;
     
-    // Sort logic optional but good
-    tempConfig.HOTEL.STATS_CONFIG.RANGOS.sort((a,b) => a.min - b.min);
-
-    renderRangos();
+    if(!tempConfig.SYSTEM) tempConfig.SYSTEM = {};
+    tempConfig.SYSTEM.API_URL = document.getElementById('conf_api_url').value;
+    tempConfig.SYSTEM.ADMIN_PASSWORD = document.getElementById('conf_admin_pass').value;
     
-    // Convert to blank strings to clear inputs
-    document.getElementById('newRangePlanta').value = '';
-    document.getElementById('newRangeMin').value = '';
-    document.getElementById('newRangeMax').value = '';
-};
+    if(!tempConfig.SAFE) tempConfig.SAFE = {};
+    tempConfig.SAFE.PRECIO_DIARIO = parseFloat(document.getElementById('conf_safe_precio').value) || 0;
 
-window.removeRango = (index) => {
-    if (tempConfig.HOTEL?.STATS_CONFIG?.RANGOS) {
+    if(!tempConfig.CAJA) tempConfig.CAJA = {};
+    const fondoElement = document.getElementById('conf_caja_fondo');
+    if (fondoElement) tempConfig.CAJA.FONDO = parseFloat(fondoElement.value) || 0;
+}
+
+function configurarEventos() {
+    // === RECEPCIONISTAS ===
+    window.addRecepcionista = () => {
+        const input = document.getElementById('newRecepcionista');
+        const nombre = input.value.trim();
+        if (nombre && !tempConfig.HOTEL.RECEPCIONISTAS.includes(nombre)) {
+            tempConfig.HOTEL.RECEPCIONISTAS.push(nombre);
+            renderRecepcionistas();
+            input.value = '';
+            input.focus();
+        }
+    };
+    window.removeRecepcionista = (nombre) => {
+        tempConfig.HOTEL.RECEPCIONISTAS = tempConfig.HOTEL.RECEPCIONISTAS.filter(n => n !== nombre);
+        renderRecepcionistas();
+    };
+
+    // === TRANSFERS ===
+    window.addDestinoTransfer = () => {
+        const input = document.getElementById('newDestinoTransfer');
+        const val = input.value.trim();
+        if (val && !tempConfig.TRANSFERS.DESTINOS.includes(val)) {
+            tempConfig.TRANSFERS.DESTINOS.push(val);
+            renderDestinosTransfers();
+            input.value = '';
+            input.focus();
+        }
+    };
+    window.removeDestinoTransfer = (val) => {
+        tempConfig.TRANSFERS.DESTINOS = tempConfig.TRANSFERS.DESTINOS.filter(d => d !== val);
+        renderDestinosTransfers();
+    };
+
+    // === APP LAUNCHERS ===
+    window.openIconSelector = (targetId) => {
+        IconSelector.open(targetId);
+    };
+
+    // === WEB FILE BROWSER LOGIC ===
+    const FileBrowser = {
+        currentPath: "C:\\",
+        
+        async open() {
+            const modalEl = document.getElementById('modalFileBrowser');
+            const modal = new bootstrap.Modal(modalEl);
+            modal.show();
+            await this.loadPath("C:\\");
+        },
+
+        async loadPath(targetPath) {
+            this.currentPath = targetPath;
+            document.getElementById('fb-current-path').value = this.currentPath;
+            const container = document.getElementById('fb-list');
+            container.innerHTML = '<div class="text-center p-4"><div class="spinner-border text-primary"></div></div>';
+
+            try {
+                const res = await fetch('http://localhost:3000/api/system/list-files', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ currentPath: this.currentPath })
+                });
+
+                if (!res.ok) throw new Error("Error leyendo carpeta");
+
+                const data = await res.json();
+                this.renderItems(data.items);
+
+            } catch (e) {
+                container.innerHTML = `<div class="text-danger p-3"><i class="bi bi-exclamation-triangle me-2"></i>Error: ${e.message}</div>`;
+            }
+        },
+
+        renderItems(items) {
+            const container = document.getElementById('fb-list');
+            container.innerHTML = '';
+
+            items.forEach(item => {
+                const icon = item.isDirectory ? 'folder-fill text-warning' : 'file-earmark-text text-secondary';
+                // Solo dejar seleccionar ejecutables o carpetas
+                const isExe = item.name.toLowerCase().endsWith('.exe');
+                const isSelectable = item.isDirectory || isExe;
+                const opacity = isSelectable ? '1' : '0.5';
+                const cursor = isSelectable ? 'pointer' : 'default';
+
+                const div = document.createElement('div');
+                div.className = "list-group-item list-group-item-action d-flex align-items-center";
+                div.style.cursor = cursor;
+                div.style.opacity = opacity;
+                
+                div.innerHTML = `
+                    <i class="bi bi-${icon} me-3 fs-5"></i>
+                    <span class="text-truncate">${item.name}</span>
+                `;
+
+                if (item.isDirectory) {
+                    div.onclick = () => this.loadPath(item.path);
+                } else if (isExe) {
+                    div.onclick = () => this.selectFile(item.path);
+                }
+
+                container.appendChild(div);
+            });
+            
+            if (items.length === 0) {
+               container.innerHTML = `<div class="text-muted p-3 text-center">Carpeta vacía</div>`; 
+            }
+        },
+
+        up() {
+            // Simple parent logic for Windows paths
+            const parts = this.currentPath.split('\\');
+            if (parts.length <= 1 || (parts.length === 2 && parts[1] === '')) return; // Root
+            parts.pop();
+            // If resulted in "C:", append backslash
+            let newPath = parts.join('\\');
+            if (!newPath.includes('\\') && newPath.endsWith(':')) newPath += '\\';
+            // Simple handling for C:\ vs C:
+            if (newPath.length === 2 && newPath[1] === ':') newPath += '\\';
+            
+            this.loadPath(newPath);
+        },
+
+        selectFile(fullPath) {
+            document.getElementById('newLauncherPath').value = fullPath;
+            const modalEl = document.getElementById('modalFileBrowser');
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            modal.hide();
+        }
+    };
+
+    // Expose FileBrowser globally for HTML onclicks
+    window.FileBrowser = FileBrowser;
+
+    window.pickLauncherFile = () => {
+        FileBrowser.open();
+    };
+
+    window.addAppLauncher = () => {
+        const label = document.getElementById('newLauncherLabel').value.trim();
+        const path = document.getElementById('newLauncherPath').value.trim();
+        const icon = document.getElementById('newLauncherIcon').value.trim() || 'box-arrow-up-right';
+
+        if (!label || !path) {
+            alert("Nombre y Ruta son obligatorios.");
+            return;
+        }
+        if (!tempConfig.SYSTEM.LAUNCHERS) tempConfig.SYSTEM.LAUNCHERS = [];
+        tempConfig.SYSTEM.LAUNCHERS.push({ label, path, icon });
+        renderAppLaunchers();
+        
+        document.getElementById('newLauncherLabel').value = '';
+        document.getElementById('newLauncherPath').value = '';
+        document.getElementById('newLauncherIcon').value = '';
+    };
+
+    window.removeAppLauncher = (index) => {
+        tempConfig.SYSTEM.LAUNCHERS.splice(index, 1);
+        renderAppLaunchers();
+    };
+
+    // === HABITACIONES ===
+    window.addRango = () => {
+        const planta = parseInt(document.getElementById('newRangePlanta').value);
+        const min = parseInt(document.getElementById('newRangeMin').value);
+        const max = parseInt(document.getElementById('newRangeMax').value);
+        if (isNaN(planta) || isNaN(min) || isNaN(max)) return;
+        tempConfig.HOTEL.STATS_CONFIG.RANGOS.push({ planta, min, max });
+        tempConfig.HOTEL.STATS_CONFIG.RANGOS.sort((a,b) => a.min - b.min);
+        renderRangos();
+        document.getElementById('newRangePlanta').value = '';
+        document.getElementById('newRangeMin').value = '';
+        document.getElementById('newRangeMax').value = '';
+    };
+    window.removeRango = (index) => {
         tempConfig.HOTEL.STATS_CONFIG.RANGOS.splice(index, 1);
         renderRangos();
-    }
-};
+    };
 
-window.addFilter = (type) => {
-    let inputId = '';
-    let emojiId = '';
-    
-    if (type === 'TIPOS') { inputId = 'newFiltroTipo'; emojiId = 'newFiltroTipoEmoji'; }
-    if (type === 'VISTAS') { inputId = 'newFiltroVista'; emojiId = 'newFiltroVistaEmoji'; }
-    if (type === 'CARACTERISTICAS') { inputId = 'newFiltroCarac'; emojiId = 'newFiltroCaracEmoji'; }
-
-    const input = document.getElementById(inputId);
-    const emojiInput = document.getElementById(emojiId);
-    
-    const val = input.value.trim();
-    const icon = emojiInput.value.trim(); // Allow empty icon
-    
-    if (!val) return;
-
-    if (!tempConfig.HOTEL.STATS_CONFIG.FILTROS) tempConfig.HOTEL.STATS_CONFIG.FILTROS = {};
-    if (!tempConfig.HOTEL.STATS_CONFIG.FILTROS[type]) tempConfig.HOTEL.STATS_CONFIG.FILTROS[type] = [];
-
-    const exists = tempConfig.HOTEL.STATS_CONFIG.FILTROS[type].some(x => (x.label || x) === val);
-
-    if (!exists) {
-        tempConfig.HOTEL.STATS_CONFIG.FILTROS[type].push({ label: val, icon: icon });
+    window.addFilter = (type) => {
+        let inputId = (type === 'TIPOS') ? 'newFiltroTipo' : (type === 'VISTAS' ? 'newFiltroVista' : 'newFiltroCarac');
+        let emojiId = inputId + 'Emoji';
+        const input = document.getElementById(inputId);
+        const emoji = document.getElementById(emojiId);
+        const val = input.value.trim();
         
-        let containerId = '';
-        if (type === 'TIPOS') containerId = 'list-filtros-tipos';
-        if (type === 'VISTAS') containerId = 'list-filtros-vistas';
-        if (type === 'CARACTERISTICAS') containerId = 'list-filtros-carac';
-        
-        renderFiltros(type, containerId);
-        input.value = '';
-        emojiInput.value = ''; // Clean emoji too
-    }
-};
+        if (!val) return;
+        if (!tempConfig.HOTEL.STATS_CONFIG.FILTROS[type].some(x => (x.label || x) === val)) {
+            tempConfig.HOTEL.STATS_CONFIG.FILTROS[type].push({ label: val, icon: emoji.value.trim() });
+            renderFiltros(type, (type === 'TIPOS' ? 'list-filtros-tipos' : (type === 'VISTAS' ? 'list-filtros-vistas' : 'list-filtros-carac')));
+            input.value = '';
+            emoji.value = '';
+        }
+    };
+    window.removeFilter = (type, val) => {
+        const list = tempConfig.HOTEL.STATS_CONFIG.FILTROS[type];
+        // Filter out by label
+        tempConfig.HOTEL.STATS_CONFIG.FILTROS[type] = list.filter(item => (item.label || item) !== val);
+        renderFiltros(type, (type === 'TIPOS' ? 'list-filtros-tipos' : (type === 'VISTAS' ? 'list-filtros-vistas' : 'list-filtros-carac')));
+    };
 
-window.removeFilter = (type, val) => {
-    if (tempConfig.HOTEL?.STATS_CONFIG?.FILTROS?.[type]) {
-        renderFiltros(type, containerId);
-    }
-};
+    // === SAVE / EXPORT ===
+    // === SAVE / EXPORT ===
+    window.saveConfigLocal = async () => {
+        try {
+            // UX FIX: Auto-add pending Launcher if inputs are filled
+            const pendingLabel = document.getElementById('newLauncherLabel')?.value.trim();
+            const pendingPath = document.getElementById('newLauncherPath')?.value.trim();
+            
+            if (pendingLabel && pendingPath) {
+                // User forgot to click "+ Añadir", so we do it for them
+                console.log("Auto-adding pending launcher...");
+                window.addAppLauncher(true); // true = silent/no alert
+            }
+
+            updateTempFromInputs();
+            const response = await fetch('http://localhost:3000/api/storage/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(tempConfig) 
+            });
+            if (!response.ok) throw new Error('Failed to save to server');
+            Config.updateMemory(tempConfig);
+            localStorage.removeItem('app_config_override');
+            await Modal.showAlert("✅ Configuración guardada correctamente.", "success");
+            setTimeout(() => location.reload(), 1500);
+        } catch (e) {
+            console.error(e);
+            Modal.showAlert("❌ Error al guardar en servidor (asegúrate de que está corriendo).", "warning");
+        }
+    };
+
+    window.addAppLauncher = (silent = false) => {
+        const labelFn = document.getElementById('newLauncherLabel');
+        const pathFn = document.getElementById('newLauncherPath');
+        const iconFn = document.getElementById('newLauncherIcon');
+        
+        const label = labelFn.value.trim();
+        const path = pathFn.value.trim();
+        const icon = iconFn.value.trim() || 'box-arrow-up-right';
+
+        if (!label || !path) {
+            if (!silent) alert("Nombre y Ruta son obligatorios.");
+            return;
+        }
+        
+        if (!tempConfig.SYSTEM) tempConfig.SYSTEM = {}; // Safety
+        if (!tempConfig.SYSTEM.LAUNCHERS) tempConfig.SYSTEM.LAUNCHERS = [];
+        
+        tempConfig.SYSTEM.LAUNCHERS.push({ label, path, icon });
+        renderAppLaunchers();
+        
+        // Clear inputs
+        labelFn.value = '';
+        pathFn.value = '';
+        iconFn.value = '';
+    };
+
+    window.exportConfig = () => {
+        updateTempFromInputs();
+        const jsonString = JSON.stringify(tempConfig, null, 4);
+        const blob = new Blob([jsonString], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = "config.json";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        Modal.showAlert("📂 Archivo descargado.", "info");
+    };
+
+    window.resetConfigToDefault = async () => {
+        if (await Modal.showConfirm("¿Estás seguro?")) {
+            localStorage.removeItem('app_config_override');
+            location.reload();
+        }
+    };
+}

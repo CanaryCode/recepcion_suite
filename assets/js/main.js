@@ -10,6 +10,7 @@ import { inicializarNovedades } from './modules/novedades.js';
 import { inicializarCenaFria } from './modules/cena_fria.js';
 import { inicializarRiu } from './modules/riu.js';
 import { inicializarAyuda } from './modules/ayuda.js';
+import { inicializarTransfers } from './modules/transfers.js';
 import { inicializarNotasPermanentes } from './modules/notas_permanentes.js';
 import { inicializarPrecios } from './modules/precios.js';
 import { inicializarSystemAlarms } from './modules/alarms.js';
@@ -67,6 +68,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         { id: 'cena-fria-content', path: 'assets/templates/cena_fria.html' },
         { id: 'atenciones-content', path: 'assets/templates/atenciones.html' },
         { id: 'ayuda-content', path: 'assets/templates/ayuda.html' },
+        { id: 'transfers-content', path: 'assets/templates/transfers.html' },
         { id: 'notas-content', path: 'assets/templates/notas_permanentes.html' },
         { id: 'precios-content', path: 'assets/templates/precios.html' },
         { id: 'system-alarms-content', path: 'assets/templates/system_alarms.html' },
@@ -98,6 +100,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         { nombre: 'Safe', init: inicializarSafe },
         { nombre: 'Estancia', init: inicializarEstancia },
         { nombre: 'Atenciones', init: inicializarAtenciones },
+        { nombre: 'Transfers', init: inicializarTransfers }, // Added Transfers here
         { nombre: 'Riu', init: inicializarRiu },
         { nombre: 'Ayuda', init: inicializarAyuda },
         { nombre: 'Notas Permanentes', init: inicializarNotasPermanentes },
@@ -133,9 +136,63 @@ document.addEventListener('DOMContentLoaded', async () => {
         setTimeout(cleanSearch, 800);
         setTimeout(cleanSearch, 2000);
 
+        // 9. Init Tooltips (Clean slate)
+        const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+        [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+
         console.log("Sistema completamente inicializado.");
     }, 100);
 });
+
+// MODAL LAUNCHER FUNCTION
+window.openLaunchPad = () => {
+    const container = document.getElementById('launchPadGrid');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    const apps = APP_CONFIG.SYSTEM?.LAUNCHERS || [];
+    
+    if (apps.length === 0) {
+        container.innerHTML = '<div class="col-12 text-center text-muted">No hay aplicaciones configuradas.</div>';
+    } else {
+        apps.forEach(app => {
+            container.innerHTML += `
+            <div class="col-6 col-md-4 col-lg-3">
+                <div class="card h-100 border-0 shadow-sm hover-scale text-center p-3" 
+                     style="cursor:pointer;" onclick="window.launchExternalApp('${app.path.replace(/\\/g, '\\\\')}')">
+                    <div class="mb-2 text-primary"><i class="bi bi-${app.icon || 'app'} fs-1"></i></div>
+                    <div class="fw-bold text-dark small text-truncate">${app.label}</div>
+                </div>
+            </div>
+            `;
+        });
+    }
+
+    const modal = new bootstrap.Modal(document.getElementById('launchPadModal'));
+    modal.show();
+};
+
+// Global Launcher Function
+window.launchExternalApp = async (command) => {
+    try {
+        const response = await fetch('http://localhost:3000/api/launch', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ command })
+        });
+        
+        if (!response.ok) throw new Error('Server error');
+        
+        // Visual feedback
+        // Maybe a small toast? For now just log
+        console.log("App launched:", command);
+        
+    } catch (e) {
+        console.error("Launch failed:", e);
+        alert("Error al lanzar aplicación. Asegúrate de que el servidor Node.js está corriendo.");
+    }
+};
 
 function inicializarSesionGlobal() {
     const userList = document.getElementById('globalUserList');

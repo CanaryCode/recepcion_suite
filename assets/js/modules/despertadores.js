@@ -316,10 +316,17 @@ function lanzarAlarma(lista, hora, playSound = false) {
         const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
         modal.show();
     } else {
-        setTimeout(() => {
-            const textos = lista.map(i => i.text + (i.subtext ? ` (${i.subtext})` : ''));
-            alert("⏰ Alarmas Pendientes:\n\n" + textos.join('\n'));
-        }, 100);
+        // Fallback robusto: Solo mostrar alert si NO hay uno reciente
+        const now = Date.now();
+        if (!window._lastAlarmAlert || (now - window._lastAlarmAlert > 60000)) { // 1 min cooldown
+            window._lastAlarmAlert = now;
+            setTimeout(() => {
+                const textos = lista.map(i => i.text + (i.subtext ? ` (${i.subtext})` : ''));
+                alert("⏰ Alarmas Pendientes (Bootstrap Modal Falló):\n\n" + textos.join('\n'));
+            }, 100);
+        } else {
+            console.warn("Alarma silenciada por cooldown (Modal falló).");
+        }
     }
 }
 

@@ -1,9 +1,0 @@
-[
-  {
-    "id": "sys_default_0",
-    "hora": "23:30",
-    "mensaje": "Realizar lecturas de las VISAS",
-    "dias": "todos",
-    "active": true
-  }
-]

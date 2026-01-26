@@ -94,6 +94,80 @@ const server = http.createServer((req, res) => {
         }
     }
 
+    // Launcher API: /api/launch (POST)
+    if (pathname === '/api/launch' && req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => body += chunk.toString());
+        req.on('end', () => {
+            try {
+                const { command } = JSON.parse(body);
+                if (!command) throw new Error('No command provided');
+
+                // Execute command
+                // Note: This is a security risk in public servers, but acceptable for a local personal tool
+                require('child_process').exec(`start "" "${command}"`, (err) => {
+                    if (err) {
+                        console.error('Launch error:', err);
+                        res.writeHead(500);
+                        res.end(JSON.stringify({ error: err.message }));
+                    } else {
+                        res.writeHead(200, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({ success: true }));
+                    }
+                });
+            } catch (e) {
+                res.writeHead(400);
+                res.end(JSON.stringify({ error: e.message }));
+            }
+        });
+        return;
+    }
+
+    // SYSTEM FILE BROWSER API (Replaces Native Picker)
+    if (pathname === '/api/system/list-files' && req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => body += chunk.toString());
+        req.on('end', () => {
+            try {
+                const { currentPath } = JSON.parse(body || '{}');
+                const targetPath = currentPath || 'C:\\';
+                
+                // Read directory
+                fs.readdir(targetPath, { withFileTypes: true }, (err, dirents) => {
+                    if (err) {
+                        res.writeHead(500);
+                        res.end(JSON.stringify({ error: err.message }));
+                        return;
+                    }
+
+                    const items = dirents.map(dirent => {
+                        return {
+                            name: dirent.name,
+                            isDirectory: dirent.isDirectory(),
+                            path: path.join(targetPath, dirent.name)
+                        };
+                    });
+
+                    // Sort: Directories first, then files
+                    items.sort((a, b) => {
+                        if (a.isDirectory === b.isDirectory) return a.name.localeCompare(b.name);
+                        return a.isDirectory ? -1 : 1;
+                    });
+
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ 
+                        path: targetPath,
+                        items: items
+                    }));
+                });
+            } catch (e) {
+                res.writeHead(400);
+                res.end(JSON.stringify({ error: 'Invalid JSON' }));
+            }
+        });
+        return;
+    }
+
     // Static Files (Frontend)
     let safePath = path.normalize(pathname).replace(/^(\.\.[\/\\])+/, '');
     if (safePath === '/' || safePath === '\\') safePath = '/index.html';
@@ -131,5 +205,6 @@ const server = http.createServer((req, res) => {
 
 server.listen(PORT, () => {
     console.log(`ZERO-DEPENDENCY Server running at http://localhost:${PORT}`);
+    console.log('SERVER VERSION 4.0 (WEB FILE BROWSER)'); // Version Check
     console.log(`Storage endpoint: http://localhost:${PORT}/api/storage/KEY`);
 });

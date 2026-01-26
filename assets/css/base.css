@@ -8,6 +8,7 @@
 
 body {
     font-family: 'Inter', sans-serif;
+    font-size: 1.15rem; /* Aumento significativo de legibilidad */
     background-color: #eef1f5;
     background-image:
         radial-gradient(#cbd5e1 1.5px, transparent 1.5px),

@@ -11,12 +11,15 @@ class SystemAlarmsService extends BaseService {
         const existing = this.getAll();
         if (!existing || existing.length === 0) {
             // Seed defaults from Config if storage is empty
-            const defaults = APP_CONFIG.HOTEL.ALARMAS_SISTEMA.map((a, i) => ({
-                id: `sys_default_${i}`,
-                ...a,
-                active: true
-            }));
-            this.saveAll(defaults);
+            // FIX: Check if config is loaded to avoid crash
+            if (APP_CONFIG.HOTEL && Array.isArray(APP_CONFIG.HOTEL.ALARMAS_SISTEMA)) {
+                const defaults = APP_CONFIG.HOTEL.ALARMAS_SISTEMA.map((a, i) => ({
+                    id: `sys_default_${i}`,
+                    ...a,
+                    active: true
+                }));
+                this.saveAll(defaults);
+            }
         }
     }
 

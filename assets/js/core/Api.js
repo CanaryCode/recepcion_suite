@@ -4,11 +4,15 @@ import { APP_CONFIG } from './Config.js';
  * Wrapper para comunicaciones HTTP (Fetch)
  */
 export const Api = {
-    baseUrl: APP_CONFIG.SYSTEM.API_URL,
+    // Helper to get fresh URL
+    get baseUrl() {
+        return APP_CONFIG.SYSTEM.API_URL || 'http://localhost:3000/api';
+    },
 
     async get(endpoint) {
         try {
-            const response = await fetch(`${this.baseUrl}/${endpoint}`);
+            const url = `${this.baseUrl}/${endpoint}`;
+            const response = await fetch(url);
             if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
             return await response.json();
         } catch (error) {
@@ -19,7 +23,8 @@ export const Api = {
 
     async post(endpoint, data) {
         try {
-            const response = await fetch(`${this.baseUrl}/${endpoint}`, {
+            const url = `${this.baseUrl}/${endpoint}`;
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
@@ -34,7 +39,8 @@ export const Api = {
 
     async put(endpoint, data) {
         try {
-            const response = await fetch(`${this.baseUrl}/${endpoint}`, {
+            const url = `${this.baseUrl}/${endpoint}`;
+            const response = await fetch(url, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
@@ -49,7 +55,8 @@ export const Api = {
 
     async delete(endpoint) {
         try {
-            const response = await fetch(`${this.baseUrl}/${endpoint}`, {
+            const url = `${this.baseUrl}/${endpoint}`;
+            const response = await fetch(url, {
                 method: 'DELETE'
             });
             if (!response.ok) throw new Error(`API Error: ${response.statusText}`);

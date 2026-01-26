@@ -10,6 +10,9 @@ import { safeService } from './SafeService.js';
 import { systemAlarmsService } from './SystemAlarmsService.js';
 import { ayudaService } from './AyudaService.js';
 import { riuService } from './RiuService.js';
+import { transfersService } from './TransfersService.js';
+import { cenaFriaService } from './CenaFriaService.js';
+import { rackService } from './RackService.js';
 
 class BackupService {
     constructor() {
@@ -25,7 +28,10 @@ class BackupService {
             { name: "Safe", svc: safeService },
             { name: "Alarmas Sistema", svc: systemAlarmsService },
             { name: "Guías Ayuda", svc: ayudaService },
-            { name: "RIU Class", svc: riuService }
+            { name: "RIU Class", svc: riuService },
+            { name: "Transfers", svc: transfersService },
+            { name: "Cenas Frias", svc: cenaFriaService },
+            { name: "Rack", svc: rackService }
         ];
     }
 

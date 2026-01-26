@@ -12,10 +12,22 @@
 - **Interacción**: Animaciones sutiles, feedback visual inmediato, tooltips informativos.
 - **Evitar**: Diseños planos aburridos, colores primarios estándar (azul/rojo puro), alertas nativas del navegador (usar Modales/Toasts).
 
+### 7.3. Estética Limpia
+
+- **Estructura de Panel Único**: Los módulos deben contenido principal en **UN solo contenedor** tipo "card" o "content-panel". **NUNCA anidar** cards dentro de cards (paneles dentro de paneles), ya que genera ruido visual y márgenes innecesarios.
+- **Alineación**: Los formularios y la información principal deben tender a ocupar el ancho disponible o justificarse a la **IZQUIERDA**. Evitar el centrado de formularios (`justify-content-center`) que deja espacios vacíos a los lados innecesariamente.
+- **Iconos**: Usar `bootstrap-icons`.
+- **Botones**: Primarios (`btn-primary`) para acciones principales, `btn-outline-*` para alternas, `btn-light` para cancelar/limpiar. Efecto `hover-scale` para interactividad.
+
 ## 3. Arquitectura Técnica
 
 - **Configuración**: Todas las constantes (nombres, precios, configuraciones del hotel) DEBEN estar en `config.json` y cargarse vía `Config.js`. NO harcodear valores.
-- **Persistencia**: Sistema híbrido (LocalStorage + Backup en JSON).
+- **Persistencia (Estrategia Híbrida)**:
+  - **Fase Actual**: LocalStorage (Cliente) + Archivos JSON en servidor local (Node.js). Se prioriza la simplicidad y portabilidad evitando bases de datos complejas en esta etapa.
+  - **Fase Futura**: Arquitectura preparada para migrar a una Base de Datos real cuando sea necesario. Los servicios deben mantener esta abstracción.
+- **Configurabilidad (Adaptabilidad Hotelera)**:
+  - Cualquier variable o lista de opciones que sea específica de este hotel (ej: Destinos de transfer, departamentos, tipos de habitación, precios...) **DEBE SER CONFIGURABLE** desde `config.json` y editable desde el módulo de Configuración.
+  - El objetivo es que la aplicación sea "multihotel" o fácilmente adaptable a otro establecimiento sin tocar código fuente.
 - **Módulos**: Uso estricto de ES Modules (`import/export`).
 - **CSS**: Estilos centralizados pero modulares. Evitar estilos en línea excesivos.
 
@@ -223,3 +235,39 @@ Los atributos de las habitaciones no deben estar harcodeados en el código JS ("
 2.  **Uso en la App**:
     - Al renderizar filtros o selectores, iterar sobre estas variables de configuración.
     - No usar `if (tipo === "Doble")` si "Doble" no está definido en la configuración.
+
+## 7. Reglas de UX/UI y "Resumen del Día" (CRÍTICO)
+
+### 7.1. Módulos de "Resumen del Día"
+
+Ciertos módulos generan información vital que debe revisarse nada más abrir el turno. Estos módulos DEBEN aparecer en el Dashboard o vista principal de "Novedades del Día".
+
+- **Módulos Incluidos**: Novedades, Desayunos Temprano, Cenas Frías, **Transfers**.
+- **Implementación**: Deben exponer un método o servicio que permita consultar sus registros activos para el día actual y mostrarlos en el widget de resumen.
+- **Visibilidad Inteligente**: Si un módulo de resumen NO tiene registros activos (está vacío), **DEBE OCULTARSE** completamente del Dashboard (usando `d-none` en su contenedor) para no ocupar espacio inútil.
+
+### 7.2. Orden de Vistas y Jerarquía
+
+- **Orden de Vistas**: La **Vista de Trabajo** (Formulario para añadir/procesar) debe ser SIEMPRE la **PRIMERA VISTA** (pestaña activa por defecto). La Vista de Lista/Resumen/Rack debe ser secundaria.
+  - _Razón_: La prioridad es la operativa rápida (añadir datos).
+- **Barra de Herramientas**: TODO módulo debe tener explícitamente una barra de herramientas con el botón de **IMPRIMIR** visible y funcional.
+
+### 7.3. Limpieza Visual (Estilo Flat/Glass)
+
+- **Prohibido Paneles Blancos Anidados**: No colocar una tarjeta (`.card` / `bg-white`) dentro de otro contenedor que ya tiene fondo blanco o apariencia de panel.
+  - El fondo de la aplicación ya es texturizado/gris, por lo que el primer nivel de contenedor puede ser blanco (`card`), pero su contenido NO debe estar encerrado en otros bloques con fondo blanco y sombra (`shadow`). Esto "ensucia" el diseño.
+  - Mantener diseño limpio, aireado y sin excesivos bordes o cajas dentro de cajas.
+
+### 7.4. Componentes Estándar (Selectores Globales)
+
+Para mantener la consistencia en la selección de activos y recursos del sistema:
+
+1.  **Selector de Iconos (Standard)**:
+    - **Módulo**: `assets/js/core/IconSelector.js`.
+    - **Uso**: Inocar `IconSelector.open(targetInputId)` para abrir el modal estándar con buscador de Bootstrap Icons.
+    - **Propósito**: Usar siempre este selector cuando el usuario deba personalizar iconos de módulos, habitaciones o servicios.
+
+2.  **Selector de Archivos (Local)**:
+    - **Endpoint**: `/api/system/pick-file` (Requiere servidor Node.js activo).
+    - **Uso**: Usar solo en configuraciones del sistema (ej: lanzadores de apps) donde se requiera una ruta absoluta local.
+    - **Limitación**: Solo funciona en entorno Windows/Localhost con el servidor backend propio.

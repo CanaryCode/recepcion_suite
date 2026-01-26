@@ -103,6 +103,19 @@ class RackService {
         this.cache = null;
     }
 
+    /**
+     * Interface methods for BackupService
+     */
+    getAll() {
+        return this.savedData;
+    }
+
+    saveAll(data) {
+        this.savedData = data || {};
+        LocalStorage.set(this.STORAGE_KEY, this.savedData);
+        this.cache = null;
+    }
+
     getRoomsWithDetails() {
         if (this.cache) return this.cache;
 

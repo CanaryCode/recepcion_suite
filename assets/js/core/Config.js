@@ -1,13 +1,18 @@
 export let APP_CONFIG = {
     // Default fallback config just in case
-    SYSTEM: { USE_API: false, USE_SYNC_SERVER: true },
+    SYSTEM: { 
+        USE_API: false, 
+        USE_SYNC_SERVER: true,
+        API_URL: 'http://localhost:3000/api'
+    },
     HOTEL: { RECEPCIONISTAS: [] }
 };
 
 export const Config = {
     loadConfig: async () => {
         try {
-            const response = await fetch('config.json?v=' + Date.now()); // Prevent caching
+            // FIX: Load from API Storage to match the Write path
+            const response = await fetch('/api/storage/config?v=' + Date.now()); 
             if (!response.ok) throw new Error("Config not found");
             const data = await response.json();
             

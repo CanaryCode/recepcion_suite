@@ -1,6 +1,6 @@
 @echo off
 setlocal enabledelayedexpansion
-set "VERSION=2.1"
+set "VERSION=4.0 [WEB EDITION]"
 
 :: Forzar que el script se ejecute siempre en su propia carpeta
 cd /d "%~dp0"
@@ -11,6 +11,7 @@ title [ RECEPCION SUITE v%VERSION% ] - SERVIDOR ACTIVO
 echo.
 echo  =======================================================
 echo   RECEPCION SUITE - Sistema de Gestion Hotelera
+echo   Versión: %VERSION%
 echo  =======================================================
 echo.
 
@@ -21,7 +22,7 @@ echo.
 :: Opcion 1: Node.js Portable (Carpeta local 'bin')
 set "NODE_EXEC=%~dp0bin\node.exe"
 if exist "!NODE_EXEC!" (
-    echo   [+] Modo: PORTABLE (Usando Node local)
+    echo   [+] Modo: PORTABLE (Usando Node local en /bin)
     goto :StartServer
 )
 
@@ -29,21 +30,17 @@ if exist "!NODE_EXEC!" (
 where node >nul 2>nul
 if %errorlevel% equ 0 (
     set "NODE_EXEC=node"
-    echo   [+] Modo: INSTALADO (Usando Node del PATH)
+    echo   [+] Modo: INSTALADO (Usando Node del Sistema)
     goto :StartServer
 )
 
-:: Opcion 3: Node.js en Program Files (Estandar)
+:: Opcion 3: Busqueda en Program Files
 if exist "%ProgramFiles%\nodejs\node.exe" (
     set "NODE_EXEC=%ProgramFiles%\nodejs\node.exe"
-    echo   [+] Modo: INSTALADO (Detectado en Program Files)
     goto :StartServer
 )
-
-:: Opcion 4: Node.js en Program Files x86 (Compatibilidad)
 if exist "%ProgramFiles(x86)%\nodejs\node.exe" (
     set "NODE_EXEC=%ProgramFiles(x86)%\nodejs\node.exe"
-    echo   [+] Modo: INSTALADO (Detectado en Program Files x86)
     goto :StartServer
 )
 
@@ -51,43 +48,25 @@ if exist "%ProgramFiles(x86)%\nodejs\node.exe" (
 :: SI LLEGAMOS AQUI, NO SE ENCONTRO NADA
 :: ---------------------------------------------------------
 echo.
-echo   [!] ERROR: No se ha detectado Node.js en este ordenador.
+echo   [!] ERROR CRITICO: No se encuentra Node.js.
 echo.
-echo   OPCION A: Instalar Node.js desde https://nodejs.org/
-echo   OPCION B: Ejecuta "PACK_PORTABLE.bat" en un PC que si tenga Node
-echo             para crear una version portable automaticamente.
+echo   Para que esta aplicacion sea PORTABLE, debes copiar el archivo
+echo   "node.exe" dentro de una carpeta llamada "bin" aqui mismo.
+echo.
+echo   Estructura requerida:
+echo      /RECEPCION SUITE/
+echo         /bin/node.exe
+echo         /server/...
+echo         INICIAR_APP.bat
 echo.
 pause
 exit /b
 
 :: ---------------------------------------------------------
-:: 2. VERIFICACION DE INTEGRIDAD
+:: 2. ARRANQUE
 :: ---------------------------------------------------------
 :StartServer
 
-:: Comprobar si faltan librerias
-if not exist "server\node_modules\" (
-    echo   [!] ADVERTENCIA: No se encuentra la carpeta 'node_modules'.
-    echo       Intentando restaurar librerias automaticamente...
-    
-    where npm >nul 2>nul
-    if !errorlevel! equ 0 (
-        cd /d "%~dp0server"
-        call npm install
-        cd /d "%~dp0"
-    ) else (
-        echo.
-        echo   [!] ERROR: Faltan las librerias del servidor y no se encontro NPM.
-        echo       Si has copiado el proyecto a otro PC, asegúrate de haber
-        echo       ejecutado "PACK_PORTABLE.bat" en el PC original antes de copiar,
-        echo       o instala Node.js en este PC.
-        echo.
-        pause
-        exit /b
-    )
-)
-
-echo   [+] Estado: INICIANDO SERVIDOR...
 echo   [+] Motor: !NODE_EXEC!
 echo   [+] Web: http://localhost:3000
 echo.
@@ -98,11 +77,11 @@ echo.
 :: Abrimos el navegador automáticamente
 start http://localhost:3000
 
-:: Arrancamos el servidor (Relative path)
+:: Arrancamos usando el script estándar
+:: Si hay package.json en raiz, usamos la logica directa
 if exist "server/app.js" (
     "!NODE_EXEC!" server/app.js
 ) else (
-    echo [!] ERROR: No se encuentra el archivo 'server/app.js'
-    echo Asegurate de que estas ejecutando este .bat desde la carpeta del proyecto.
+    echo [!] ERROR: No se encuentra 'server/app.js'
     pause
 )

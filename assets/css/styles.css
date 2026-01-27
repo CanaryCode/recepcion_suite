@@ -22,6 +22,24 @@
 /* Estilos específicos de cada módulo (Caja, Riu, Notas...) */
 /* @import 'print.css'; -- MOVIDO A INDEX.HTML PARA CONTROLAR CACHE */
 
+/* FIX CRÍTICO: Layout Margins Override */
+/* (Eliminado para restaurar comportamiento estándar) */
+/* SALVAGUARDA: Forzar comportamiento de contenedor Bootstrap */
+/* FIX: Se aplica directamente al ID para vencer especificidad */
+#app-layout {
+    margin-left: auto !important;
+    margin-right: auto !important;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+    width: 100%; /* Default mobile */
+}
+
+@media (min-width: 576px) { #app-layout { max-width: 540px !important; } }
+@media (min-width: 768px) { #app-layout { max-width: 720px !important; } }
+@media (min-width: 992px) { #app-layout { max-width: 960px !important; } }
+@media (min-width: 1200px) { #app-layout { max-width: 1140px !important; } }
+@media (min-width: 1400px) { #app-layout { max-width: 1320px !important; } }
+
 /* FIX: Navbar Layout */
 .nav-search-wrapper {
     width: 250px;
@@ -52,32 +70,38 @@
     box-shadow: 0 4px 6px rgba(0,0,0,0.3);
 }
 
-/* Responsive Navbar fixes */
+/* Responsive Navbar refined fixes */
+/* Only wrap on smaller screens (< 991px) */
 @media (max-width: 991px) {
-    /* Stack elements vertically on mobile/tablet */
-    #navbar-container {
-        flex-direction: column;
-        align-items: stretch !important;
-    }
-    
-    /* Center tabs */
-    #mainTabs {
+    .nav-tabs {
         justify-content: center;
-        width: 100%;
-        margin-bottom: 0.5rem;
-        flex-wrap: wrap; /* Allow tabs to wrap on very small screens */
+        gap: 5px;
     }
 
-    /* Stack User/Search controls */
-    .d-flex.align-items-center.ms-auto.gap-3.py-1 {
-        justify-content: center;
-        width: 100%;
-        margin-left: 0 !important;
+    #navbar-container {
+        padding: 0.25rem;
     }
     
-    /* Full width search on mobile */
+    /* Cuando se desborde, los elementos individuales deben ajustarse */
     .nav-search-wrapper {
-        width: 100%;
-        max-width: 300px;
+        flex-grow: 1;
+        min-width: 200px;
     }
+
+    #globalUserBtn {
+        flex-grow: 1;
+    }
+}
+
+@media (max-width: 576px) {
+    .nav-link {
+        padding: 6px 10px;
+        font-size: 0.85rem;
+    }
+    
+    .nav-tabs {
+        border-radius: 12px;
+    }
+
+    /* En móviles pequeños, apilar controles si es necesario o dejar que el flex-wrap actúe natural */
 }

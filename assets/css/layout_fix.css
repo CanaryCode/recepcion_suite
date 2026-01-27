@@ -1,0 +1,57 @@
+/* LAYOUT FIX - FORCE MARGINS */
+#app-layout {
+    width: 100% !important;
+    margin-right: auto !important;
+    margin-left: auto !important;
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+}
+
+/* Force Bootstrap container max-widths */
+@media (min-width: 576px) { #app-layout { max-width: 540px !important; } }
+@media (min-width: 768px) { #app-layout { max-width: 720px !important; } }
+@media (min-width: 992px) { #app-layout { max-width: 960px !important; } }
+@media (min-width: 1200px) { #app-layout { max-width: 1140px !important; } }
+@media (min-width: 1400px) { #app-layout { max-width: 1320px !important; } }
+
+/* Ensure children don't overflow */
+.tab-content, .tab-pane {
+    max-width: 100% !important;
+    width: 100% !important;
+    position: relative !important; /* Reset potential absolute positioning */
+    left: auto !important;
+    right: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* FIX: Prevent tab-pane from breaking out (High Specificity) */
+#app-layout .tab-content .tab-pane.active,
+.tab-pane.active {
+    display: block !important;
+    visibility: visible !important;
+    position: relative !important; /* CRITICAL: Override print.css absolute */
+    top: auto !important;
+    left: auto !important;
+    
+    /* FORCE CONTAINER BEHAVIOR ON MODULES INDEPENDENT OF PARENT */
+    width: 100% !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+}
+
+/* Force Bootstrap container max-widths ON THE TABS THEMSELVES */
+@media (min-width: 576px) { .tab-pane.active { max-width: 540px !important; } }
+@media (min-width: 768px) { .tab-pane.active { max-width: 720px !important; } }
+@media (min-width: 992px) { .tab-pane.active { max-width: 960px !important; } }
+@media (min-width: 1200px) { .tab-pane.active { max-width: 1140px !important; } }
+@media (min-width: 1400px) { .tab-pane.active { max-width: 1320px !important; } }
+
+/* SPECIAL: Ensure rows inside tabs don't cause overflow */
+.tab-pane .row {
+    margin-left: -0.75rem; /* Bootstrap default, compatible with container padding */
+    margin-right: -0.75rem;
+    width: auto !important;
+}

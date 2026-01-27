@@ -22,7 +22,8 @@ let currentFilters = {
  * Configura los buscadores, botones de reset y la delegación de eventos 
  * para el desbloqueo de seguridad y cambios de extras.
  */
-export function inicializarRack() {
+export async function inicializarRack() {
+    await rackService.init(); // Cargar datos del servidor
     renderFilters();
     renderRack();
 

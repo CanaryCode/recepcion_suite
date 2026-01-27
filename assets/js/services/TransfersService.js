@@ -8,7 +8,7 @@ import { BaseService } from './BaseService.js';
  */
 class TransfersService extends BaseService {
     constructor() {
-        super('app_transfers_data', []); // Key matches old one for compatibility
+        super('riu_transfers', []); // Key matches standard JSON file in storage
     }
 
     async init() {

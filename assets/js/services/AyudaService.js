@@ -8,7 +8,15 @@ import { BaseService } from './BaseService.js';
  */
 class AyudaService extends BaseService {
     constructor() {
-        super('riu_ayuda', { mañana: [], tarde: [], noche: [] });
+        super('guia_operativa', { mañana: [], tarde: [], noche: [] });
+    }
+
+    /**
+     * INICIALIZACIÓN ASÍNCRONA
+     * Carga el JSON del servidor (storage/guia_operativa.json) como autoridad.
+     */
+    async init() {
+        await this.syncWithServer();
     }
 
     /**

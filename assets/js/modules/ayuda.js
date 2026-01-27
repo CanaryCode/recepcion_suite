@@ -19,7 +19,10 @@ const PASSWORD_EDICION = "1234";
 /**
  * INICIALIZACIÓN
  */
-export function inicializarAyuda() {
+export async function inicializarAyuda() {
+    // 1. Cargar datos frescos del servidor (JSON Authority)
+    await ayudaService.init();
+
     // Reparar el DOM si el contenedor principal no existe
     asegurarContenedorAyuda();
 

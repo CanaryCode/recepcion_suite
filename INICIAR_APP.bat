@@ -63,7 +63,27 @@ pause
 exit /b
 
 :: ---------------------------------------------------------
-:: 2. ARRANQUE
+:: 2. VERIFICACION DE DEPENDENCIAS (AUTO-INSTALL)
+:: ---------------------------------------------------------
+:CheckDependencies
+
+if not exist "%~dp0server\node_modules" (
+    echo.
+    echo   [!] PRIMERA EJECUCION DETECTADA
+    echo   [i] Instalando librerias necesarias...
+    echo.
+    
+    cd server
+    call npm install
+    cd ..
+    
+    echo.
+    echo   [+] Instalacion completada.
+    echo.
+)
+
+:: ---------------------------------------------------------
+:: 3. ARRANQUE
 :: ---------------------------------------------------------
 :StartServer
 

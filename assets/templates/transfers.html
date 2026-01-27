@@ -1,3 +1,14 @@
+<div class="d-none d-print-block report-header-print">
+    <div class="report-info-left">
+        <h2>Reporte de Transfers</h2>
+        <p>Hotel Garoé • Recepción</p>
+    </div>
+    <div class="report-info-right">
+        <div><strong>Fecha:</strong> <span id="print-date-transfers"></span></div>
+        <div><strong>Generado por:</strong> <span id="print-repc-nombre-transfers"></span></div>
+    </div>
+</div>
+
 <!-- Encabezado del Módulo -->
 <h4 class="module-title-discrete animate-fade-in">
   <i class="bi bi-taxi-front-fill me-2 text-warning"></i>Transfers & Taxis
@@ -32,9 +43,9 @@
   <div class="btn-print-wrapper">
     <button
       class="btn btn-primary btn-sm fw-bold shadow-sm"
-      onclick="window.print()"
+      onclick="imprimirTransfers()"
       data-bs-toggle="tooltip"
-      data-bs-title="Imprimir Listado/Ticket"
+      data-bs-title="Imprimir Listado"
     >
       <i class="bi bi-printer me-2"></i>Imprimir
     </button>

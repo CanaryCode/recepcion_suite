@@ -17,9 +17,12 @@ const PASSWORD_EDICION = "1234";
 // 1. INICIALIZACIÓN
 // ==========================================
 
-export function inicializarNotasPermanentes() {
+export async function inicializarNotasPermanentes() {
     const container = document.getElementById('notas-content');
     if (!container) return;
+
+    // Carga de datos autoritativa (JSON Server)
+    await notasService.init();
 
     // Event Listeners
     const form = document.getElementById('formNota');

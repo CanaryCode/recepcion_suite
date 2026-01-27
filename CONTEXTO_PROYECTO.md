@@ -22,9 +22,10 @@
 ## 3. Arquitectura Técnica
 
 - **Configuración**: Todas las constantes (nombres, precios, configuraciones del hotel) DEBEN estar en `config.json` y cargarse vía `Config.js`. NO harcodear valores.
-- **Persistencia (Estrategia Híbrida)**:
-  - **Fase Actual**: LocalStorage (Cliente) + Archivos JSON en servidor local (Node.js). Se prioriza la simplicidad y portabilidad evitando bases de datos complejas en esta etapa.
-  - **Fase Futura**: Arquitectura preparada para migrar a una Base de Datos real cuando sea necesario. Los servicios deben mantener esta abstracción.
+- **Persistencia (Autoridad JSON)**:
+  - **Ubicación**: Todos los datos residen en la carpeta `storage/` en formato `.json`. Este directorio es la **BASE DE DATOS REAL** y única fuente de verdad.
+  - **Sin Caché**: La aplicación **prohíbe el uso de caché del navegador** o LocalStorage como fuente persistente. LocalStorage se usa solo como "espejo" temporal por velocidad, pero el archivo JSON en disco siempre manda.
+  - **Timestamp Anti-Caché**: Todas las peticiones `GET` a la API deben incluir un timestamp (`?_t=...`) para forzar al navegador a ignorar su memoria caché.
 - **Configurabilidad (Adaptabilidad Hotelera)**:
   - Cualquier variable o lista de opciones que sea específica de este hotel (ej: Destinos de transfer, departamentos, tipos de habitación, precios...) **DEBE SER CONFIGURABLE** desde `config.json` y editable desde el módulo de Configuración.
   - El objetivo es que la aplicación sea "multihotel" o fácilmente adaptable a otro establecimiento sin tocar código fuente.
@@ -221,11 +222,15 @@ El sistema debe ser robusto ante actualizaciones. Para evitar corromper datos de
     - Usar asignación con valores por defecto (ej: `const valor = data.campo || "default";`).
     - Si se añade una nueva propiedad a un objeto guardado, el código debe poder funcionar si esa propiedad falta (tratándola como antigua versión).
 
-2.  **No Borrar Claves Antiguas**:
+2.  **No Borrar Claves Antiguas (Sagrado)**:
     - Si se depreca un campo, mantenerlo en el código de lectura o migrarlo suavemente, nunca borrarlo drásticamente si eso impide cargar el backup anterior.
+    - Los datos introducidos por el usuario (contactos, alarmas, etc.) son el activo más valioso; ninguna actualización de código debe borrarlos o ignorarlos.
 
 3.  **Backups Seguros**:
     - Antes de cualquier migración de estructura de datos crítica, el sistema debe forzar un backup del estado actual.
+
+4.  **Anti-Autofill Global**:
+    - Todos los formularios e inputs deben tener `autocomplete="off"` para evitar que el navegador guarde o inyecte "basura" (como contraseñas o datos antiguos) en campos de dinero o información operativa.
 
 ### 6.8. Variables de Configuración Dinámicas (Habitaciones)
 
@@ -271,3 +276,36 @@ Para mantener la consistencia en la selección de activos y recursos del sistema
     - **Endpoint**: `/api/system/pick-file` (Requiere servidor Node.js activo).
     - **Uso**: Usar solo en configuraciones del sistema (ej: lanzadores de apps) donde se requiera una ruta absoluta local.
     - **Limitación**: Solo funciona en entorno Windows/Localhost con el servidor backend propio.
+
+## 8. Arquitectura de Datos y API (CRUD)
+
+La aplicación utiliza un sistema de persistencia **JSON-agnóstico**. El backend no tiene esquemas fijos; simplemente guarda y entrega archivos JSON según lo solicite el frontend.
+
+### 8.1. Endpoints Genéricos (CRUD)
+
+Todas las operaciones de datos se centralizan en la ruta `/api/data/` mediante el servicio `Api.js`.
+
+| Operación  | Método | Endpoint             | Descripción                                                                |
+| :--------- | :----- | :------------------- | :------------------------------------------------------------------------- |
+| **READ**   | `GET`  | `/api/data/:archivo` | Obtiene el contenido completo de `storage/:archivo.json`.                  |
+| **UPDATE** | `POST` | `/api/data/:archivo` | Sobrescribe el archivo completo con el JSON enviado en el cuerpo (`body`). |
+| **CREATE** | `POST` | `/api/data/:archivo` | Si el archivo no existe, la API lo crea con los datos enviados.            |
+| **DELETE** | `POST` | `/api/data/:archivo` | Generalmente se borra enviando un array vacío `[]` o un objeto nulo `{}`.  |
+
+### 8.2. Esquema de Datos (Flexible)
+
+No existe un "JSON maestro" de especificación porque cada módulo define su propia estructura. Sin embargo, el estándar seguido por los módulos (ej: `AgendaService`, `NotesService`) es:
+
+```json
+[
+  {
+    "id": 1674829302,
+    "fecha": "2026-01-27",
+    "autor": "Nombre Recepcionista",
+    "datos": { ... campos específicos del módulo ... }
+  }
+]
+```
+
+> [!NOTE]
+> La lógica de negocio (filtrado, ordenación, validación) reside 100% en el **Frontend** antes de enviar el paquete JSON final al servidor para su persistencia física.

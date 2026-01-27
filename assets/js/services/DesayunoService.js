@@ -11,6 +11,10 @@ class DesayunoService extends BaseService {
         super('riu_desayunos', {}); // Estructura: { "Hab": { pax: 1, hora: "06:30" } }
     }
 
+    async init() {
+        await this.syncWithServer();
+    }
+
     /**
      * OBTENER TODOS LOS DESAYUNOS
      */

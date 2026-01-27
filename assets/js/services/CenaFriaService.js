@@ -10,6 +10,10 @@ class CenaFriaService extends BaseService {
         super('riu_cenas_frias', {}); // Estructura: { "Hab": { pax: 2, obs: "..." } }
     }
 
+    async init() {
+        await this.syncWithServer();
+    }
+
     /**
      * OBTENER TODAS LAS SOLICITUDES
      */

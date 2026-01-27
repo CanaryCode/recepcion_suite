@@ -6,12 +6,17 @@
  * específicos y emiten un sonido de "Beep" sintetizado vía AudioContext.
  */
 
+import { systemAlarmsService } from '../services/SystemAlarmsService.js';
+
 let audioCtx = null;
 let beepInterval = null;
 
 const ALARM_CHECK_INTERVAL = 15000; // Check every 15s for better precision
 
-export function inicializarSystemAlarms() {
+export async function inicializarSystemAlarms() {
+    // Garantizar carga de datos desde disco
+    await systemAlarmsService.init();
+
     // Inyectar modal especifico para Alarmas de Sistema
     crearModalSystemAlert();
     iniciarMonitorAlarmas();

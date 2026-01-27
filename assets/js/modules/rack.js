@@ -198,7 +198,6 @@ async function saveRoomDetails() {
     });
 
     if (roomDetailsModal) roomDetailsModal.hide();
-    if (roomDetailsModal) roomDetailsModal.hide();
     renderRack(); // Re-render to show changes
     
     // Success Message

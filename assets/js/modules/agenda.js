@@ -21,8 +21,8 @@ export async function inicializarAgenda() {
     formAgenda = document.getElementById('formAgenda');
     agendaCuerpo = document.getElementById('agendaCuerpo');
 
-    // 1. Verificar si la agenda está cargada (lógica anti-corrupción)
-    await agendaService.verificarDatosIniciales();
+    // 1. Inicialización Robusta (Carga del servidor + Verificación)
+    await agendaService.init();
 
     // 2. Preparar el selector de teléfonos dinámico
     const wrapper = document.getElementById('telefonos-wrapper');

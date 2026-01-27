@@ -25,7 +25,10 @@ alarmaAudio.loop = true;             // Sonará en bucle hasta que se cierre el 
  * INICIALIZACIÓN
  * Configura el formulario, inyecta el modal de alarma y activa el verificador.
  */
-export function inicializarDespertadores() {
+export async function inicializarDespertadores() {
+    // Garantizar carga autoritativa
+    await despertadorService.init();
+
     const form = document.getElementById('formNuevoDespertador');
     if (form) {
         form.removeEventListener('submit', manejarSubmitDespertador);
@@ -227,26 +230,31 @@ function renderVistaRackDespertadores() {
 
     const despertadores = despertadorService.getDespertadores();
     const rangos = APP_CONFIG.HOTEL.STATS_CONFIG.RANGOS;
+    
+    // Optimización 1: Convertir Array a Map para búsqueda O(1)
+    const despMap = new Map();
+    despertadores.forEach(d => despMap.set(d.habitacion, d));
 
-    rackCont.innerHTML = '';
+    let html = '';
+    
+    // Optimización 2: Construir string HTML en memoria
     rangos.forEach(r => {
-        const header = document.createElement('div');
-        header.className = 'w-100 mt-3 mb-2 d-flex align-items-center';
-        header.innerHTML = `<span class="badge bg-secondary me-2">Planta ${r.planta}</span><hr class="flex-grow-1 my-0 opacity-25">`;
-        rackCont.appendChild(header);
+        html += `<div class="w-100 mt-3 mb-2 d-flex align-items-center"><span class="badge bg-secondary me-2">Planta ${r.planta}</span><hr class="flex-grow-1 my-0 opacity-25"></div>`;
 
         for (let i = r.min; i <= r.max; i++) {
             const num = i.toString().padStart(3, '0');
-            const data = despertadores.find(d => d.habitacion === num);
+            const data = despMap.get(num);
             const colorClass = data ? 'bg-warning text-dark' : 'bg-white text-muted border';
 
-            rackCont.innerHTML += `
+            html += `
             <div class="d-flex align-items-center justify-content-center rounded rack-box ${colorClass}" 
                  data-bs-toggle="tooltip" data-bs-title="${data ? 'Despertador: ' + data.hora + (data.comentario ? ' - ' + data.comentario : '') : 'Sin programar'}">
                 ${num}
             </div>`;
         }
     });
+
+    rackCont.innerHTML = html;
 
     statsCont.innerHTML = `
     <div class="col-md-4">
@@ -255,6 +263,9 @@ function renderVistaRackDespertadores() {
             <div class="h3 mb-0 fw-bold">${despertadores.length}</div>
         </div>
     </div>`;
+    
+    // Reinicializar tooltips si es necesario (La función global MutationObserver se encarga, 
+    // pero si falla, aquí sería el lugar)
 }
 
 /**
@@ -412,7 +423,7 @@ window.borrarAlarmaDesdeModal = async (hab) => {
 function imprimirDespertadores() {
     const user = Utils.validateUser();
     if (!user) return;
-    Utils.printSection('print-date-desp', 'print-repc-nombre-desp', user);
+    Utils.printSection('print-date-despertadores', 'print-repc-nombre-despertadores', user);
 }
 
 window.irADespertador = (hab) => {

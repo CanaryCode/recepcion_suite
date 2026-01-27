@@ -6,6 +6,9 @@
  * actuando como puente entre el usuario y el servicio de alarmas del sistema.
  */
 
+import { systemAlarmsService } from '../services/SystemAlarmsService.js';
+import { Utils } from '../core/Utils.js';
+
 export function inicializarSystemAlarmsUI() {
     const form = document.getElementById('formSystemAlarm');
     if (form) {

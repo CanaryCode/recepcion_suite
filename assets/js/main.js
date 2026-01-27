@@ -37,6 +37,11 @@ window.Utils = Utils;
  * Se ejecuta cuando el navegador termina de cargar el HTML básico.
  */
 document.addEventListener('DOMContentLoaded', async () => {
+    // FIX: Desactivar autocompletado globalmente para prevenir "basura" en los inputs
+    try {
+        document.querySelectorAll('form, input').forEach(el => el.setAttribute('autocomplete', 'off'));
+    } catch(e) { console.warn("No se pudo desactivar autocompletado", e); }
+
     // 0. CARGAR CONFIGURACIÓN (CRÍTICO)
     // El sistema no puede arrancar sin saber la URL de la API o la configuración del hotel.
     const configLoaded = await Config.loadConfig();
@@ -368,17 +373,13 @@ function inicializarSesionGlobal() {
     };
 
     function initSingleTooltip(el) {
+        // Optimization: If a tooltip already exists, do not recreate it.
+        // This prevents "Bootstrap doesn't allow more than one instance per element" errors
+        // and improves performance by avoiding unnecessary dispose/create cycles.
         const instance = bootstrap.Tooltip.getInstance(el);
-        const desiredDelay = { show: 700, hide: 100 };
+        if (instance) return;
         
-        if (instance) {
-            // Check if delay is correct. Accessing private config is risky, 
-            // but we can just dispose and recreate to be safe if we want to enforce it strict.
-            // Or only if we suspect it's wrong. 
-            // Let's go aggressive: Dispose ensuring our config wins.
-            // But checking instance._config.delay might be possible if we needed optimization.
-            instance.dispose();
-        }
+        const desiredDelay = { show: 700, hide: 100 };
         
         new bootstrap.Tooltip(el, {
             trigger: 'hover',

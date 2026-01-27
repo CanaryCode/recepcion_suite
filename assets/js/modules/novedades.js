@@ -14,7 +14,10 @@ import { sessionService } from '../services/SessionService.js';
 // INICIALIZACIÓN
 // ============================================================================
 
-export function inicializarNovedades() {
+export async function inicializarNovedades() {
+    // Garantizar carga autoritativa
+    await novedadesService.init();
+    
     const form = document.getElementById('formNovedad');
 
     if (form) {

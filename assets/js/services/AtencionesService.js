@@ -11,6 +11,10 @@ class AtencionesService extends BaseService {
         super('riu_atenciones_v2', {}); // Usamos un objeto { "101": {...}, "102": {...} }
     }
 
+    async init() {
+        await this.syncWithServer();
+    }
+
     async getAtenciones() {
         return await this.getAll();
     }

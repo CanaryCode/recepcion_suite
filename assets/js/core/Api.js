@@ -21,8 +21,18 @@ export const Api = {
      */
     async get(endpoint) {
         try {
-            const url = `${this.baseUrl}/${endpoint}`;
-            const response = await fetch(url);
+            // FIX: Añadimos timestamp para evitar caché del navegador
+            const separator = endpoint.includes('?') ? '&' : '?';
+            const url = `${this.baseUrl}/${endpoint}${separator}_t=${Date.now()}`;
+            
+            const response = await fetch(url, {
+                headers: {
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache',
+                    'Expires': '0'
+                }
+            });
+            
             if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
             return await response.json();
         } catch (error) {

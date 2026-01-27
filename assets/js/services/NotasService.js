@@ -12,6 +12,14 @@ class NotasService extends BaseService {
     }
 
     /**
+     * INICIALIZACIÓN ASÍNCRONA
+     * Asegura que los datos esten cargados del servidor antes de pintar.
+     */
+    async init() {
+        await this.syncWithServer();
+    }
+
+    /**
      * OBTENER TODAS LAS NOTAS
      * @returns {Object[]} Lista de notas guardadas.
      */

@@ -16,17 +16,25 @@ class SessionService {
      * OBTENER USUARIO ACTUAL
      * @returns {string|null} El nombre del recepcionista o null si nadie se ha identificado.
      */
+    /**
+     * OBTENER USUARIO ACTUAL
+     * @returns {string|null} El nombre del recepcionista o null si nadie se ha identificado.
+     */
     getUser() {
-        return LocalStorage.get(this.STORAGE_KEY, null);
+        // Migración: Si existe en LocalStorage (versión antigua), limpiarlo para respetar nueva política
+        if (localStorage.getItem(this.STORAGE_KEY)) {
+            localStorage.removeItem(this.STORAGE_KEY);
+        }
+        return sessionStorage.getItem(this.STORAGE_KEY);
     }
 
     /**
      * ESTABLECER USUARIO
-     * Guarda el nombre del nuevo recepcionista que entra al turno.
+     * Guarda el nombre del nuevo recepcionista temporalmente (solo esta pestana).
      */
     setUser(username) {
         if (username) {
-            LocalStorage.set(this.STORAGE_KEY, username);
+            sessionStorage.setItem(this.STORAGE_KEY, username);
         } else {
             this.logout();
         }
@@ -37,7 +45,7 @@ class SessionService {
      * Borra el nombre del usuario actual del sistema.
      */
     logout() {
-        LocalStorage.remove(this.STORAGE_KEY);
+        sessionStorage.removeItem(this.STORAGE_KEY);
     }
 
     /**

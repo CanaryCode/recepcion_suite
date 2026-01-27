@@ -158,15 +158,17 @@
                 </form>
 
                 <!-- Security Access Section -->
-                <div id="security-check-container" class="mt-4 border-top pt-3">
-                    <label class="form-label small fw-bold text-danger"><i class="bi bi-shield-lock-fill me-1"></i>Seguridad Requerida</label>
-                    <div class="input-group input-group-sm mb-2">
-                        <input type="password" class="form-control" id="security-pin-input" placeholder="Introducir código para editar" autocomplete="off" data-bs-toggle="tooltip" title="Introduce el código de supervisor">
-                        <button class="btn btn-outline-danger" type="button" id="btn-unlock-details" data-bs-toggle="tooltip" title="Desbloquear edición de formulario">
-                            <i class="bi bi-unlock-fill me-1"></i>Desbloquear
-                        </button>
+                <form onsubmit="return false;">
+                    <div id="security-check-container" class="mt-4 border-top pt-3">
+                        <label class="form-label small fw-bold text-danger"><i class="bi bi-shield-lock-fill me-1"></i>Seguridad Requerida</label>
+                        <div class="input-group input-group-sm mb-2">
+                            <input type="password" class="form-control" id="security-pin-input" placeholder="Introducir código para editar" autocomplete="off" data-bs-toggle="tooltip" title="Introduce el código de supervisor">
+                            <button class="btn btn-outline-danger" type="button" id="btn-unlock-details" data-bs-toggle="tooltip" title="Desbloquear edición de formulario">
+                                <i class="bi bi-unlock-fill me-1"></i>Desbloquear
+                            </button>
+                        </div>
                     </div>
-                </div>
+                </form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>

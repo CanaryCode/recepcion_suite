@@ -13,6 +13,14 @@ class SystemAlarmsService extends BaseService {
         this.initializeDefaults();
     }
 
+    async init() {
+        await this.syncWithServer();
+        // Si después de sincronizar sigue vacío, reaplicar defaults
+        if (this.getAll().length === 0) {
+            this.initializeDefaults();
+        }
+    }
+
     /**
      * CARGA INICIAL POR DEFECTO
      * Si el sistema arranca sin alarmas guardadas, las toma del archivo Config.js.

@@ -23,6 +23,9 @@ const ICONOS_ATENCION = {
 // ============================================================================
 
 export async function inicializarAtenciones() {
+    // Garantizar carga de datos
+    await atencionesService.init();
+
     const form = document.getElementById('formNuevaAtencion');
     if (form) form.addEventListener('submit', manejarSubmitAtencion);
 

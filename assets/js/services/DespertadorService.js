@@ -11,6 +11,10 @@ class DespertadorService extends BaseService {
         super('riu_despertadores');
     }
 
+    async init() {
+        await this.syncWithServer();
+    }
+
     /**
      * OBTENER TODOS LOS DESPERTADORES
      * Incluye una lógica de migración para convertir el antiguo formato de objeto 

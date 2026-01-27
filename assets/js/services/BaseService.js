@@ -69,30 +69,38 @@ export class BaseService {
     }
 
     /**
-     * RESTAURACIÓN INTELIGENTE
-     * Si detecta que no tenemos datos locales pero sí hay una copia de seguridad 
-     * en el servidor, los recupera automáticamente.
+     * RESTAURACIÓN INTELIGENTE (MODO JSON AUTHORITY)
+     * Da prioridad absoluta a los datos del servidor (archivos JSON).
+     * Si el servidor tiene datos, sobrescriben lo que haya en el navegador.
      */
     async syncWithServer() {
         if (!APP_CONFIG.SYSTEM.USE_SYNC_SERVER) return;
 
         try {
             const { syncManager } = await import('../core/SyncManager.js');
+            // Leemos del disco (JSON)
             const remoteData = await syncManager.pull(this.endpoint);
             
             if (remoteData) {
-                // Comprobamos si lo que tenemos localmente es diferente a lo remoto
-                const isLocalEmpty = !this.cache || (Array.isArray(this.cache) && this.cache.length === 0);
+                // FIX: El usuario quiere que SIEMPRE mande el JSON (disco), no el LocalStorage (navegador).
+                // Eliminamos la comprobación de "si está vacío". 
+                // Si hay datos en el servidor, esos son la VERDAD.
                 
-                // Si aquí no tenemos nada pero el servidor tiene una copia -> RESTAURAR
-                if (isLocalEmpty && remoteData.length > 0) {
-                    console.log(`[BaseService] Restaurando copia de seguridad de '${this.endpoint}'...`);
+                // Comprobamos si hay cambios reales para no machacar por gusto
+                const localStr = JSON.stringify(this.cache);
+                const remoteStr = JSON.stringify(remoteData);
+
+                if (localStr !== remoteStr) {
+                    console.log(`[BaseService] Sincronizando '${this.endpoint}' desde JSON (Autoridad)...`);
                     this.cache = remoteData;
                     LocalStorage.set(this.endpoint, remoteData);
-                } 
+                    
+                    // Opcional: Si quisiéramos refrescar la UI aquí, necesitaríamos eventos.
+                    // Por ahora, confiamos en que esto corre al inicio o recarga.
+                }
             }
         } catch (err) {
-            console.warn(`[BaseService] Error al comprobar copia de seguridad para ${this.endpoint}`, err);
+            console.warn(`[BaseService] Error al leer JSON para ${this.endpoint}`, err);
         }
     }
 }

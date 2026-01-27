@@ -17,6 +17,12 @@ class AgendaService extends BaseService {
     this.importKey = "riu_agenda_v_FINAL_v4_DEBUG"; 
   }
 
+  async init() {
+     await this.syncWithServer();
+     // También verificamos integridad después de sincronizar
+     await this.verificarDatosIniciales();
+  }
+
   async getAll() {
     if (this.cache) return this.cache;
     const data = await super.getAll();

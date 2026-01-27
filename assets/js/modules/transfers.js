@@ -17,7 +17,10 @@ let transferParaImprimir = null; // Objeto temporal para el ticket
 // INICIALIZACIÓN
 // ============================================================================
 
-export function inicializarTransfers() {
+export async function inicializarTransfers() {
+    // Garantizar carga autoritativa
+    await transfersService.init();
+
     // Configurar Event Listeners
     const form = document.getElementById('formTransfer');
     if (form) {
@@ -358,3 +361,10 @@ window.imprimirTransferTicket = (id) => {
 
 window.filtrarTransfers = mostrarTransfers;
 window.cambiarVistaTransfers = cambiarVistaTransfers;
+
+function imprimirTransfers() {
+    const user = Utils.validateUser();
+    if (!user) return;
+    Utils.printSection('print-date-transfers', 'print-repc-nombre-transfers', user);
+}
+window.imprimirTransfers = imprimirTransfers;

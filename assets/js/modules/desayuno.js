@@ -1,3 +1,7 @@
+import { Utils } from '../core/Utils.js';
+import { APP_CONFIG } from '../core/Config.js';
+import { desayunoService } from '../services/DesayunoService.js';
+
 /**
  * MÓDULO DE DESAYUNOS TEMPRANOS (desayuno.js)
  * ------------------------------------------
@@ -10,7 +14,10 @@
 // INICIALIZACIÓN
 // ============================================================================
 
-export function inicializarDesayuno() {
+export async function inicializarDesayuno() {
+    // Garantizar datos de disco
+    await desayunoService.init();
+
     const form = document.getElementById('formNuevoDesayuno');
     if (form) {
         form.removeEventListener('submit', manejarSubmitDesayuno);
@@ -159,12 +166,9 @@ function renderVistaRackDesayuno() {
     const rangos = APP_CONFIG.HOTEL.STATS_CONFIG.RANGOS;
     let totalPax = 0;
 
-    rackCont.innerHTML = '';
+    let html = '';
     rangos.forEach(r => {
-        const header = document.createElement('div');
-        header.className = 'w-100 mt-3 mb-2 d-flex align-items-center';
-        header.innerHTML = `<span class="badge bg-secondary me-2">Planta ${r.planta}</span><hr class="flex-grow-1 my-0 opacity-25">`;
-        rackCont.appendChild(header);
+        html += `<div class="w-100 mt-3 mb-2 d-flex align-items-center"><span class="badge bg-secondary me-2">Planta ${r.planta}</span><hr class="flex-grow-1 my-0 opacity-25"></div>`;
 
         for (let i = r.min; i <= r.max; i++) {
             const num = i.toString().padStart(3, '0');
@@ -173,13 +177,15 @@ function renderVistaRackDesayuno() {
 
             if (data) totalPax += parseInt(data.pax);
 
-            rackCont.innerHTML += `
+            html += `
                 <div class="d-flex align-items-center justify-content-center rounded rack-box ${colorClass}" 
                      data-bs-toggle="tooltip" data-bs-title="${data ? 'Pax: ' + data.pax + ' | Hora: ' + data.hora + (data.obs ? ' | Obs: ' + data.obs : '') : 'Sin pedido'}">
                     ${num}
                 </div>`;
         }
     });
+    
+    rackCont.innerHTML = html;
 
     statsCont.innerHTML = `
         <div class="col-md-4">

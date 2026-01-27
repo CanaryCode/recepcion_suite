@@ -327,9 +327,9 @@ function generarInterfazCaja() {
   renderizarInputs("monedas-container", monedas, "bi-coin", "MONEDAS");
 
   // Fondo por defecto
-  // FIX: Scope selector
-  const fondoInput = document.querySelector("#caja-content #caja_fondo");
-  if (fondoInput && fondoInput.id !== 'globalSearch' && !fondoInput.value) {
+  const fondoInput = document.getElementById("input_fondo_arqueo");
+
+  if (fondoInput && !fondoInput.value) {
     fondoInput.value = "2000.00";
   }
 
@@ -419,11 +419,12 @@ function calcularCaja() {
   if (valesInput) valesInput.value = Utils.formatCurrency(totalVales);
 
   // FONDO (Cargar y mostrar signo si existe el elemento)
-  // FIX: Usar selector específico para evitar colisiones con Search Global u otros inputs
-  const fondoInput = document.querySelector("#caja-content #caja_fondo");
+  // FIX: Usar getElementById para ser más específico y evitar colisiones
+  // FONDO (Cargar y mostrar signo si existe el elemento)
+  // FIX: Renombrado a ID único para evitar cualquier colisión con el buscador
+  const fondoInput = document.getElementById("input_fondo_arqueo");
   
-  // Verificación extra: Asegurar que NO es el buscador global (id specific check)
-  if (fondoInput && fondoInput.id !== 'globalSearch' && document.activeElement !== fondoInput) {
+  if (fondoInput) {
       fondoInput.value = Utils.formatCurrency(-Math.abs(fondoCajaValue));
   }
 
@@ -628,90 +629,152 @@ async function guardarCajaPDF() {
 
   const fecha = document.getElementById("caja_fecha")?.value || "fecha";
   const turno = document.getElementById("caja_turno")?.value || "turno";
-  const partes = fecha.split("-");
-  const fechaFormateada =
-    partes.length === 3 ? `${partes[2]}-${partes[1]}-${partes[0]}` : fecha;
-  const filename = `${fechaFormateada}-${turno}.pdf`;
+  // 0. Asegurar que los datos están calculados
+  calcularCaja();
 
-  // 1. Preparar CLON para manipular (Sin afectar la UI real)
-  const original = document.getElementById("caja-content");
-  const clone = original.cloneNode(true);
+  // --- FILENAME LOGIC FIX ---
+  let fechaVal = document.getElementById("caja_fecha")?.value;
+  let turnoVal = document.getElementById("caja_turno")?.value;
 
-  // 2. Crear Contenedor Temporal con clase PDF-EXPORT para forzar estilos
-  const wrapper = document.createElement("div");
-  wrapper.className = "pdf-export p-4"; // p-4 para margen interno blanco
-  wrapper.style.position = "absolute";
-  wrapper.style.left = "-9999px";
-  wrapper.style.top = "0";
-  wrapper.style.width = "210mm"; // A4 width hint
-  wrapper.appendChild(clone);
-  document.body.appendChild(wrapper);
-
-  // 3. Sincronizar Datos en el CLON
-  // Entradas de texto/numeros -> Atributos value para que salgan
-  const inputsOriginal = original.querySelectorAll("input, select, textarea");
-  const inputsClone = clone.querySelectorAll("input, select, textarea");
-
-  inputsClone.forEach((inputClone, i) => {
-    const inputOriginal = inputsOriginal[i];
-    if (inputOriginal) {
-      if (inputClone.tagName === "SELECT") {
-        try {
-          const selectedText =
-            inputOriginal.options[inputOriginal.selectedIndex]?.text ||
-            inputOriginal.value;
-          // Reemplazar select por span para mejor visualización
-          const span = document.createElement("span");
-          span.className = "fw-bold";
-          span.textContent = selectedText;
-          inputClone.parentNode.replaceChild(span, inputClone);
-        } catch (e) {}
-      } else {
-        inputClone.setAttribute("value", inputOriginal.value);
-        // Si es checkbox/radio
-        if (inputOriginal.checked)
-          inputClone.setAttribute("checked", "checked");
-      }
-    }
-  });
-
-  // Comentarios
-  const comentariosVal =
-    document.getElementById("caja_comentarios_cierre")?.value || "";
-  const printComentarios = clone.querySelector("#print-comentarios-caja");
-  if (printComentarios) {
-    printComentarios.textContent = comentariosVal;
-    printComentarios.classList.remove("d-none"); // Asegurar visible
+  if (!fechaVal) {
+      fechaVal = new Date().toISOString().split('T')[0];
+  }
+  if (!turnoVal || turnoVal === "turno") {
+      const h = new Date().getHours();
+      turnoVal = (h >= 7 && h < 15) ? "MAÑANA" : (h >= 15 && h < 23) ? "TARDE" : "NOCHE";
   }
 
-  // Cabeceras y Firmas (Están d-none en UI, forzar block en clon)
-  // Ya lo hace el CSS .pdf-export, pero aseguramos
-  const headerPrint = clone.querySelector(".report-header-print");
-  if (headerPrint) headerPrint.classList.remove("d-none");
+  const partes = fechaVal.split("-");
+  const fechaFormateada = partes.length === 3 ? `${partes[2]}-${partes[1]}-${partes[0]}` : fechaVal;
+  const filename = `${fechaFormateada}-${turnoVal}.pdf`;
 
-  const signature = clone.querySelector(".signature-area");
-  if (signature) signature.classList.remove("d-none");
+  // Sincronizar Comentarios (Textarea -> Div en reporte Real)
+  const comentariosVal = document.getElementById("caja_comentarios_cierre")?.value || "";
+  const printComentarios = document.getElementById("print-comentarios-caja");
+  if (printComentarios) {
+      printComentarios.innerText = comentariosVal;
+  }
 
-  // Vales
-  const printVales = clone.querySelector("#print-vales-details");
-  if (printVales) printVales.classList.remove("d-none");
+  // Sincronizar Cabeceras (DOM Real)
+  const dateEl = document.getElementById("print-date-caja");
+  const turnoEl = document.getElementById("print-turno-label");
+  const userEl = document.getElementById("print-repc-nombre-caja");
+  
+  const ahora = new Date();
+  const fechaHoraStr = `${fechaFormateada} ${ahora.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
 
-  // Desembolsos (Nuevo)
-  const printDesembolsos = clone.querySelector("#print-desembolsos-details");
-  if (printDesembolsos) printDesembolsos.classList.remove("d-none");
+  if (dateEl) dateEl.innerText = fechaHoraStr;
+  if (turnoEl) turnoEl.innerText = turnoVal;
+  if (userEl) userEl.innerText = user;
+
+  // 1. Crear Contenedor Temporal con el HTML limpio
+  const sourceView = document.getElementById("caja-print-report-view");
+  if (!sourceView) return;
+
+  const wrapper = document.createElement("div");
+  wrapper.className = "pdf-export";
+  wrapper.style.position = "fixed"; 
+  wrapper.style.left = "0";
+  wrapper.style.top = "0";
+  wrapper.style.zIndex = "9999"; 
+  wrapper.style.width = "100%"; 
+  wrapper.style.height = "100%"; 
+  wrapper.style.backgroundColor = "white"; 
+  wrapper.style.color = "black";
+  wrapper.style.padding = "20px";
+  wrapper.style.overflow = "auto";
+  wrapper.style.fontFamily = "Arial, sans-serif";
+  wrapper.style.boxSizing = "border-box";
+  
+  // Contenedor A4 (Estricto)
+  const a4Container = document.createElement("div");
+  a4Container.style.width = "210mm";
+  a4Container.style.minHeight = "297mm"; // A4 height
+  a4Container.style.backgroundColor = "white";
+  a4Container.style.boxShadow = "none"; 
+  a4Container.style.padding = "10mm"; 
+  // NO ZOOM
+  
+  // Estilos de compactación
+  const styles = `
+    <style>
+      .pdf-compact { font-family: Arial, sans-serif; color: #000; width: 100%; }
+      .pdf-compact h2 { font-size: 18pt !important; margin: 0 0 10px 0 !important; color: #0d6efd !important; }
+      .pdf-compact p { margin: 0 !important; font-size: 10pt !important; color: #666 !important; }
+      
+      .pdf-compact h4 { font-size: 12pt !important; margin: 0 !important; padding: 4px !important; }
+      .pdf-compact h5 { font-size: 10pt !important; margin: 8px 0 4px 0 !important; padding: 4px !important; background-color: #f0f0f0 !important; border-bottom: 1px solid #ccc !important; }
+      .pdf-compact h6 { font-size: 9pt !important; margin: 0 0 2px 0 !important; font-weight: bold !important; }
+      
+      .pdf-compact table { width: 100%; border-collapse: collapse; margin-bottom: 10px !important; table-layout: fixed !important; }
+      .pdf-compact td { padding: 3px 5px !important; font-size: 9pt !important; vertical-align: top; }
+      
+      .pdf-compact div { font-size: 9pt !important; }
+      
+      .pdf-compact .report-header-print { 
+          margin-bottom: 15px !important; 
+          padding-bottom: 10px !important; 
+          border-bottom: 2px solid #0d6efd !important; 
+          display: flex !important; 
+          justify-content: space-between !important; 
+      }
+      .pdf-compact .signature-area { 
+          margin-top: 30px !important; 
+          display: flex !important; 
+          justify-content: space-around !important; 
+      }
+      .pdf-compact hr { margin: 5px 0 !important; }
+    </style>
+  `;
+
+  // Inyectar HTML
+  a4Container.innerHTML = styles + `<div class="pdf-compact">${sourceView.innerHTML}</div>`;
+  wrapper.appendChild(a4Container);
+  
+  // Mensaje de estado
+  const msg = document.createElement("div");
+  msg.innerHTML = '<div class="spinner-border text-primary me-2" role="status"></div>Generando PDF...';
+  msg.style.position = "fixed";
+  msg.style.top = "20px";
+  msg.style.left = "50%";
+  msg.style.transform = "translateX(-50%)";
+  msg.style.padding = "10px 20px";
+  msg.style.background = "rgba(255,255,255,0.9)";
+  msg.style.borderRadius = "30px";
+  msg.style.boxShadow = "0 4px 15px rgba(0,0,0,0.2)";
+  msg.style.fontWeight = "bold";
+  msg.style.zIndex = "10000";
+  wrapper.appendChild(msg);
+
+  document.body.appendChild(wrapper);
+
+  // Guardar scroll actual y subir arriba del todo
+  const scrollY = window.scrollY;
+  window.scrollTo(0, 0);
 
   // 4. Configurar PDF
   const opt = {
-    margin: [5, 5, 5, 5], // Márgenes pequeños, el padding lo da el wrapper
+    margin: [0, 0, 0, 0], 
     filename: filename,
     image: { type: "jpeg", quality: 0.98 },
-    html2canvas: { scale: 2, useCORS: true, logging: false },
+    html2canvas: { 
+        scale: 2, 
+        useCORS: true, 
+        logging: true, 
+        scrollY: 0,
+        x: 0,
+        y: 0,
+        windowWidth: 800 
+    },
     jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
   };
 
   try {
+    // PAUSA DE SEGURIDAD PARA RENDERIZADO
+    await new Promise(resolve => setTimeout(resolve, 500));
+
     if (window.showSaveFilePicker) {
-      const pdfBlob = await html2pdf().set(opt).from(wrapper).output("blob");
+      // 1. Pedir archivo PRIMERO (dentro del "user gesture" del click)
       const handle = await window.showSaveFilePicker({
         suggestedName: filename,
         types: [
@@ -721,12 +784,19 @@ async function guardarCajaPDF() {
           },
         ],
       });
+
+      // 2. Generar PDF
+      const pdfBlob = await html2pdf().set(opt).from(a4Container).output("blob");
+      
+      // 3. Escribir
       const writable = await handle.createWritable();
       await writable.write(pdfBlob);
       await writable.close();
       await window.showAlert(`Guardado PDF: ${filename}`, "success");
+
     } else {
-      await html2pdf().set(opt).from(wrapper).save();
+      // Fallback clásico
+      await html2pdf().set(opt).from(a4Container).save();
       await window.showAlert(`Descargado PDF: ${filename}`, "success");
     }
   } catch (err) {
@@ -735,10 +805,13 @@ async function guardarCajaPDF() {
       await window.showAlert("Error al generar PDF.", "error");
     }
   } finally {
-    // 5. Limpieza
-    document.body.removeChild(wrapper);
+    // 5. Limpieza y Restauración de Scroll
+    if (document.body.contains(wrapper)) {
+        document.body.removeChild(wrapper);
+    }
+    window.scrollTo(0, scrollY);
   }
-}
+} // End guardarCajaPDF
 
 /**
  * REPORTE EMAIL (HTML Rico)

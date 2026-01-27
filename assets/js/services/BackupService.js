@@ -5,6 +5,23 @@
  * Su función principal es recolectar los datos de cada servicio y forzar su 
  * sincronización/guardado, actuando como un seguro contra pérdida de información.
  */
+
+import { agendaService } from './AgendaService.js';
+import { notasService } from './NotasService.js';
+import { novedadesService } from './NovedadesService.js';
+import { atencionesService } from './AtencionesService.js';
+import { desayunoService } from './DesayunoService.js';
+import { despertadorService } from './DespertadorService.js';
+import { estanciaService } from './EstanciaService.js';
+import { preciosService } from './PreciosService.js';
+import { safeService } from './SafeService.js';
+import { systemAlarmsService } from './SystemAlarmsService.js';
+import { ayudaService } from './AyudaService.js';
+import { riuService } from './RiuService.js';
+import { transfersService } from './TransfersService.js';
+import { cenaFriaService } from './CenaFriaService.js';
+import { rackService } from './RackService.js';
+
 class BackupService {
     constructor() {
         this.services = [

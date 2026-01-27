@@ -11,6 +11,10 @@ class NovedadesService extends BaseService {
         super('riu_novedades');
     }
 
+    async init() {
+        await this.syncWithServer();
+    }
+
     /**
      * OBTENER NOVEDADES
      */

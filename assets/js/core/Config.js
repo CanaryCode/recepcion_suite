@@ -65,6 +65,8 @@ export const Config = {
      * Permite cambiar la configuración actual sin recargar la página (uso interno).
      */
     updateMemory: (newConfig) => {
-        APP_CONFIG = newConfig;
+        // Al ser APP_CONFIG una constante, no podemos reasignarla.
+        // Usamos Object.assign para actualizar sus propiedades.
+        Object.assign(APP_CONFIG, newConfig);
     }
 };

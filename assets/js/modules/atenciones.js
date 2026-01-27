@@ -6,6 +6,10 @@
  * visualizarlos de forma gráfica en un rack dedicado para el departamento de pisos.
  */
 
+import { atencionesService } from '../services/AtencionesService.js';
+import { Utils } from '../core/Utils.js';
+import { APP_CONFIG } from '../core/Config.js';
+
 const ICONOS_ATENCION = {
     "Fruta": "bi-apple", "Fruta Especial": "bi-basket2", "Cava": "bi-cup-straw",
     "Flores": "bi-flower1", "Agua": "bi-droplet", "Mojo": "bi-bowl",

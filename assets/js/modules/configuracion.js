@@ -276,12 +276,13 @@ function configurarEventos() {
             container.innerHTML = '';
 
             items.forEach(item => {
-                const icon = item.isDirectory ? 'folder-fill text-warning' : 'file-earmark-text text-secondary';
-                // Solo dejar seleccionar ejecutables o carpetas
-                const isExe = item.name.toLowerCase().endsWith('.exe');
-                const isSelectable = item.isDirectory || isExe;
-                const opacity = isSelectable ? '1' : '0.5';
-                const cursor = isSelectable ? 'pointer' : 'default';
+                const icon = item.isDirectory ? 'folder-fill text-warning' : (item.name.toLowerCase().endsWith('.lnk') ? 'box-arrow-up-right text-info' : 'file-earmark-text text-secondary');
+                
+                // MEJORA: Permitimos seleccionar CUALQUIER archivo (exe, lnk, bat, pdf...)
+                // El backend usa "start" así que Windows sabrá qué hacer con él.
+                const isSelectable = true; 
+                const opacity = '1';
+                const cursor = 'pointer';
 
                 const div = document.createElement('div');
                 div.className = "list-group-item list-group-item-action d-flex align-items-center";
@@ -295,7 +296,7 @@ function configurarEventos() {
 
                 if (item.isDirectory) {
                     div.onclick = () => this.loadPath(item.path);
-                } else if (isExe) {
+                } else {
                     div.onclick = () => this.selectFile(item.path);
                 }
 

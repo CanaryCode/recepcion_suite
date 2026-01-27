@@ -54,8 +54,18 @@ const server = http.createServer((req, res) => {
             fs.readFile(filePath, 'utf8', (err, data) => {
                 if (err) {
                     if (err.code === 'ENOENT') {
-                        res.writeHead(200, { 'Content-Type': 'application/json' });
-                        res.end('null'); // Si no existe, devolvemos null en vez de error
+                        if (key === 'config') {
+                            // FIX CRITICO: Si falta config.json, devolver un objeto válido con defaults
+                            // Esto evita que versiones antiguas del frontend crasheen por null
+                            res.writeHead(200, { 'Content-Type': 'application/json' });
+                            res.end(JSON.stringify({ 
+                                SYSTEM: { API_URL: '/api', USE_SYNC_SERVER: true },
+                                HOTEL: { RECEPCIONISTAS: [] }
+                            }));
+                        } else {
+                            res.writeHead(200, { 'Content-Type': 'application/json' });
+                            res.end('null'); // Para otros archivos, null es aceptable
+                        }
                     } else {
                         res.writeHead(500);
                         res.end(JSON.stringify({ error: 'Read error' }));

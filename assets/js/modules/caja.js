@@ -24,7 +24,7 @@ let fondoCajaValue = (APP_CONFIG.CAJA?.FONDO !== undefined) ? APP_CONFIG.CAJA.FO
  */
 
 window.abrirModalVales = () => {
-  const modal = new bootstrap.Modal(document.getElementById("modalVales"));
+  const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById("modalVales"));
   renderVales();
   modal.show();
   setTimeout(() => document.getElementById("vale_concepto")?.focus(), 500);
@@ -131,7 +131,7 @@ function renderVales() {
  */
 
 window.abrirModalDesembolsos = () => {
-  const modal = new bootstrap.Modal(
+  const modal = bootstrap.Modal.getOrCreateInstance(
     document.getElementById("modalDesembolsos"),
   );
   renderDesembolsos();

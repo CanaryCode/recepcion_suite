@@ -239,7 +239,7 @@ function configurarEventos() {
         
         async open() {
             const modalEl = document.getElementById('modalFileBrowser');
-            const modal = new bootstrap.Modal(modalEl);
+            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
             modal.show();
             await this.loadPath("C:\\"); // Cargar raíz al abrir
         },

@@ -19,8 +19,8 @@ let systemModalInstance = null; // Instancia única del modal en el sistema
 
 // HTML base que se inyectará en la página al arrancar
 const modalHTML = `
-<div class="modal fade" id="globalSystemModal" tabindex="-1" style="z-index: 10060;" data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-dialog-centered">
+<div class="modal fade" id="globalSystemModal" tabindex="-1" style="z-index: 10060;" data-bs-backdrop="static" data-bs-keyboard="false" aria-labelledby="globalModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content shadow-lg border-0 overflow-hidden" id="globalModalContent">
             <div class="modal-header text-white border-0 py-2" id="globalModalHeader">
                 <h5 class="modal-title fw-bold" id="globalModalTitle">AVISO</h5>
@@ -43,9 +43,9 @@ const modalHTML = `
 function ensureModalExists() {
     if (!document.getElementById('globalSystemModal')) {
         document.body.insertAdjacentHTML('beforeend', modalHTML);
-        systemModalInstance = new bootstrap.Modal(document.getElementById('globalSystemModal'));
+        systemModalInstance = bootstrap.Modal.getOrCreateInstance(document.getElementById('globalSystemModal'));
     } else if (!systemModalInstance) {
-        systemModalInstance = new bootstrap.Modal(document.getElementById('globalSystemModal'));
+        systemModalInstance = bootstrap.Modal.getOrCreateInstance(document.getElementById('globalSystemModal'));
     }
     return systemModalInstance;
 }

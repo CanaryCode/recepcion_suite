@@ -167,7 +167,7 @@ window.openLaunchPad = () => {
         });
     }
 
-    const modal = new bootstrap.Modal(document.getElementById('launchPadModal'));
+    const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('launchPadModal'));
     modal.show();
 };
 
@@ -266,7 +266,7 @@ function inicializarSesionGlobal() {
     window.promptGlobalUser = () => {
         const input = document.getElementById('inputGlobalUser');
         if (input) input.value = '';
-        const modal = new bootstrap.Modal(document.getElementById('modalGlobalUser'));
+        const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalGlobalUser'));
         modal.show();
         setTimeout(() => input?.focus(), 500);
     };
@@ -427,7 +427,7 @@ window.navegarA = (tabSelector) => {
     // 1. Activate Tab
     const triggerEl = document.querySelector(`button[data-bs-target="${tabSelector}"]`);
     if (triggerEl) {
-        const tab = new bootstrap.Tab(triggerEl);
+        const tab = bootstrap.Tab.getOrCreateInstance(triggerEl);
         tab.show();
     } else {
         console.warn(`navegarA: No tab trigger found for selector ${tabSelector}`);

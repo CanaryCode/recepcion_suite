@@ -204,7 +204,7 @@ function showAlarmModal(alarm) {
         snoozeAlarm(alarm);
     };
 
-    const modal = new bootstrap.Modal(modalEl);
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
     modal.show();
 }
 

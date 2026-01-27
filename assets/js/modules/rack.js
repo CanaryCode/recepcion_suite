@@ -116,7 +116,7 @@ function openRoomDetails(roomNum) {
     if (!room) return;
 
     if (!roomDetailsModal) {
-        roomDetailsModal = new bootstrap.Modal(document.getElementById('roomDetailsModal'));
+        roomDetailsModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('roomDetailsModal'));
     }
 
     // Rellenar campos del modal

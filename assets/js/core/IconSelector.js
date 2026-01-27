@@ -50,7 +50,7 @@ export const IconSelector = {
         this.init();
         this.renderIcons(); // Dibujar todos los iconos iniciales
         
-        const modal = new bootstrap.Modal(document.getElementById('iconSelectorModal'));
+        const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('iconSelectorModal'));
         modal.show();
     },
 

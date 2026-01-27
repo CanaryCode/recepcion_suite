@@ -3,9 +3,10 @@ node_modules/
 .DS_Store
 Thumbs.db
 *.log
-storage/*.json
-!storage/precios.json
-!storage/ayuda.json
+# storage/*.json  <-- COMENTADO PARA SUBIR TODO
+# !storage/precios.json
+# !storage/ayuda.json
+# !storage/config.json
 
 # Portable binaries
 bin/

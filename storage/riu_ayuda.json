@@ -1,0 +1,191 @@
+{
+  "mañana": [],
+  "tarde": [],
+  "noche": [
+    {
+      "id": 1,
+      "texto": "<h6 class='mb-1 text-primary fw-bold'>1. Tareas Preparatorias</h6><b>Novedades:</b> Revisar novedades del turno de tarde y apagar luces.",
+      "hecho": false
+    },
+    {
+      "id": 2,
+      "texto": "<b>Material:</b> Reponer material (folios, grapas, etc.).",
+      "hecho": false
+    },
+    {
+      "id": 3,
+      "texto": "<b>Desayunos:</b> Comunicar despertadores y desayunos (Marcos/Antonio).",
+      "hecho": false
+    },
+    {
+      "id": 4,
+      "texto": "<b>Seguridad:</b> Cerrar accesos sistema (salvo puesto trabajo) y oficina.",
+      "hecho": false
+    },
+    {
+      "id": 5,
+      "texto": "<b>Datáfonos:</b> Realizar operaciones comercio y cierre antes 00:00.",
+      "hecho": false
+    },
+    {
+      "id": 6,
+      "texto": "<b>Control:</b> Firma de control de llaves de recepción.",
+      "hecho": false
+    },
+    {
+      "id": 7,
+      "texto": "<h6 class='mb-1 text-primary fw-bold mt-2'>2. Gestión Llegadas y Reservas</h6><b>Archivo Viajeros:</b> Archivar partes de llegada en casilleros.",
+      "hecho": false
+    },
+    {
+      "id": 8,
+      "texto": "<b>Auditoría Datos:</b> Revisar datos sistema vs reservas físicas (hab, pensión, localizador).",
+      "hecho": false
+    },
+    {
+      "id": 9,
+      "texto": "<b>Verif. Valoración:</b> Opción 1: Listado llegadas (grapar). Opción 2: Búsqueda reservas > Valoración total.",
+      "hecho": false
+    },
+    {
+      "id": 10,
+      "texto": "<b>Archivo Reservas:</b> Archivar al chequeadas en baúles verde/azul por fecha salida.",
+      "hecho": false
+    },
+    {
+      "id": 11,
+      "texto": "<b>Discrepancias:</b> Corregir fallos. Si duda precio, dejar pendiente turno mañana.",
+      "hecho": false
+    },
+    {
+      "id": 12,
+      "texto": "<b>Documentación:</b> Resto información a carpeta documentos sobrante.",
+      "hecho": false
+    },
+    {
+      "id": 13,
+      "texto": "<h6 class='mb-1 text-primary fw-bold mt-2'>3. Liquidación y Libro Caja</h6><b>Bar Hall:</b> Buscar cta restaurante (90...). Verificar efectivo/visas. Facturar.",
+      "hecho": false
+    },
+    {
+      "id": 14,
+      "texto": "<b>Libro Caja:</b> Lupa > 'Análisis completo por formas pago'. Puntear facturas y datáfonos.",
+      "hecho": false
+    },
+    {
+      "id": 15,
+      "texto": "<b>Desembolsos:</b> Imprimir listado 'Desembolsos Clientes'.",
+      "hecho": false
+    },
+    {
+      "id": 16,
+      "texto": "<b>Auditoría Fdas:</b> Revisar Facturas Emitidas (sin CLX 3 ni pago vacío). Corregir.",
+      "hecho": false
+    },
+    {
+      "id": 17,
+      "texto": "<h6 class='mb-1 text-primary fw-bold mt-2'>4. Errores e Ingresos</h6><b>Corrección:</b> Cancelar (rellamada 3) y refacturar correctamente.",
+      "hecho": false
+    },
+    {
+      "id": 18,
+      "texto": "<b>Ingreso:</b> Preparar sobre (Total Contado, Desembolsos, Vales firmados).",
+      "hecho": false
+    },
+    {
+      "id": 19,
+      "texto": "<b>Cálculo:</b> Contado - Desembolsos - Vales = Total Efectivo.",
+      "hecho": false
+    },
+    {
+      "id": 20,
+      "texto": "<b>Entrega Admin:</b> Juntar facturas, docs safes, spa, lavandería y sobre. Al safe.",
+      "hecho": false
+    },
+    {
+      "id": 21,
+      "texto": "<b>Caja Noche:</b> Conteo dinero, sellos y vales propios.",
+      "hecho": false
+    },
+    {
+      "id": 22,
+      "texto": "<h6 class='mb-1 text-primary fw-bold mt-2'>5. Cierre del Día</h6><b>Previa:</b> Sin CLX 3, Control Center a 0. Libro firmado. Listado cancelaciones.",
+      "hecho": false
+    },
+    {
+      "id": 23,
+      "texto": "<b>Control SS Fijos:</b> Listado previsión (detectar cargas mal o a 0).",
+      "hecho": false
+    },
+    {
+      "id": 24,
+      "texto": "<b>Ejecución:</b> Lupa > Cierre del día > Tabla procesos > Inicio. Confirmar.",
+      "hecho": false
+    },
+    {
+      "id": 25,
+      "texto": "<h6 class='mb-1 text-primary fw-bold mt-2'>6. Informes Post-Cierre</h6><b>Listados Admin:</b> Tabla 'ADMIN' > Resumen producción.",
+      "hecho": false
+    },
+    {
+      "id": 26,
+      "texto": "<b>Management Report:</b> Estadística Producción > Neto ON. Revisar y guardar.",
+      "hecho": false
+    },
+    {
+      "id": 27,
+      "texto": "<b>Estancias:</b> Rellenar Excel Estado Hotel (ordenador Paqui).",
+      "hecho": false
+    },
+    {
+      "id": 28,
+      "texto": "<h6 class='mb-1 text-primary fw-bold mt-2'>7. Fact. Agencias</h6><b>Listado Salidas:</b> Confirmar importes.",
+      "hecho": false
+    },
+    {
+      "id": 29,
+      "texto": "<b>Agrupadas:</b> Check Out > Buscar cuentas > Tipo titular > Masiva > A crédito.",
+      "hecho": false
+    },
+    {
+      "id": 30,
+      "texto": "<b>Individuales:</b> Fact. Masiva > Filtro titular. (No directos, Mirai, Expedia hotel, Booking...).",
+      "hecho": false
+    },
+    {
+      "id": 31,
+      "texto": "<b>Impresión:</b> Facturas Emitidas > Selección Control > Impresión Masiva.",
+      "hecho": false
+    },
+    {
+      "id": 32,
+      "texto": "<b>Relación:</b> Para Sr. Farrais. Enviar a Voxel correctamente.",
+      "hecho": false
+    },
+    {
+      "id": 33,
+      "texto": "<h6 class='mb-1 text-primary fw-bold mt-2'>8. Tareas Finales</h6><b>Archivar:</b> Créditos día y facturines salidas.",
+      "hecho": false
+    },
+    {
+      "id": 34,
+      "texto": "<b>Llegadas:</b> Chequear llegadas día con llaves. A la caja.",
+      "hecho": false
+    },
+    {
+      "id": 35,
+      "texto": "<b>Reservas:</b> Preparar carpeta llegadas y bandeja Emiliano.",
+      "hecho": false
+    },
+    {
+      "id": 36,
+      "texto": "<b>Libro:</b> Firmar libro recepción.",
+      "hecho": false
+    },
+    {
+      "id": 37,
+      "texto": "<b>Novedades:</b> Anotar para minibares/gobernantas (No Show, Check-in post-cierre).",
+      "hecho": false
+    }
+  ]
+}

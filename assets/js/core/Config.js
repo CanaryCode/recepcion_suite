@@ -28,6 +28,12 @@ export const Config = {
             // Actualizamos la variable global con los datos del servidor
             APP_CONFIG = data;
             
+            // FIX CRITICO: Forzamos ruta relativa para asegurar que funciona en cualquier PC/IP
+            // Esto sobrescribe cualquier valor incorrecto (como localhost) que venga del json
+            if (APP_CONFIG.SYSTEM) {
+                APP_CONFIG.SYSTEM.API_URL = '/api';
+            }
+            
             // Verificamos si hay "sobrescrituras" en el navegador (para pruebas o modo offline local)
             try {
                 const localOverride = localStorage.getItem('app_config_override');

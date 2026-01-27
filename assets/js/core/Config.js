@@ -7,7 +7,7 @@ export let APP_CONFIG = {
     SYSTEM: { 
         USE_API: false, 
         USE_SYNC_SERVER: true,
-        API_URL: 'http://localhost:3000/api'
+        API_URL: '/api'
     },
     HOTEL: { RECEPCIONISTAS: [] }
 };

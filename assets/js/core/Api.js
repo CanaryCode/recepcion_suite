@@ -12,7 +12,7 @@ export const Api = {
      * Obtiene la dirección del servidor (ej: http://localhost:3000/api) de la configuración global.
      */
     get baseUrl() {
-        return APP_CONFIG.SYSTEM.API_URL || 'http://localhost:3000/api';
+        return APP_CONFIG.SYSTEM.API_URL || '/api';
     },
 
     /**

@@ -114,10 +114,30 @@
 
             <div class="col-md-8 col-lg-6">
               <label class="form-label small fw-bold text-muted">Destino</label>
-              <input type="text" class="form-control" id="transfer_destino" list="transfer_destinos_list" placeholder="Seleccione o escriba..." required>
-              <datalist id="transfer_destinos_list">
-                <!-- Populated by JS -->
-              </datalist>
+              <div class="input-group">
+                <span class="input-group-text bg-white"
+                  ><i class="bi bi-geo-alt-fill text-danger"></i
+                ></span>
+                <select
+                  class="form-select"
+                  id="transfer_destino_select"
+                  required
+                >
+                  <option value="" selected disabled>
+                    Seleccione destino...
+                  </option>
+                  <option value="Aeropuerto Norte">✈️ Aeropuerto Norte</option>
+                  <option value="Aeropuerto Sur">✈️ Aeropuerto Sur</option>
+                  <option value="OTRO">✏️ Otro destino...</option>
+                </select>
+              </div>
+              <input
+                type="text"
+                class="form-control mt-2 d-none animate-fade-in"
+                id="transfer_destino_custom"
+                placeholder="Especifique el lugar de destino..."
+                disabled
+              />
             </div>
 
             <div class="col-md-12 col-lg-6">

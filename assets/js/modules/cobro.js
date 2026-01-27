@@ -6,6 +6,9 @@
  * sugiere el cambio óptimo (billetes y monedas) a entregar al cliente.
  */
 
+import { Utils } from '../core/Utils.js';
+import { APP_CONFIG } from '../core/Config.js';
+
 export function inicializarCobro() {
     const valores = APP_CONFIG.COBRO.VALORES;
     const rBil = document.getElementById('recibido-billetes');

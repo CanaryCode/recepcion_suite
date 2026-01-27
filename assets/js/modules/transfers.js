@@ -6,8 +6,13 @@
  * del día con el panel de control (Dashboard).
  */
 
+import { Utils } from '../core/Utils.js';
+import { APP_CONFIG } from '../core/Config.js';
+import { transfersService } from '../services/TransfersService.js';
+
 let transferParaImprimir = null; // Objeto temporal para el ticket
 
+// ============================================================================
 // ============================================================================
 // INICIALIZACIÓN
 // ============================================================================
@@ -20,6 +25,26 @@ export function inicializarTransfers() {
         form.addEventListener('submit', manejarSubmitTransfer);
     }
 
+    // LISTENER PARA EL SELECTOR DE DESTINO
+    const destinoSelect = document.getElementById('transfer_destino_select');
+    const destinoInput = document.getElementById('transfer_destino_custom');
+    
+    if (destinoSelect && destinoInput) {
+        destinoSelect.addEventListener('change', (e) => {
+            if (e.target.value === 'OTRO') {
+                destinoInput.classList.remove('d-none');
+                destinoInput.disabled = false;
+                destinoInput.required = true;
+                destinoInput.focus();
+            } else {
+                destinoInput.classList.add('d-none');
+                destinoInput.disabled = true;
+                destinoInput.required = false;
+                destinoInput.value = '';
+            }
+        });
+    }
+
     // Set default date to tomorrow for convenience
     const dateInput = document.getElementById('transfer_fecha');
     if (dateInput && !dateInput.value) {
@@ -28,14 +53,6 @@ export function inicializarTransfers() {
         dateInput.value = tomorrow.toISOString().split('T')[0];
     }
     
-    // Populate Destinations Datalist
-    if (APP_CONFIG.TRANSFERS && APP_CONFIG.TRANSFERS.DESTINOS) {
-        const dl = document.getElementById('transfer_destinos_list');
-        if (dl) {
-            dl.innerHTML = APP_CONFIG.TRANSFERS.DESTINOS.map(d => `<option value="${d}">`).join('');
-        }
-    }
-
     // Initial Render
     mostrarTransfers();
 }
@@ -62,7 +79,13 @@ function cambiarVistaTransfers(vista) {
         
         // Reset form for new entry if switching manually
         if (!document.getElementById('transfer_id').value) {
-             document.getElementById('formTransfer').reset();
+             const form = document.getElementById('formTransfer');
+             form.reset();
+             
+             // Reset UI del select manual
+             document.getElementById('transfer_destino_custom').classList.add('d-none');
+             document.getElementById('transfer_destino_select').value = "";
+
              // Restore default date
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
@@ -88,11 +111,19 @@ function manejarSubmitTransfer(e) {
     const hab = document.getElementById('transfer_hab').value.trim();
     const tipo = document.getElementById('transfer_tipo').value;
     const pax = document.getElementById('transfer_pax').value;
-    const destino = document.getElementById('transfer_destino').value.trim();
     const notas = document.getElementById('transfer_notas').value.trim();
 
+    // LÓGICA DE DESTINO MEJORADA
+    const selectDestino = document.getElementById('transfer_destino_select');
+    const inputDestino = document.getElementById('transfer_destino_custom');
+    
+    let destino = selectDestino.value;
+    if (destino === 'OTRO') {
+        destino = inputDestino.value.trim();
+    }
+
     if (!hab || !destino || !hora) {
-        alert("Por favor rellene los campos obligatorios.");
+        alert("Por favor rellene los campos obligatorios (Habitación, Hora y Destino).");
         return;
     }
 
@@ -103,7 +134,7 @@ function manejarSubmitTransfer(e) {
         hab,
         tipo,
         pax,
-        destino,
+        destino, // Guardamos el string final
         notas,
         autor,
         creadoEn: new Date().toISOString()
@@ -120,6 +151,9 @@ function manejarSubmitTransfer(e) {
     // Reset and return
     e.target.reset();
     document.getElementById('transfer_id').value = '';
+    // Reset visual del input custom
+    inputDestino.classList.add('d-none');
+    
     cambiarVistaTransfers('lista');
 }
 
@@ -266,7 +300,25 @@ window.editarTransfer = (id) => {
         document.getElementById('transfer_hab').value = item.hab;
         document.getElementById('transfer_tipo').value = item.tipo;
         document.getElementById('transfer_pax').value = item.pax;
-        document.getElementById('transfer_destino').value = item.destino;
+        
+        // LOGICA INTELIGENTE PARA POBLAR EL DESTINO EN EDICIÓN
+        const selectDestino = document.getElementById('transfer_destino_select');
+        const inputDestino = document.getElementById('transfer_destino_custom');
+        
+        const estandar = ["Aeropuerto Norte", "Aeropuerto Sur"];
+        
+        if (estandar.includes(item.destino)) {
+            selectDestino.value = item.destino;
+            inputDestino.classList.add('d-none');
+            inputDestino.disabled = true;
+            inputDestino.value = '';
+        } else {
+            selectDestino.value = 'OTRO';
+            inputDestino.classList.remove('d-none');
+            inputDestino.disabled = false;
+            inputDestino.value = item.destino;
+        }
+
         document.getElementById('transfer_notas').value = item.notas || '';
         
         cambiarVistaTransfers('form');

@@ -35,6 +35,7 @@ export async function inicializarNovedades() {
     // Configurar layout
     document.getElementById('novedades-formulario')?.classList.add('content-panel');
 
+    document.getElementById('btnVistaTrabajoNov')?.addEventListener('click', () => cambiarVistaNovedades('trabajo'));
     document.getElementById('btnVistaSoloNov')?.addEventListener('click', () => cambiarVistaNovedades('solo'));
 
     mostrarNovedades();

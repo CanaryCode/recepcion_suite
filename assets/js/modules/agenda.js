@@ -68,6 +68,9 @@ export async function inicializarAgenda() {
     // 6. Configurar IntersectionObserver para Scroll Infinito
     setupIntersectionObserver();
 
+    // 7. Configurar Filtros Avanzados y Ordenación
+    setupAdvancedFilters();
+
     // Botones de cambio de vista (Trabajo vs Lista completa)
     document.getElementById('btnVistaTrabajoAgenda')?.addEventListener('click', () => toggleViewAgenda('trabajo'));
     document.getElementById('btnVistaListaAgenda')?.addEventListener('click', () => toggleViewAgenda('lista'));
@@ -97,8 +100,9 @@ window.toggleViewAgenda = function(view) {
 }
 
 function manejarBusqueda(e) {
-    const term = e.target.value.trim();
-    mostrarContactos(term);
+    // El evento 'input' del buscador ahora también llama a mostrarContactos sin argumentos,
+    // ya que mostrarContactos leerá el valor del input directamente.
+    mostrarContactos();
 }
 
 /**
@@ -227,10 +231,6 @@ function toggleTelExt(select) {
 /**
  * OCULTAR/MOSTRAR CAMPOS SEGÚN CATEGORÍA
  * Si es una "Extensión", no necesitamos dirección, email ni web.
- */
-/**
- * OCULTAR/MOSTRAR CAMPOS SEGÚN CATEGORÍA
- * Si es una "Extensión", no necesitamos dirección, email ni web.
  * También bloquea el tipo de teléfono a "Ext".
  */
 function actualizarVisibilidadCampos() {
@@ -272,37 +272,154 @@ let currentFilteredContacts = [];
 let visibleCount = 50;
 const PAGE_SIZE = 50;
 
+// Estado de ordenación
+let currentSortColumn = 'nombre';
+let currentSortDirection = 'asc';
+
+/**
+ * CONFIGURACIÓN DE FILTROS AVANZADOS
+ */
+async function setupAdvancedFilters() {
+    // Eventos para Dropdowns (Change)
+    ['filterAgendaVinculo', 'filterAgendaCategoria', 'filterAgendaFavorito'].forEach(id => {
+        document.getElementById(id)?.addEventListener('change', () => mostrarContactos());
+    });
+
+    // Eventos para Inputs de Texto (Input) - Búsqueda en tiempo real
+    ['filterAgendaPais', 'filterAgendaCiudad'].forEach(id => {
+        document.getElementById(id)?.addEventListener('input', () => mostrarContactos());
+    });
+}
+
+/**
+ * RESETEAR FILTROS
+ */
+window.resetAgendaFilters = function() {
+    document.getElementById('searchAgenda').value = '';
+    document.getElementById('filterAgendaVinculo').value = '';
+    document.getElementById('filterAgendaPais').value = '';
+    document.getElementById('filterAgendaCategoria').value = '';
+    
+    const cityEl = document.getElementById('filterAgendaCiudad');
+    if(cityEl) cityEl.value = '';
+    
+    const favEl = document.getElementById('filterAgendaFavorito');
+    if(favEl) favEl.checked = false;
+
+    // Reset Sort
+    currentSortColumn = 'nombre';
+    currentSortDirection = 'asc';
+    updateSortIcons();
+    
+    mostrarContactos();
+}
+
+/**
+ * ORDENAR AGENDA (Click en Cabecera)
+ */
+window.ordenarAgenda = function(column) {
+    if (currentSortColumn === column) {
+        currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+        currentSortColumn = column;
+        currentSortDirection = 'asc';
+    }
+    updateSortIcons();
+    mostrarContactos();
+}
+
+function updateSortIcons() {
+    // Reset all icons
+    document.querySelectorAll('.sort-icon').forEach(i => i.className = 'bi bi-arrow-down-up ms-1 small text-muted sort-icon');
+    
+    // Update active icon
+    const activeIcon = document.getElementById(`sort-icon-${currentSortColumn}`);
+    if (activeIcon) {
+        activeIcon.className = `bi bi-arrow-${currentSortDirection === 'asc' ? 'down' : 'up'} ms-1 small text-primary sort-icon`;
+    }
+}
+
 /**
  * FILTRAR Y PREPARAR LISTA
- * Ordena por favoritos y alfabéticamente antes de filtrar por el término de búsqueda.
+ * Aplica filtros de texto, selectores y ordenación.
  */
-async function mostrarContactos(filtro = "") {
+async function mostrarContactos() {
     let contactos = await agendaService.getAll();
     try {
         if (!contactos || !Array.isArray(contactos)) {
             contactos = [];
         }
-
-        // Ordenar: Favoritos primero, luego Alfabético
-        contactos.sort((a, b) => {
-            if (a.favorito !== b.favorito) return b.favorito ? -1 : 1;
-            return a.nombre.localeCompare(b.nombre);
-        });
     } catch (e) {
-        console.error("Error sorting:", e);
+        console.error("Error fetching contacts:", e);
         contactos = [];
     }
 
-    // Aplicar Filtro
-    currentFilteredContacts = filtro.trim() === "" 
-        ? contactos 
-        : contactos.filter(c =>
-            c.nombre.toLowerCase().includes(filtro.toLowerCase()) ||
-            (c.telefonos && c.telefonos.some(t => t.numero && t.numero.includes(filtro))) ||
-            (c.email && c.email.toLowerCase().includes(filtro.toLowerCase()))
-        );
+    // 1. Obtener valores de filtrado
+    const searchTerm = document.getElementById('searchAgenda')?.value.trim().toLowerCase() || "";
+    const filterVinculo = document.getElementById('filterAgendaVinculo')?.value || "";
+    const filterPais = document.getElementById('filterAgendaPais')?.value.trim().toLowerCase() || "";
+    const filterCiudad = document.getElementById('filterAgendaCiudad')?.value.trim().toLowerCase() || "";
+    const filterCategoria = document.getElementById('filterAgendaCategoria')?.value || "";
+    const filterFavorito = document.getElementById('filterAgendaFavorito')?.checked || false;
+    
+    // 2. Aplicar Filtros
+    currentFilteredContacts = contactos.filter(c => {
+        // A. Filtro de Texto (Nombre, Tel, Email)
+        const matchText = searchTerm === "" || 
+            c.nombre.toLowerCase().includes(searchTerm) ||
+            (c.telefonos && c.telefonos.some(t => t.numero && t.numero.includes(searchTerm))) ||
+            (c.email && c.email.toLowerCase().includes(searchTerm));
 
-    // Resetear paginación en cada búsqueda
+        if (!matchText) return false;
+
+        // B. Filtro Favorito
+        if (filterFavorito && !c.favorito) return false;
+
+        // C. Filtro Vínculo
+        if (filterVinculo && c.vinculo !== filterVinculo) return false;
+
+        // D. Filtro Prioridad / Categoría
+        if (filterCategoria && c.categoria !== filterCategoria) return false;
+
+        // E. Filtro País (Búsqueda parcial en dirección o prefijos)
+        if (filterPais) {
+            const hasPhone = c.telefonos && c.telefonos.some(t => (t.prefijo || "").toLowerCase().includes(filterPais));
+            const hasAddress = c.direccion && c.direccion.pais && c.direccion.pais.toLowerCase().includes(filterPais);
+            if (!hasPhone && !hasAddress) return false;
+        }
+
+        // F. Filtro Ciudad (Búsqueda parcial)
+        if (filterCiudad) {
+            if (!c.direccion || !c.direccion.ciudad || !c.direccion.ciudad.toLowerCase().includes(filterCiudad)) return false;
+        }
+
+        return true;
+    });
+
+    // 3. Aplicar Ordenación
+    currentFilteredContacts.sort((a, b) => {
+        // Siempre Favoritos primero, a menos que el filtro Favorito esté activado (entonces todos son favoritos)
+        // Pero mantenemos la coherencia UX.
+        if (a.favorito !== b.favorito) return b.favorito ? -1 : 1;
+
+        let valA, valB;
+        
+        if (currentSortColumn === 'nombre') {
+            valA = a.nombre;
+            valB = b.nombre;
+        } else if (currentSortColumn === 'vinculo') {
+            valA = a.vinculo;
+            valB = b.vinculo;
+        } else if (currentSortColumn === 'categoria') {
+            valA = a.categoria;
+            valB = b.categoria;
+        }
+
+        const comparison = valA.localeCompare(valB);
+        return currentSortDirection === 'asc' ? comparison : -comparison;
+    });
+
+    // Resetear paginación en cada búsqueda/filtro
     visibleCount = PAGE_SIZE;
     
     // Actualizar Contadores UI

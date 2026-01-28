@@ -5840,10 +5840,19 @@
         "flag": ""
       }
     ],
+    "email": "",
+    "web": "",
+    "direccion": {
+      "pais": "",
+      "ciudad": "",
+      "calle": "",
+      "numero": "",
+      "cp": ""
+    },
     "vinculo": "Otro",
     "categoria": "Información",
     "comentarios": "",
-    "favorito": false
+    "favorito": true
   },
   {
     "id": 1769535559480,

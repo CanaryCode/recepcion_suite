@@ -1,6 +1,7 @@
 import { APP_CONFIG } from '../core/Config.js';
 import { agendaService } from '../services/AgendaService.js';
 import { Utils } from '../core/Utils.js';
+import { Ui } from '../core/Ui.js';
 
 /**
  * MÓDULO DE AGENDA DE CONTACTOS (agenda.js)
@@ -63,6 +64,9 @@ export async function inicializarAgenda() {
     // 5. Mostrar la lista inicial
     await mostrarContactos();
     actualizarVisibilidadCampos();
+
+    // 6. Configurar IntersectionObserver para Scroll Infinito
+    setupIntersectionObserver();
 
     // Botones de cambio de vista (Trabajo vs Lista completa)
     document.getElementById('btnVistaTrabajoAgenda')?.addEventListener('click', () => toggleViewAgenda('trabajo'));
@@ -305,20 +309,60 @@ async function mostrarContactos(filtro = "") {
     const totalEl = document.getElementById('totalContactos');
     if (totalEl) totalEl.innerText = currentFilteredContacts.length;
 
-    renderListaContactos();
+    renderListaContactos(false); // Render inicial (limpia todo)
 }
 
 /**
- * DIBUJAR TABLA DE CONTACTOS (Paginado)
- * Muestra solo los primeros N contactos e incluye un botón para cargar más si es necesario.
+ * CONFIGURAR SCROLL INFINITO (Ui.js)
  */
-function renderListaContactos() {
+let infiniteScrollController = null;
+
+function setupIntersectionObserver() {
+    infiniteScrollController = Ui.infiniteScroll({
+        onLoadMore: window.cargarMasContactos,
+        sentinelId: 'sentinel-loader'
+    });
+}
+
+// updateObserver ya no es necesario manualmente con Ui.js
+function updateObserver() {
+    // Legacy support or no-op since Ui handles it
+}
+
+/**
+ * DIBUJAR TABLA DE CONTACTOS
+ * @param {boolean} append - Si es true, añade al final. Si es false, borra y pinta de cero.
+ */
+function renderListaContactos(append = false) {
     if (!agendaCuerpo) return;
     
-    const slice = currentFilteredContacts.slice(0, visibleCount);
-    let html = '';
+    // Si no es append, limpiar todo primero
+    if (!append) {
+        agendaCuerpo.innerHTML = '';
+        visibleCount = Math.min(PAGE_SIZE, currentFilteredContacts.length > 0 ? currentFilteredContacts.length : PAGE_SIZE);
+    }
+
+    // Calcular qué trozo ("chunk") mostrar
+    // Si es append, mostramos desde el último visible hasta el nuevo límite.
+    // Si es reset, mostramos desde 0 hasta el límite.
+    
+    // FIX: Asegurar que no pedimos más de lo que hay
+    const total = currentFilteredContacts.length;
+    const start = append ? Math.max(0, visibleCount - PAGE_SIZE) : 0;
+    const end = Math.min(visibleCount, total);
+    
+    // Si start >= end y es append, no hay nada que pintar
+    if (append && start >= end) return;
+
+    const slice = currentFilteredContacts.slice(start, end);
+    
+    // Generar fragmento de documento
+    const fragment = document.createDocumentFragment();
 
     slice.forEach(c => {
+        const tr = document.createElement('tr');
+        if (c.favorito) tr.className = 'table-warning';
+
         const favIcon = c.favorito ? '<i class="bi bi-star-fill text-warning me-1"></i>' : '';
         let telList = (c.telefonos || []).map(t => `
             <div class="small fw-bold">
@@ -336,13 +380,12 @@ function renderListaContactos() {
         }
 
         const commHtml = c.comentarios ? `<div class="small fst-italic text-secondary mt-1 border-top pt-1">${c.comentarios}</div>` : '';
-
-        // Estilos de badges
+        
+        // Safety checks for undefined classes
         const vinculoClass = { "Empresa": "bg-secondary", "Cliente": "bg-info", "Hotel": "bg-primary", "Otro": "bg-light text-dark border" }[c.vinculo] || "bg-dark";
         const catClass = { "Urgencia": "bg-danger", "Información": "bg-primary", "Extensión": "bg-success" }[c.categoria] || "bg-secondary";
 
-        html += `
-            <tr class="${c.favorito ? 'table-warning' : ''}">
+        tr.innerHTML = `
                 <td style="width: 30%">
                     <div class="d-flex align-items-center">${favIcon}<i class="bi bi-person-badge me-2 text-muted"></i><strong>${c.nombre}</strong></div>
                     ${commHtml}
@@ -353,28 +396,34 @@ function renderListaContactos() {
                 <td style="width: 20%">
                     <button onclick="prepararEdicionAgenda(${c.id})" class="btn btn-sm btn-outline-primary border-0 me-1"><i class="bi bi-pencil"></i></button>
                     <button onclick="eliminarContacto(${c.id})" class="btn btn-sm btn-outline-danger border-0"><i class="bi bi-trash"></i></button>
-                </td>
-            </tr>`;
+                </td>`;
+        
+        fragment.appendChild(tr);
     });
 
-    // Botón "Cargar más"
-    if (visibleCount < currentFilteredContacts.length) {
-        html += `
-        <tr id="row-load-more">
-            <td colspan="5" class="text-center py-3">
-                <button class="btn btn-light text-primary fw-bold w-100" onclick="window.cargarMasContactos()">
-                    <i class="bi bi-arrow-down-circle me-2"></i>Cargar más contactos (${currentFilteredContacts.length - visibleCount} restantes)
-                </button>
-            </td>
-        </tr>`;
-    }
+    // Antes de añadir las nuevas filas, quitamos el loader viejo si existe
+    const existingSentinel = document.getElementById('sentinel-loader');
+    if (existingSentinel) existingSentinel.remove();
 
-    agendaCuerpo.innerHTML = html;
+    // Añadir el fragmento al DOM
+    agendaCuerpo.appendChild(fragment);
+
+    // Si aún quedan elementos por mostrar, ponemos el loader al final
+    if (visibleCount < total) {
+        const sentinelRow = Ui.createSentinelRow('sentinel-loader', 'Cargando más contactos...');
+        agendaCuerpo.appendChild(sentinelRow);
+        
+        // Reconexión gestionada por Ui, pero aseguramos
+        if (infiniteScrollController) infiniteScrollController.reconnect();
+    }
 }
 
 window.cargarMasContactos = function() {
+    // Evitar cargar si ya estamos mostrando todo
+    if (visibleCount >= currentFilteredContacts.length) return;
+
     visibleCount += PAGE_SIZE;
-    renderListaContactos();
+    renderListaContactos(true); // APPEND = TRUE
 };
 
 /**

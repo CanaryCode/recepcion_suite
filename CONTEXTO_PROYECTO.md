@@ -309,3 +309,31 @@ No existe un "JSON maestro" de especificación porque cada módulo define su pro
 
 > [!NOTE]
 > La lógica de negocio (filtrado, ordenación, validación) reside 100% en el **Frontend** antes de enviar el paquete JSON final al servidor para su persistencia física.
+
+## 9. Rendimiento y Carga de Datos (Lazy Load)
+
+Dado que la aplicación puede manejar miles de registros y eventualmente se conectará a una base de datos real, es **IMPERATIVO** que los módulos de listado (Agenda, Clientes, Histórico) implementen estrategias de carga diferida ("Lazy Loading").
+
+1.  **Prohibido "Cargar Todo" en el DOM**:
+    - Nunca volcar 1000 filas `<tr>` de golpe en una tabla. El navegador se congelará.
+    - Usar **Paginación** o **Scroll Infinito** (Infinite Scroll).
+
+2.  **Scroll Infinito (Recomendado)**:
+    - Utilizar `IntersectionObserver` para detectar cuando el usuario llega al final del scroll.
+    - Cargar/Mostrar bloques pequeños (ej: 50 elementos).
+    - Usar `append` para añadir los nuevos elementos al DOM, **nunca** repintar toda la lista (`innerHTML +=`) ya que eso destruye y recrea todos los nodos previos.
+
+3.  **Filtrado Eficiente**:
+    - Al filtrar por búsqueda, resetear la vista y mostrar solo el primer bloque de coincidencias.
+
+## 10. Core API (`Ui.js`)
+
+Para evitar duplicidad de código y asegurar consistencia, se ha creado una API central (`assets/js/core/Ui.js`) que maneja patrones de interfaz comunes.
+
+1.  **Infinite Scroll (Estándar)**:
+    - **NO** implementar `IntersectionObserver` manualmente en los módulos.
+    - Usar `Ui.infiniteScroll({ onLoadMore: miFuncion, sentinelId: 'mi-id' })`.
+    - Esto gestiona automáticamente la desconexión y reconexión segura del observador.
+
+2.  **Spinners y Sentinels**:
+    - Usar `Ui.createSentinelRow(id, texto, colspan)` para generar filas de carga estandarizadas.

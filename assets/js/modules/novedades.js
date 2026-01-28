@@ -1,5 +1,6 @@
 import { APP_CONFIG } from '../core/Config.js';
 import { Utils } from '../core/Utils.js';
+import { Ui } from '../core/Ui.js';
 import { novedadesService } from '../services/NovedadesService.js';
 import { sessionService } from '../services/SessionService.js';
 
@@ -34,10 +35,10 @@ export async function inicializarNovedades() {
     // Configurar layout
     document.getElementById('novedades-formulario')?.classList.add('content-panel');
 
-    document.getElementById('btnVistaTrabajoNov')?.addEventListener('click', () => cambiarVistaNovedades('trabajo'));
     document.getElementById('btnVistaSoloNov')?.addEventListener('click', () => cambiarVistaNovedades('solo'));
 
     mostrarNovedades();
+    setupIntersectionObserver();
 }
 
 /**
@@ -205,20 +206,62 @@ function manejarSubmitNovedad(e) {
  * Actualiza tanto el mini-resumen del Dashboard como la tabla principal de gestión.
  * Aplica estilos visuales según prioridad (Urgente = Rojo).
  */
+// ============================================================================
+// PAGINACIÓN Y RENDERIZADO (LAZY LOAD)
+// ============================================================================
+
+// ============================================================================
+// PAGINACIÓN Y RENDERIZADO (LAZY LOAD)
+// ============================================================================
+
+let currentFilteredNovedades = [];
+let visibleCount = 50;
+const PAGE_SIZE = 50;
+let infiniteScrollController = null;
+
+function setupIntersectionObserver() {
+    infiniteScrollController = Ui.infiniteScroll({
+        onLoadMore: window.cargarMasNovedades,
+        sentinelId: 'sentinel-loader-nov'
+    });
+}
+
+
+/**
+ * RENDERIZADO DE NOVEDADES (CONTROLLER)
+ * Prepara los datos, actualiza el Dashboard y llama al renderizado de la tabla.
+ */
 function mostrarNovedades() {
     const novedades = novedadesService.getNovedades();
 
-    // Dashboard: Solo pendientes y en proceso
+    // 1. Actualizar Dashboard (Siempre con los datos más recientes)
+    actualizarDashboardNovedades(novedades);
+
+    // 2. Preparar Lista Filtrada (Por ahora sin filtro de texto en UI, pero preparado)
+    // Ordenar por fecha desc (más reciente primero)
+    // Nota: El servicio ya suele devolverlas ordenadas, pero aseguramos
+    // Si hubiera filtro de búsqueda, lo aplicaríamos aquí
+    currentFilteredNovedades = [...novedades]; 
+    
+    // Resetear paginación
+    visibleCount = 50;
+    
+    // 3. Renderizar Tabla (Reset)
+    renderListaNovedades(false);
+}
+
+function actualizarDashboardNovedades(novedades) {
     const dashCol = document.getElementById('dash-col-novedades');
     const dashTabla = document.getElementById('dash-tabla-novedades');
     const dashCount = document.getElementById('dash-count-novedades');
+    
     const pendientes = novedades.filter(n => n.estado !== 'Terminada');
-
     if (dashCol) dashCol.classList.toggle('d-none', pendientes.length === 0);
     if (dashCount) dashCount.innerText = pendientes.length;
 
     if (dashTabla) {
         dashTabla.innerHTML = '';
+        // Solo mostrar las 5 más recientes en dashboard
         pendientes.slice(0, 5).forEach(n => {
             const color = n.prioridad === 'Urgente' ? 'text-danger' : 'text-info';
             dashTabla.innerHTML += `
@@ -228,19 +271,45 @@ function mostrarNovedades() {
             </tr>`;
         });
     }
+}
 
+/**
+ * DIBUJAR TABLA PRINCIPAL (VIEW)
+ * Soporta append para Infinite Scroll.
+ */
+function renderListaNovedades(append = false) {
     const tabla = document.getElementById('tablaNovedadesCuerpo');
     if (!tabla) return;
-    tabla.innerHTML = '';
 
-    novedades.forEach(n => {
+    if (!append) {
+        tabla.innerHTML = '';
+        visibleCount = Math.min(PAGE_SIZE, currentFilteredNovedades.length > 0 ? currentFilteredNovedades.length : PAGE_SIZE);
+    }
+
+    const total = currentFilteredNovedades.length;
+    const start = append ? Math.max(0, visibleCount - PAGE_SIZE) : 0;
+    const end = Math.min(visibleCount, total);
+
+    if (append && start >= end) return;
+
+    const slice = currentFilteredNovedades.slice(start, end);
+    const fragment = document.createDocumentFragment();
+
+    slice.forEach(n => {
         const isUrgente = n.prioridad === 'Urgente';
         let statusClass = 'bg-secondary';
         if (n.estado === 'En Proceso') statusClass = 'bg-info text-dark';
         if (n.estado === 'Terminada') statusClass = 'bg-success';
 
-        tabla.innerHTML += `
-        <tr id="nov-row-${n.id}" class="${isUrgente ? 'nov-urgente' : ''}">
+        const tr = document.createElement('tr');
+        tr.id = `nov-row-${n.id}`;
+        if (isUrgente) tr.className = 'nov-urgente';
+
+        const deptsBadges = n.departamentos.map(d => `<span class="badge bg-primary opacity-75 me-1" style="font-size: 0.6rem;">${d}</span>`).join('');
+        const comentarioHtml = n.comentario ? `<div class="mt-1 p-2 bg-light rounded small border-start border-3"><strong>Seguimiento:</strong> ${n.comentario}</div>` : '';
+        const modificadoHtml = n.fechaModificacion ? `<div class="text-info mt-1" style="font-size: 0.65rem;"><strong><i class="bi bi-info-circle me-1"></i>Modificado:</strong> ${n.fechaModificacion}</div>` : '';
+
+        tr.innerHTML = `
             <td class="small">
                 <div class="fw-bold">${n.fecha}</div>
                 <div class="text-muted">${n.hora}</div>
@@ -250,10 +319,10 @@ function mostrarNovedades() {
             </td>
             <td>
                 <div class="fw-bold mb-1">${n.texto}</div>
-                <div class="mb-1">${n.departamentos.map(d => `<span class="badge bg-primary opacity-75 me-1" style="font-size: 0.6rem;">${d}</span>`).join('')}</div>
+                <div class="mb-1">${deptsBadges}</div>
                 <div class="small text-muted">Escrito por: <strong>${n.autor}</strong></div>
-                ${n.comentario ? `<div class="mt-1 p-2 bg-light rounded small border-start border-3"><strong>Seguimiento:</strong> ${n.comentario}</div>` : ''}
-                ${n.fechaModificacion ? `<div class="text-info mt-1" style="font-size: 0.65rem;"><strong><i class="bi bi-info-circle me-1"></i>Modificado:</strong> ${n.fechaModificacion}</div>` : ''}
+                ${comentarioHtml}
+                ${modificadoHtml}
             </td>
             <td>
                 <select onchange="cambiarEstadoNovedad(${n.id}, this.value)" class="form-select form-select-sm ${statusClass} bg-opacity-10 fw-bold">
@@ -265,12 +334,34 @@ function mostrarNovedades() {
             <td class="text-end">
                 <button onclick="prepararEdicionNovedad(${n.id})" class="btn btn-sm btn-outline-primary border-0 me-1" data-bs-toggle="tooltip" data-bs-title="Editar"><i class="bi bi-pencil"></i></button>
                 <button onclick="eliminarNovedad(${n.id})" class="btn btn-sm btn-outline-danger border-0" data-bs-toggle="tooltip" data-bs-title="Eliminar"><i class="bi bi-trash"></i></button>
-            </td>
-        </tr>`;
+            </td>`;
+        
+        fragment.appendChild(tr);
     });
+
+    // Gestionar Sentinel con Ui.js
+    const existingSentinel = document.getElementById('sentinel-loader-nov');
+    if (existingSentinel) existingSentinel.remove();
+
+    tabla.appendChild(fragment);
+
+    if (visibleCount < total) {
+        const sentinelRow = Ui.createSentinelRow('sentinel-loader-nov', 'Cargando historial...', 5);
+        tabla.appendChild(sentinelRow);
+        
+        // Re-conectar (aunque Ui.infiniteScroll suele ser autosuficiente, si el elemento cambió de DOM
+        // puede necesitar refresh. El controlador lo hace un poco automatico pero mejor asegurar)
+        if (infiniteScrollController) infiniteScrollController.reconnect();
+    }
 
     if (window.checkDailySummaryVisibility) window.checkDailySummaryVisibility();
 }
+
+window.cargarMasNovedades = function() {
+    if (visibleCount >= currentFilteredNovedades.length) return;
+    visibleCount += PAGE_SIZE;
+    renderListaNovedades(true);
+};
 
 // ============================================================================
 // ACCIONES GLOBALES

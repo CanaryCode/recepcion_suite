@@ -43,6 +43,23 @@ const server = http.createServer((req, res) => {
         return;
     }
 
+    // API de HEARTBEAT (Latido): Evita que el servidor se cierre por inactividad
+    // El frontend llama a esto cada pocos segundos.
+    if (pathname === '/api/heartbeat') {
+        // Resetear el timer de muerte súbita
+        if (shutdownTimer) clearTimeout(shutdownTimer);
+        
+        // Configurar nuevo timer de 60 segundos (más robusto contra bloqueos de UI del cliente)
+        shutdownTimer = setTimeout(() => {
+            console.log('No heartbeat received (Client Disconnected). Shutting down...');
+            process.exit(0);
+        }, 60000);
+
+        res.writeHead(200, { 'Content-Type': 'text/plain' });
+        res.end('OK');
+        return;
+    }
+
     // API de Almacenamiento: /api/storage/:key
     // Permite guardar y leer archivos JSON en la carpeta storage.
     const storageMatch = pathname.match(/^\/api\/storage\/([\w-]+)$/);

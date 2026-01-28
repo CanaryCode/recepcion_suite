@@ -8,6 +8,7 @@
 
 import { Utils } from '../core/Utils.js';
 import { APP_CONFIG } from '../core/Config.js';
+import { Ui } from '../core/Ui.js';
 import { transfersService } from '../services/TransfersService.js';
 
 let transferParaImprimir = null; // Objeto temporal para el ticket
@@ -57,7 +58,9 @@ export async function inicializarTransfers() {
     }
     
     // Initial Render
+    // Initial Render
     mostrarTransfers();
+    setupIntersectionObserverTransfers();
 }
 
 function cambiarVistaTransfers(vista) {
@@ -164,73 +167,144 @@ function manejarSubmitTransfer(e) {
 // RENDER
 // ============================================================================
 
+// ============================================================================
+// PAGINACIÓN Y RENDERIZADO (LAZY LOAD)
+// ============================================================================
+
+// ============================================================================
+// PAGINACIÓN Y RENDERIZADO (LAZY LOAD)
+// ============================================================================
+
+let currentFilteredTransfers = [];
+let visibleCountTransfers = 50;
+const PAGE_SIZE_TRANSFERS = 50;
+let infiniteScrollControllerTransfers = null;
+
+function setupIntersectionObserverTransfers() {
+    infiniteScrollControllerTransfers = Ui.infiniteScroll({
+        onLoadMore: window.cargarMasTransfers,
+        sentinelId: 'sentinel-loader-transfers'
+    });
+}
+
 /**
- * RENDER LISTADO DE TRANSFERS
- * Muestra las reservas de transporte, destacando en color azul las de HOY.
+ * RENDER LÓGICO DE TRANSFERS (Controller)
+ * Prepara los datos, limpia antiguos y actualiza dashboard.
  */
 function mostrarTransfers() {
-    const contenedor = document.getElementById('tablaTransfersCuerpo');
-    const emptyState = document.getElementById('transfers-empty-state');
-    const busqueda = document.getElementById('transfersSearch')?.value.toLowerCase() || '';
-
-    if (!contenedor) return;
-
     // Clean old
     transfersService.cleanupOld(3); // Keep 3 days of history
-
-    let items = transfersService.getAll();
     
+    // Obtener todos
+    let items = transfersService.getAll();
+    const busqueda = document.getElementById('transfersSearch')?.value.toLowerCase() || '';
+
     // Filter
     if (busqueda) {
         items = items.filter(t => t.hab.toLowerCase().includes(busqueda) || t.destino.toLowerCase().includes(busqueda));
     }
-
-    contenedor.innerHTML = '';
-
-    if (items.length === 0) {
-        emptyState?.classList.remove('d-none');
-    } else {
-        emptyState?.classList.add('d-none');
-        
-        items.forEach(t => {
-            const isToday = t.fecha === new Date().toISOString().split('T')[0];
-            const rowClass = isToday ? 'table-info bg-opacity-10' : '';
-            
-            contenedor.innerHTML += `
-                <tr class="${rowClass}">
-                    <td class="ps-4">
-                        <div class="fw-bold text-dark">${Utils.formatDate(t.fecha)}</div>
-                        <div class="fs-5 text-primary fw-bold font-monospace">${t.hora}</div>
-                    </td>
-                    <td><span class="badge bg-secondary fs-6">${t.hab}</span></td>
-                    <td>
-                        ${getIconoTipo(t.tipo)} <span class="small fw-bold">${t.tipo}</span>
-                    </td>
-                    <td>${t.pax}</td>
-                    <td>
-                        <div class="fw-bold">${t.destino}</div>
-                        ${t.notas ? `<div class="small text-muted fst-italic"><i class="bi bi-info-circle me-1"></i>${t.notas}</div>` : ''}
-                    </td>
-                    <td><small class="text-muted">${t.autor}</small></td>
-                    <td class="text-end pe-4">
-                        <button class="btn btn-sm btn-outline-dark me-1" onclick="imprimirTransferTicket(${t.id})" data-bs-toggle="tooltip" title="Imprimir Ticket">
-                            <i class="bi bi-printer-fill"></i>
-                        </button>
-                        <button class="btn btn-sm btn-outline-primary me-1" onclick="editarTransfer(${t.id})" data-bs-toggle="tooltip" title="Editar">
-                            <i class="bi bi-pencil-fill"></i>
-                        </button>
-                        <button class="btn btn-sm btn-outline-danger" onclick="eliminarTransfer(${t.id})" data-bs-toggle="tooltip" title="Eliminar">
-                            <i class="bi bi-trash-fill"></i>
-                        </button>
-                    </td>
-                </tr>
-            `;
-        });
-    }
-
+    
+    currentFilteredTransfers = [...items];
+    
     // Actualizar Widget Dashboard
     actualizarDashboardTransfers();
+
+    // Resetear paginación y renderizar lista
+    visibleCountTransfers = PAGE_SIZE_TRANSFERS;
+    renderListaTransfers(false);
 }
+
+/**
+ * DIBUJAR TABLA DE TRANSFERS (View)
+ * Soporta append para Infinite Scroll.
+ */
+function renderListaTransfers(append = false) {
+    const contenedor = document.getElementById('tablaTransfersCuerpo');
+    const emptyState = document.getElementById('transfers-empty-state');
+    
+    if (!contenedor) return;
+
+    if (!append) {
+        contenedor.innerHTML = '';
+        visibleCountTransfers = Math.min(PAGE_SIZE_TRANSFERS, currentFilteredTransfers.length > 0 ? currentFilteredTransfers.length : PAGE_SIZE_TRANSFERS);
+        
+        // Manejo de estado vacío
+        if (currentFilteredTransfers.length === 0) {
+            emptyState?.classList.remove('d-none');
+            return; 
+        } else {
+            emptyState?.classList.add('d-none');
+        }
+    }
+
+    const total = currentFilteredTransfers.length;
+    const start = append ? Math.max(0, visibleCountTransfers - PAGE_SIZE_TRANSFERS) : 0;
+    const end = Math.min(visibleCountTransfers, total);
+
+    if (append && start >= end) return;
+
+    const slice = currentFilteredTransfers.slice(start, end);
+    const fragment = document.createDocumentFragment();
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    slice.forEach(t => {
+        const isToday = t.fecha === todayStr;
+        const rowClass = isToday ? 'table-info bg-opacity-10' : '';
+        
+        const tr = document.createElement('tr');
+        if(rowClass) tr.className = rowClass;
+
+        tr.innerHTML = `
+                <td class="ps-4">
+                    <div class="fw-bold text-dark">${Utils.formatDate(t.fecha)}</div>
+                    <div class="fs-5 text-primary fw-bold font-monospace">${t.hora}</div>
+                </td>
+                <td><span class="badge bg-secondary fs-6">${t.hab}</span></td>
+                <td>
+                    ${getIconoTipo(t.tipo)} <span class="small fw-bold">${t.tipo}</span>
+                </td>
+                <td>${t.pax}</td>
+                <td>
+                    <div class="fw-bold">${t.destino}</div>
+                    ${t.notas ? `<div class="small text-muted fst-italic"><i class="bi bi-info-circle me-1"></i>${t.notas}</div>` : ''}
+                </td>
+                <td><small class="text-muted">${t.autor}</small></td>
+                <td class="text-end pe-4">
+                    <button class="btn btn-sm btn-outline-dark me-1" onclick="imprimirTransferTicket(${t.id})" data-bs-toggle="tooltip" title="Imprimir Ticket">
+                        <i class="bi bi-printer-fill"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-primary me-1" onclick="editarTransfer(${t.id})" data-bs-toggle="tooltip" title="Editar">
+                        <i class="bi bi-pencil-fill"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="eliminarTransfer(${t.id})" data-bs-toggle="tooltip" title="Eliminar">
+                        <i class="bi bi-trash-fill"></i>
+                    </button>
+                </td>
+        `;
+        fragment.appendChild(tr);
+    });
+
+    // Gestión del Sentinel con Ui.js
+    const existingSentinel = document.getElementById('sentinel-loader-transfers');
+    if (existingSentinel) existingSentinel.remove();
+
+    contenedor.appendChild(fragment);
+
+    if (visibleCountTransfers < total) {
+        // Usar helper de Ui
+        const sentinelRow = Ui.createSentinelRow('sentinel-loader-transfers', 'Cargando reservas...', 7);
+        contenedor.appendChild(sentinelRow);
+        
+        // Reconectar si es necesario
+        if (infiniteScrollControllerTransfers) infiniteScrollControllerTransfers.reconnect();
+    }
+}
+
+window.cargarMasTransfers = function() {
+    if (visibleCountTransfers >= currentFilteredTransfers.length) return;
+    visibleCountTransfers += PAGE_SIZE_TRANSFERS;
+    renderListaTransfers(true);
+};
 
 /**
  * Actualiza el widget de Transfers en el Dashboard principal ("Resumen del Día")

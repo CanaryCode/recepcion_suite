@@ -380,17 +380,12 @@ function inicializarSesionGlobal() {
     };
 
     function initSingleTooltip(el) {
-        // Optimization: If a tooltip already exists, do not recreate it.
-        // This prevents "Bootstrap doesn't allow more than one instance per element" errors
-        // and improves performance by avoiding unnecessary dispose/create cycles.
-        const instance = bootstrap.Tooltip.getInstance(el);
-        if (instance) return;
-        
         const desiredDelay = { show: 700, hide: 100 };
         
-        new bootstrap.Tooltip(el, {
+        // Use getOrCreateInstance to prevent "instance already exists" errors
+        bootstrap.Tooltip.getOrCreateInstance(el, {
             trigger: 'hover',
-            container: 'body', // Force body to avoid clipping in navbars/modals
+            container: 'body', 
             delay: desiredDelay,
             html: true,
             placement: el.dataset.bsPlacement || 'top'

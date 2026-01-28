@@ -44,16 +44,15 @@ const server = http.createServer((req, res) => {
     }
 
     // API de HEARTBEAT (Latido): Evita que el servidor se cierre por inactividad
-    // El frontend llama a esto cada pocos segundos.
     if (pathname === '/api/heartbeat') {
         // Resetear el timer de muerte súbita
         if (shutdownTimer) clearTimeout(shutdownTimer);
         
-        // Configurar nuevo timer de 60 segundos (más robusto contra bloqueos de UI del cliente)
+        // Configurar nuevo timer de 24 HORAS (Persistencia total durante el turno)
         shutdownTimer = setTimeout(() => {
-            console.log('No heartbeat received (Client Disconnected). Shutting down...');
+            console.log('No heartbeat received for 24 hours. Shutting down...');
             process.exit(0);
-        }, 60000);
+        }, 86400000); 
 
         res.writeHead(200, { 'Content-Type': 'text/plain' });
         res.end('OK');
@@ -245,15 +244,24 @@ const server = http.createServer((req, res) => {
 });
 
 // --- INICIO DEL SERVIDOR ---
+server.on('error', (e) => {
+    if (e.code === 'EADDRINUSE') {
+        console.error('CRITICAL ERROR: Port 3000 is already in use by another program.');
+        console.error('Please close other instances of the application and try again.');
+    } else {
+        console.error('Server error:', e);
+    }
+});
+
 server.listen(PORT, () => {
     console.log(`ZERO-DEPENDENCY Server running at http://localhost:${PORT}`);
-    console.log('SERVER VERSION 4.0 [WEB EDITION]'); // Identificador visual de versión
+    console.log('SERVER VERSION 4.1 [STABILITY PATCH]'); 
     console.log(`Storage endpoint: http://localhost:${PORT}/api/storage/KEY`);
 
     // Iniciar el timer de muerte súbita (se cancelará si llega un heartbeat)
-    // Esto evita que el server se quede colgado si abres el exe y nunca abres el navegador
+    // Aumentado a 60 segundos por si el navegador tarda en abrir/cargar
     shutdownTimer = setTimeout(() => {
-         console.log('Initial startup timeout. No client connected. Shutting down...');
+         console.log('Initial startup timeout. No client connected within 60s. Shutting down...');
          process.exit(0);
-    }, 15000); // Dar 15 segundos al inicio para abrir el navegador
+    }, 60000); 
 });

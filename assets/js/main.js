@@ -137,10 +137,53 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         console.log("Sistema completamente inicializado.");
 
-        // --- HEARTBEAT PARA AUTO-CIERRE ---
-        // Envía una señal al servidor cada 2 segundos. Si se detiene (cierre de pestaña), el server se apaga.
+        // --- HEARTBEAT PARA AUTO-CIERRE ROBUSTO ---
+        // Mantiene vivo el servidor (24h timeout). Si falla, informa al usuario sin bloquear la consola.
+        let heartbeatFailures = 0;
+        const maxFailures = 5;
+
         setInterval(() => {
-            fetch('/api/heartbeat').catch(() => console.log('Server unreachable'));
+            fetch('/api/heartbeat').then(() => {
+                heartbeatFailures = 0; // Reset si hay éxito
+            }).catch(() => {
+                heartbeatFailures++;
+                if (heartbeatFailures < maxFailures) {
+                    console.warn(`Server unreachable (Attempt ${heartbeatFailures}/${maxFailures})`);
+                } else if (heartbeatFailures === maxFailures) {
+                    console.error("Connection to server lost permanently. Stopping heartbeat.");
+                    
+                    // MOSTRAR PANTALLA DE RECUPERACIÓN (Overlay Bloqueante)
+                    // No podemos reiniciar el exe desde aquí (seguridad del navegador),
+                    // pero podemos guiar al usuario para que lo haga y recargue.
+                    const overlay = document.createElement('div');
+                    overlay.id = 'server-lost-overlay';
+                    overlay.innerHTML = `
+                        <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+                                    background: rgba(0,0,0,0.85); z-index: 10000; 
+                                    display: flex; flex-direction: column; align-items: center; justify-content: center; 
+                                    color: white; font-family: 'Segoe UI', system-ui, sans-serif; text-align: center;">
+                            <div style="font-size: 4rem; color: #dc3545; margin-bottom: 20px;">
+                                <i class="bi bi-wifi-off"></i>
+                            </div>
+                            <h1 style="font-size: 2rem; margin-bottom: 10px;">¡Conexión Perdida!</h1>
+                            <p style="font-size: 1.2rem; max-width: 600px; margin-bottom: 30px; opacity: 0.9;">
+                                El servidor de la aplicación se ha detenido o no responde.<br>
+                                Esto puede ocurrir si el PC entró en suspensión profunda o se cerró el programa.
+                            </p>
+                            
+                            <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; margin-bottom: 30px; border: 1px solid rgba(255,255,255,0.2);">
+                                <strong style="display: block; margin-bottom: 10px; color: #ffc107;">PASO 1:</strong>
+                                Ejecuta de nuevo el icono <strong>"Recepcion Suite"</strong> en el escritorio.
+                            </div>
+
+                            <button onclick="location.reload()" 
+                                    style="padding: 12px 30px; font-size: 1.1rem; background: #0d6efd; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: background 0.2s;">
+                                <i class="bi bi-arrow-clockwise me-2"></i>PASO 2: Reconectar
+                            </button>
+                        </div>`;
+                    document.body.appendChild(overlay);
+                }
+            });
         }, 2000);
 
     }, 100);

@@ -337,3 +337,22 @@ Para evitar duplicidad de código y asegurar consistencia, se ha creado una API 
 
 2.  **Spinners y Sentinels**:
     - Usar `Ui.createSentinelRow(id, texto, colspan)` para generar filas de carga estandarizadas.
+
+## 11. Solución de Problemas (Troubleshooting)
+
+### 11.1. SmartScreen (Pantalla Azul "Windows protegió su PC")
+
+Si al ejecutar `RecepcionSuite.exe` Windows bloquea la aplicación por falta de firma digital:
+
+1.  Abrir **PowerShell** como Administrador.
+2.  Ejecutar el comando de desbloqueo:
+    ```powershell
+    Unblock-File -Path ".\RecepcionSuite.exe"
+    ```
+
+### 11.2. Error de Conexión ("Server Lost")
+
+Si aparece la pantalla negra de "Conexión Perdida":
+
+- **Causa**: El servidor Node.js se detuvo (timeout de 24h o suspensión del PC).
+- **Solución**: Ejecutar nuevamente el acceso directo del escritorio y pulsar "Reconectar" en el navegador.

@@ -105,6 +105,7 @@ async function manejarSubmitCliente(e) {
         clientes = clientes.map(c => c.id === editId ? cliente : c);
         riuService.saveClientes(clientes);
         editId = null;
+        document.getElementById('btnSubmitRiu').innerHTML = '<i class="bi bi-person-check-fill me-2"></i>Registrar Cliente';
     } else {
         riuService.addCliente(cliente);
     }
@@ -161,11 +162,11 @@ export async function mostrarClientes() {
 
         tabla.innerHTML += `
             <tr>
-                <td>${c.nombre}</td>
-                <td>${c.habitacion}</td>
+                <td class="fw-bold">${c.nombre}</td>
+                <td><span class="badge bg-secondary">${c.habitacion}</span></td>
                 <td><span class="badge ${badgeClass}">${c.tipo_tarjeta}</span></td>
                 <td>${Utils.formatDate(c.fecha_salida)}</td>
-                <td>${c.comentarios}</td>
+                <td class="small text-muted">${c.comentarios}</td>
                 <td class="text-end">
                     <button onclick="prepararEdicionCliente(${c.id})" class="btn btn-sm btn-outline-primary border-0 me-1" data-bs-toggle="tooltip" data-bs-title="Editar"><i class="bi bi-pencil"></i></button>
                     <button onclick="eliminarCliente(${c.id})" class="btn btn-sm btn-outline-danger border-0" data-bs-toggle="tooltip" data-bs-title="Eliminar"><i class="bi bi-trash"></i></button>
@@ -310,6 +311,8 @@ export async function prepararEdicionCliente(id) {
         Utils.setVal('fecha_salida', c.fecha_salida);
         Utils.setVal('comentarios', c.comentarios);
         editId = id;
+        document.getElementById('btnSubmitRiu').innerHTML = '<i class="bi bi-pencil-square me-2"></i>Actualizar Cliente';
+        document.getElementById('formCliente')?.scrollIntoView({ behavior: 'smooth' });
     }
 }
 

@@ -136,6 +136,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         initGlobalTooltips();      // Activa las ayudas flotantes (Tooltips)
         
         console.log("Sistema completamente inicializado.");
+
+        // --- HEARTBEAT PARA AUTO-CIERRE ---
+        // Envía una señal al servidor cada 2 segundos. Si se detiene (cierre de pestaña), el server se apaga.
+        setInterval(() => {
+            fetch('/api/heartbeat').catch(() => console.log('Server unreachable'));
+        }, 2000);
+
     }, 100);
 });
 

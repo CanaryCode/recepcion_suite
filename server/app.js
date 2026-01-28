@@ -6,6 +6,7 @@ const url = require('url');   // Para analizar las URLs de las peticiones
 
 const PORT = 3000; // Puerto donde escuchará el servidor
 const STORAGE_DIR = path.join(__dirname, '../storage'); // Carpeta para guardar los datos JSON
+let shutdownTimer = null; // Timer para el auto-cierre
 
 // Utilidad: Asegura que la carpeta de almacenamiento existe; si no, la crea.
 const ensureStorageDir = () => {
@@ -231,4 +232,11 @@ server.listen(PORT, () => {
     console.log(`ZERO-DEPENDENCY Server running at http://localhost:${PORT}`);
     console.log('SERVER VERSION 4.0 [WEB EDITION]'); // Identificador visual de versión
     console.log(`Storage endpoint: http://localhost:${PORT}/api/storage/KEY`);
+
+    // Iniciar el timer de muerte súbita (se cancelará si llega un heartbeat)
+    // Esto evita que el server se quede colgado si abres el exe y nunca abres el navegador
+    shutdownTimer = setTimeout(() => {
+         console.log('Initial startup timeout. No client connected. Shutting down...');
+         process.exit(0);
+    }, 15000); // Dar 15 segundos al inicio para abrir el navegador
 });

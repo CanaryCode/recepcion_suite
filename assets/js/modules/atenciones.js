@@ -102,6 +102,8 @@ async function manejarSubmitAtencion(e) {
     }
 
     e.target.reset();
+    const btnSubmit = document.getElementById('btnSubmitAtenciones');
+    if (btnSubmit) btnSubmit.innerHTML = '<i class="bi bi-save-fill me-2"></i>Registrar Atención';
     await mostrarAtenciones();
 }
 
@@ -199,7 +201,8 @@ export async function prepararEdicionAtencion(hab) {
         Utils.setVal('atencion_hab', hab);
         Utils.setVal('atencion_comentario', data.comentario || "");
 
-        document.querySelectorAll('.check-atencion').forEach(cb => cb.checked = lista.includes(cb.value));
+        const btn = document.getElementById('btnSubmitAtenciones');
+        if (btn) btn.innerHTML = '<i class="bi bi-pencil-square me-2"></i>Actualizar Atención';
         document.getElementById('atencion_hab').focus();
     }
 }

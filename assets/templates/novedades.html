@@ -34,44 +34,46 @@
 
 <div id="novedades-formulario">
     <div class="card mb-4 shadow-sm border-0">
-        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+        <div class="card-header py-3">
             <h6 class="sub-title-dynamic mb-0"><i class="bi bi-pencil-square"></i>Nueva Novedad / Incidencia</h6>
-            <button class="btn btn-sm btn-outline-danger border-0" onclick="limpiarNovedadesTerminadas()"
-                data-bs-toggle="tooltip" data-bs-title="Archivar Novedades Resueltas">
-                <i class="bi bi-trash me-1"></i>Limpiar Terminadas
-            </button>
         </div>
         <div class="card-body">
-            <form id="formNovedad" class="row g-3">
+            <form id="formNovedad" class="row g-2">
                 <div class="col-md-3">
                     <label class="form-label small fw-bold">Prioridad</label>
-                    <select id="nov_prioridad" class="form-select" data-bs-toggle="tooltip" data-bs-title="Nivel de Urgencia">
+                    <select id="nov_prioridad" class="form-select form-select-sm" data-bs-toggle="tooltip" data-bs-title="Nivel de Urgencia">
                         <option value="Sin prioridad">Sin prioridad</option>
                         <option value="Urgente">🔴 Urgente</option>
                     </select>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-9">
                     <label class="form-label small fw-bold">Departamentos Destino</label>
                     <div class="d-flex flex-wrap gap-2 p-2 border rounded bg-light" id="nov_depts_container"
-                        style="max-height: 100px; overflow-y: auto;">
+                        style="max-height: 80px; overflow-y: auto;">
                         <!-- Inyectado por JS -->
                     </div>
                 </div>
                 <input type="hidden" id="nov_id">
                 <div class="col-md-12">
-                    <label class="form-label small fw-bold">Descripción de la Novedad</label>
-                    <textarea id="nov_texto" class="form-control" rows="3"
+                    <label class="form-label small fw-bold mb-1">Descripción de la Novedad</label>
+                    <textarea id="nov_texto" class="form-control form-control-sm" rows="2"
                         placeholder="Ej: Fuga de agua en la 101, cliente solicita cambio..." required
                         data-bs-toggle="tooltip" data-bs-title="Detalle completo de la novedad"></textarea>
                 </div>
-                <div class="col-md-9">
-                    <label class="form-label small fw-bold">Comentarios Adicionales / Seguimiento</label>
-                    <textarea id="nov_comentario" class="form-control" rows="2"
+                <div class="col-md-12">
+                    <label class="form-label small fw-bold mb-1">Comentarios Adicionales / Seguimiento</label>
+                    <textarea id="nov_comentario" class="form-control form-control-sm" rows="1"
                         placeholder="Notas de seguimiento o resolución..."
                         data-bs-toggle="tooltip" data-bs-title="Seguimiento / Resolución"></textarea>
                 </div>
-                <div class="col-md-3 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary w-100 fw-bold py-2"><i class="bi bi-save-fill me-2"></i>Registrar Novedad</button>
+                <div class="col-12 d-flex justify-content-end align-items-center gap-2 mt-2">
+                    <button type="button" class="btn btn-sm btn-outline-danger border-0" onclick="limpiarNovedadesTerminadas()"
+                        data-bs-toggle="tooltip" data-bs-title="Archivar Novedades Resueltas">
+                        <i class="bi bi-trash me-1"></i>Limpiar Terminadas
+                    </button>
+                    <button type="submit" id="btnSubmitNovedad" class="btn btn-primary btn-sm px-4 fw-bold shadow-sm">
+                        <i class="bi bi-save-fill me-2"></i>Registrar Novedad
+                    </button>
                 </div>
             </form>
         </div>

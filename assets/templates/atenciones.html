@@ -103,19 +103,21 @@
                         placeholder="Ej: Poner en la mesa, cliente alérgico..."
                         data-bs-toggle="tooltip" data-bs-title="Detalles Específicos"></textarea>
                 </div>
-                <div class="col-md-3">
-                    <button type="submit" class="btn btn-primary w-100 fw-bold py-2" data-bs-toggle="tooltip" data-bs-title="Guardar Atención"><i class="bi bi-save-fill me-2"></i>Actualizar</button>
+                <div class="col-12 d-flex justify-content-end align-items-center gap-2 mt-2">
+                    <button type="button" class="btn btn-sm btn-outline-danger border-0" onclick="resetearAtenciones()"
+                        data-bs-toggle="tooltip" data-bs-title="Eliminar todas las atenciones">
+                        <i class="bi bi-trash me-1"></i>Borrar Todo
+                    </button>
+                    <button type="submit" id="btnSubmitAtenciones" class="btn btn-primary btn-sm px-4 fw-bold shadow-sm" data-bs-toggle="tooltip" data-bs-title="Guardar Atención">
+                        <i class="bi bi-save-fill me-2"></i>Registrar Atención
+                    </button>
                 </div>
             </form>
         </div>
     </div>
     <div class="card shadow-sm border-0">
-        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+        <div class="card-header py-3">
             <h6 class="mb-0 fw-bold">Atenciones Activas</h6>
-            <button class="btn btn-sm btn-outline-danger border-0" onclick="resetearAtenciones()"
-                data-bs-toggle="tooltip" data-bs-title="Eliminar todas las atenciones">
-                <i class="bi bi-trash me-1"></i>Borrar Todo
-            </button>
         </div>
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0 table-atenciones-print">

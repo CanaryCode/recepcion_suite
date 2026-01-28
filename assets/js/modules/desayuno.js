@@ -85,6 +85,8 @@ function manejarSubmitDesayuno(e) {
 
     // 4. Reset
     e.target.reset();
+    const btnSubmit = document.getElementById('btnSubmitDesayuno');
+    if (btnSubmit) btnSubmit.innerHTML = '<i class="bi bi-save-fill me-2"></i>Guardar';
     mostrarDesayunos();
 }
 

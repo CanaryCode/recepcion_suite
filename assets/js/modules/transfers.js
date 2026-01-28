@@ -159,6 +159,8 @@ function manejarSubmitTransfer(e) {
     document.getElementById('transfer_id').value = '';
     // Reset visual del input custom
     inputDestino.classList.add('d-none');
+    const btnSubmit = document.getElementById('btnSubmitTransfer');
+    if (btnSubmit) btnSubmit.innerHTML = '<i class="bi bi-save-fill me-2"></i>Guardar Reserva';
     
     cambiarVistaTransfers('lista');
 }
@@ -397,6 +399,8 @@ window.editarTransfer = (id) => {
         }
 
         document.getElementById('transfer_notas').value = item.notas || '';
+        const btn = document.getElementById('btnSubmitTransfer');
+        if (btn) btn.innerHTML = '<i class="bi bi-save-fill me-2"></i>Actualizar Reserva';
         
         cambiarVistaTransfers('form');
     }

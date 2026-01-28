@@ -157,7 +157,7 @@ function manejarSubmitDespertador(e) {
 
     // 4. Reset
     e.target.reset();
-    const btnSubmit = e.target.querySelector('button[type="submit"]');
+    const btnSubmit = document.getElementById('btnSubmitDespertador');
     if (btnSubmit) btnSubmit.innerHTML = '<i class="bi bi-alarm-fill me-2"></i>Programar';
     mostrarDespertadores();
 }
@@ -446,7 +446,7 @@ window.prepararEdicionDespertador = (hab) => {
         Utils.setVal('desp_hora', data.hora);
         Utils.setVal('desp_comentario', data.comentario || '');
 
-        const btnSubmit = document.querySelector('#formNuevoDespertador button[type="submit"]');
+        const btnSubmit = document.getElementById('btnSubmitDespertador');
         if (btnSubmit) btnSubmit.innerHTML = '<i class="bi bi-pencil-square me-2"></i>Actualizar Despertador';
 
         cambiarVistaDespertadores('trabajo');

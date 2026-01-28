@@ -33,7 +33,8 @@ export async function inicializarNovedades() {
     document.querySelector('.nov-autor-wrapper')?.classList.add('d-none');
 
     // Configurar layout
-    document.getElementById('novedades-formulario')?.classList.add('content-panel');
+    // Configurar layout
+    // document.getElementById('novedades-formulario')?.classList.add('content-panel');
 
     document.getElementById('btnVistaTrabajoNov')?.addEventListener('click', () => cambiarVistaNovedades('trabajo'));
     document.getElementById('btnVistaSoloNov')?.addEventListener('click', () => cambiarVistaNovedades('solo'));
@@ -172,8 +173,8 @@ function manejarSubmitNovedad(e) {
             novedadesService.updateNovedad(novedadActualizada);
         }
         document.getElementById('nov_id').value = '';
-        const btn = document.querySelector('#formNovedad button[type="submit"]');
-        if (btn) btn.innerHTML = '<i class="bi bi-pencil-square me-2"></i>Actualizar Novedad';
+        const btn = document.getElementById('btnSubmitNovedad');
+        if (btn) btn.innerHTML = '<i class="bi bi-save-fill me-2"></i>Registrar Novedad';
     } else {
         // NUEVA
         const novedad = {
@@ -429,7 +430,7 @@ window.prepararEdicionNovedad = (id) => {
             }
         });
 
-        const btn = document.querySelector('#formNovedad button[type="submit"]');
+        const btn = document.getElementById('btnSubmitNovedad');
         if (btn) btn.innerHTML = '<i class="bi bi-pencil-square me-2"></i>Actualizar Novedad';
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }

@@ -1,8 +1,10 @@
 .gemini/
 node_modules/
+node_modules_backup/
 .DS_Store
 Thumbs.db
 *.log
+
 # storage/*.json  <-- COMENTADO PARA SUBIR TODO
 # !storage/precios.json
 # !storage/ayuda.json
@@ -18,4 +20,6 @@ desktop.ini
 # Backups to ignore
 Backups/
 backups/
-
+_Backups_Ignored_/
+**/Backups/**
+**/backups/**

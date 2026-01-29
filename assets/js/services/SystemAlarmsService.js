@@ -4,118 +4,106 @@ import { APP_CONFIG } from '../core/Config.js';
 /**
  * SERVICIO DE ALARMAS DEL SISTEMA (SystemAlarmsService)
  * ----------------------------------------------------
- * Gestiona los recordatorios internos y alarmas automáticas (ej: "Hacer copia", 
- * "Cierre de caja", etc.). Soporta repeticiones diarias, semanales o fechas únicas.
+ * Gestiona los recordatorios internos y alarmas automáticas.
  */
 class SystemAlarmsService extends BaseService {
     constructor() {
         super('riu_system_alarms');
-        this.initializeDefaults();
+        
+        // Esquema para validación de alarmas del sistema
+        this.schema = {
+            id: 'string',
+            titulo: 'string',
+            hora: 'string',
+            active: 'boolean'
+        };
     }
 
     async init() {
-        await this.syncWithServer();
-        // Si después de sincronizar sigue vacío, reaplicar defaults
-        if (this.getAll().length === 0) {
-            this.initializeDefaults();
+        const data = await super.init();
+        
+        // RECOVERY: If data is corrupted (Object instead of Array), force a reset
+        if (data && !Array.isArray(data)) {
+            console.warn("[SystemAlarms] Data corruption detected (Object instead of Array). Resetting database.");
+            this.clear(); // Wipes LocalStorage and Cache
+            await this.initializeDefaults();
+            return this.getAll();
         }
+
+        if (!data || data.length === 0) {
+            await this.initializeDefaults();
+        }
+        return data;
     }
 
     /**
      * CARGA INICIAL POR DEFECTO
-     * Si el sistema arranca sin alarmas guardadas, las toma del archivo Config.js.
      */
-    initializeDefaults() {
-        const existing = this.getAll();
-        if (!existing || existing.length === 0) {
-            // FIX: Comprobar que la configuración existe para evitar errores en el primer arranque
-            if (APP_CONFIG.HOTEL && Array.isArray(APP_CONFIG.HOTEL.ALARMAS_SISTEMA)) {
-                const defaults = APP_CONFIG.HOTEL.ALARMAS_SISTEMA.map((a, i) => ({
-                    id: `sys_default_${i}`,
-                    ...a,
-                    active: true
-                }));
-                this.saveAll(defaults);
-            }
+    async initializeDefaults() {
+        if (APP_CONFIG.HOTEL && Array.isArray(APP_CONFIG.HOTEL.ALARMAS_SISTEMA)) {
+            const defaults = APP_CONFIG.HOTEL.ALARMAS_SISTEMA.map((a, i) => ({
+                id: `sys_default_${i}`,
+                ...a,
+                titulo: a.titulo || a.mensaje || 'Alarma Sistema', // Polyfill for missing title
+                active: true
+            }));
+            return this.save(defaults);
         }
     }
 
     getAlarms() {
-        return this.getAll() || [];
+        const data = this.getAll();
+        return Array.isArray(data) ? data : [];
     }
 
     /**
      * GUARDAR O ACTUALIZAR ALARMA
      */
-    saveAlarm(alarm) {
-        let list = this.getAlarms();
-        if (alarm.id) {
-            const idx = list.findIndex(a => a.id === alarm.id);
-            if (idx >= 0) {
-                list[idx] = alarm;
-            } else {
-                list.push(alarm);
-            }
-        } else {
-            alarm.id = `sys_${Date.now()}`;
-            list.push(alarm);
-        }
-        this.saveAll(list);
+    async saveAlarm(alarm) {
+        if (!alarm.id) alarm.id = `sys_${Date.now()}`;
+        return this.update(alarm.id, alarm);
     }
 
-    deleteAlarm(id) {
-        const list = this.getAlarms().filter(a => a.id !== id);
-        this.saveAll(list);
+    /**
+     * ELIMINAR ALARMA
+     */
+    async deleteAlarm(id) {
+        return this.delete(id);
     }
 
     /**
      * ACTIVAR/DESACTIVAR
      */
-    toggleActive(id) {
-        const list = this.getAlarms();
-        const item = list.find(a => a.id === id);
+    async toggleActive(id) {
+        const item = this.getByKey(id);
         if (item) {
             item.active = !item.active;
-            this.saveAll(list);
+            return this.saveAlarm(item);
         }
     }
 
     /**
      * ¿DEBE SONAR AHORA?
-     * Comprueba si la alarma coincide con la hora y el día actuales.
-     * 
-     * @param {Object} alarm - La configuración de la alarma.
-     * @param {Date} dateObj - El momento actual (normalmente new Date()).
-     * @returns {boolean}
      */
     isTriggerDue(alarm, dateObj) {
         if (!alarm.active) return false;
 
-        // Formatear hora actual a HH:mm
         const currentHour = dateObj.getHours().toString().padStart(2, '0');
         const currentMinute = dateObj.getMinutes().toString().padStart(2, '0');
         const currentTime = `${currentHour}:${currentMinute}`;
 
-        // Si la hora no coincide, ni seguimos mirando
         if (alarm.hora !== currentTime) return false;
 
-        const weekDay = dateObj.getDay(); // 0 (Domingo) a 6 (Sábado)
-        const dateStr = dateObj.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+        const weekDay = dateObj.getDay(); 
+        const dateStr = dateObj.toISOString().split('T')[0];
 
-        // Caso 1: Alarma de fecha específica (Única)
-        if (alarm.type === 'date') {
-            return alarm.date === dateStr;
-        }
+        if (alarm.type === 'date') return alarm.date === dateStr;
 
-        // Caso 2: Alarma semanal (Días elegidos: lunas, martes...)
         if (alarm.type === 'weekly') {
-            if (Array.isArray(alarm.days)) {
-                return alarm.days.includes(weekDay);
-            }
+            if (Array.isArray(alarm.days)) return alarm.days.includes(weekDay);
             return false;
         }
 
-        // Caso 3: Alarma diaria o filtros con palabras (Legacy)
         if (alarm.dias === 'todos' || !alarm.dias) return true;
         if (alarm.dias === 'laborables') return (weekDay >= 1 && weekDay <= 5);
         if (alarm.dias === 'finde') return (weekDay === 0 || weekDay === 6);

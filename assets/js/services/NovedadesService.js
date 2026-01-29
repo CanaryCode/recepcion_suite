@@ -3,16 +3,19 @@ import { BaseService } from './BaseService.js';
 /**
  * SERVICIO DE NOVEDADES (NovedadesService)
  * ---------------------------------------
- * Gestiona el libro de relevos o bitácora diaria donde los recepcionistas 
- * anotan lo ocurrido durante su turno.
+ * Gestiona el libro de relevos o bitácora diaria.
  */
 class NovedadesService extends BaseService {
     constructor() {
         super('riu_novedades');
-    }
-
-    async init() {
-        await this.syncWithServer();
+        
+        // Esquema para validación de novedades del libro de relevos
+        this.schema = {
+            id: 'number',
+            texto: 'string',
+            autor: 'string',
+            fecha: 'string'
+        };
     }
 
     /**
@@ -23,45 +26,24 @@ class NovedadesService extends BaseService {
     }
 
     /**
-     * GUARDAR LISTA
+     * REGISTRAR/ACTUALIZAR NOVEDAD
      */
-    saveNovedades(novedades) {
-        this.saveAll(novedades);
-    }
-
-    /**
-     * REGISTRAR NUEVA NOVEDAD
-     * Se añade al principio de la lista para mostrar lo más reciente primero.
-     */
-    addNovedad(novedad) {
-        const current = this.getNovedades();
-        current.unshift(novedad);
-        this.saveNovedades(current);
-    }
-
-    /**
-     * EDITAR NOVEDAD
-     */
-    updateNovedad(novedadActualizada) {
-        const current = this.getNovedades().map(n =>
-            n.id === novedadActualizada.id ? novedadActualizada : n
-        );
-        this.saveNovedades(current);
+    async saveNovedad(novedad) {
+        return this.update(novedad.id, novedad);
     }
 
     /**
      * ELIMINAR REGISTRO
      */
-    removeNovedad(id) {
-        const current = this.getNovedades().filter(n => n.id !== id);
-        this.saveNovedades(current);
+    async removeNovedad(id) {
+        return this.delete(id);
     }
 
     /**
      * BUSCAR POR ID
      */
-    getNovedadById(id) {
-        return this.getNovedades().find(n => n.id === id);
+    getById(id) {
+        return this.getByKey(id);
     }
 }
 

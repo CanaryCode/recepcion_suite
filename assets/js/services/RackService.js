@@ -4,7 +4,8 @@ import { BaseService } from './BaseService.js';
 /**
  * SERVICIO DE RACK (RackService)
  * -----------------------------
- * ... (No changes to comments) ...
+ * Gestiona la base de datos de habitaciones, sus características estáticas 
+ * (vistas, tipos) y el estado operativo dinámico (notas, bloqueos).
  */
 
 // --- BASE DE DATOS ESTRÁTICA DEL HOTEL ---
@@ -57,8 +58,11 @@ const DATA_EXTRAS = {
 
 class RackService extends BaseService {
     constructor() {
-        super('riu_rack', {}); // Persistence key
-        this.cacheDetails = null; // Separate cache for heavy calculated details
+        super('riu_rack', {});
+        this.cacheDetails = null; // Caché para detalles calculados pesados
+        
+        // Esquema para validación (se guarda un objeto de objetos de habitación)
+        this.schema = null; // Al ser un mapa dinámico { "hab": {} }, no aplicamos schema rígido aquí
     }
 
     /**

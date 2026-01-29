@@ -54,12 +54,12 @@ export async function toggleEdicionNotas() {
         modoEdicion = false;
         renderNotas();
     } else {
-        const pass = await window.showPrompt("🔒 Contraseña de administrador:", "password");
+        const pass = await Ui.showPrompt("🔒 Contraseña de administrador:", "password");
         if (pass === PASSWORD_EDICION) {
             modoEdicion = true;
             renderNotas();
         } else if (pass !== null) {
-            window.showAlert("Contraseña incorrecta", "error");
+            Ui.showToast("Contraseña incorrecta", "danger");
         }
     }
 }
@@ -109,7 +109,6 @@ function guardarNota(e) {
 
     if (notaEnEdicionId) {
         // Editar
-        const notaExistente = notasService.getNotaById(notaEnEdicionId);
         if (notaExistente) {
             const notaActualizada = {
                 ...notaExistente,
@@ -118,7 +117,7 @@ function guardarNota(e) {
                 color,
                 fecha: fechaStr
             };
-            notasService.updateNota(notaActualizada);
+            notasService.saveNota(notaActualizada);
         }
     } else {
         // Crear
@@ -130,7 +129,7 @@ function guardarNota(e) {
             fecha: fechaStr,
             rotacion: (Math.random() * 4 - 2).toFixed(1)
         };
-        notasService.addNota(nuevaNota);
+        notasService.saveNota(nuevaNota);
     }
 
     // Cerrar modal
@@ -142,8 +141,8 @@ function guardarNota(e) {
 }
 
 export async function eliminarNota(id) {
-    if (await window.showConfirm("¿Eliminar esta nota?")) {
-        notasService.removeNota(id);
+    if (await Ui.showConfirm("¿Eliminar esta nota?")) {
+        await notasService.deleteNota(id);
         renderNotas();
     }
 }

@@ -4,23 +4,31 @@ import { RAW_PRECIOS_DATA } from '../data/PreciosData.js';
 /**
  * SERVICIO DE TARIFAS Y PRECIOS (PreciosService)
  * ---------------------------------------------
- * Gestiona el listado de cargos extra que se pueden aplicar 
- * (ej: Parking, Perros, Suplementos, etc.).
+ * Gestiona el listado de cargos extra que se pueden aplicar.
  */
 class PreciosService extends BaseService {
     constructor() {
-        // Al arrancar, si no hay datos, carga los "maestros" desde RAW_PRECIOS_DATA
         super('riu_precios', RAW_PRECIOS_DATA);
+        
+        // Esquema de validación para tarifas
+        this.schema = {
+            id: 'number',
+            concepto: 'string',
+            precio: 'number',
+            categoria: 'string'
+        };
+    }
+
+    async init() {
+        await this.syncWithServer();
         this.checkAndSeedDefaults();
     }
 
     /**
      * VERIFICACIÓN DE DATOS MAESTROS
-     * Comprueba que todos los productos obligatorios del hotel estén en la lista.
-     * Si falta alguno nuevo que se haya añadido al código, lo inyecta automáticamente.
      */
     checkAndSeedDefaults() {
-        const current = this.getPrecios();
+        const current = this.getAll();
         let changed = false;
 
         RAW_PRECIOS_DATA.forEach(defItem => {
@@ -32,8 +40,7 @@ class PreciosService extends BaseService {
         });
 
         if (changed) {
-            console.log("Actualizando lista de precios con nuevos servicios maestros...");
-            this.savePrecios(current);
+            this.save(current);
         }
     }
 
@@ -45,55 +52,36 @@ class PreciosService extends BaseService {
     }
 
     /**
-     * GUARDAR LISTA
+     * GUARDAR O ACTUALIZAR PRECIO
      */
-    savePrecios(precios) {
-        this.saveAll(precios);
+    async savePrecio(precio) {
+        if (!precio.id) precio.id = Date.now();
+        return this.update(precio.id, precio);
     }
 
     /**
-     * AÑADIR NUEVO CARGO
+     * ELIMINAR PRECIO
      */
-    addPrecio(precio) {
-        const current = this.getPrecios();
-        current.push(precio);
-        this.savePrecios(current);
-    }
-
-    /**
-     * ACTUALIZAR CARGO
-     */
-    updatePrecio(precioActualizado) {
-        const current = this.getPrecios().map(p =>
-            p.id === precioActualizado.id ? precioActualizado : p
-        );
-        this.savePrecios(current);
-    }
-
-    /**
-     * ELIMINAR CARGO
-     */
-    removePrecio(id) {
-        const current = this.getPrecios().filter(p => p.id !== id);
-        this.savePrecios(current);
+    async deletePrecio(id) {
+        return this.delete(id);
     }
 
     /**
      * BUSCAR POR ID
      */
     getPrecioById(id) {
-        return this.getPrecios().find(p => p.id === id);
+        return this.getByKey(id);
     }
 
     /**
      * MARCAR/DESMARCAR FAVORITO
-     * Los favoritos aparecen destacados en el teclado de facturación rápida.
      */
-    toggleFavorito(id) {
-        const current = this.getPrecios().map(p =>
-            p.id === id ? { ...p, favorito: !p.favorito } : p
-        );
-        this.savePrecios(current);
+    async toggleFavorito(id) {
+        const item = this.getByKey(id);
+        if (item) {
+            item.favorito = !item.favorito;
+            return this.update(id, item);
+        }
     }
 }
 

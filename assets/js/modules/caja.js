@@ -1,7 +1,10 @@
 import { APP_CONFIG } from "../core/Config.js";
 import { Utils } from "../core/Utils.js";
+import { Ui } from "../core/Ui.js";
 import { sessionService } from "../services/SessionService.js";
+import { cajaService } from "../services/CajaService.js";
 import { Modal } from "../core/Modal.js";
+import { PdfService } from "../core/PdfService.js";
 
 /**
  * MÓDULO DE GESTIÓN DE CAJA (caja.js)
@@ -45,6 +48,8 @@ window.agregarVale = (e) => {
       importe,
     });
 
+    cajaService.saveVales(listaVales);
+
     conceptoIn.value = "";
     importeIn.value = "";
     conceptoIn.focus();
@@ -56,45 +61,30 @@ window.agregarVale = (e) => {
 
 window.eliminarVale = (id) => {
   listaVales = listaVales.filter((v) => v.id !== id);
+  cajaService.saveVales(listaVales);
   renderVales();
   calcularCaja();
 };
 
 function renderVales() {
   // 1. Render en Modal
-  const container = document.getElementById("listaVales");
-  const msg = document.getElementById("noValesMsg");
-  const totalLabel = document.getElementById("modalValesTotal");
-
-  if (container) {
-    if (listaVales.length === 0) {
-      container.innerHTML = "";
-      if (msg) msg.style.display = "block";
-    } else {
-      if (msg) msg.style.display = "none";
-      container.innerHTML = listaVales
-        .map(
-          (v) => `
-                <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
-                    <div class="d-flex flex-column" style="min-width: 0;">
-                        <span class="fw-bold text-dark small text-break" style="word-wrap: break-word;">${v.concepto}</span>
-                    </div>
-                    <div class="d-flex align-items-center flex-shrink-0 ms-2">
-                        <span class="fw-bold text-primary me-3">${Utils.formatCurrency(v.importe)}</span>
-                        <button class="btn btn-sm btn-outline-danger border-0 p-1" onclick="eliminarVale(${v.id})" data-bs-toggle="tooltip" data-bs-title="Eliminar Vale">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    </div>
-                </div>
-            `,
-        )
-        .join("");
-    }
-  }
-
-  // 2. Calcular Total
   const total = listaVales.reduce((sum, v) => sum + v.importe, 0);
+  const totalLabel = document.getElementById("modalValesTotal");
   if (totalLabel) totalLabel.innerText = Utils.formatCurrency(total);
+
+  Ui.renderTable('listaVales', listaVales, (v) => `
+        <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+            <div class="d-flex flex-column" style="min-width: 0;">
+                <span class="fw-bold text-dark small text-break" style="word-wrap: break-word;">${v.concepto}</span>
+            </div>
+            <div class="d-flex align-items-center flex-shrink-0 ms-2">
+                <span class="fw-bold text-primary me-3">${Utils.formatCurrency(v.importe)}</span>
+                <button class="btn btn-sm btn-outline-danger border-0 p-1" onclick="eliminarVale(${v.id})" data-bs-toggle="tooltip" data-bs-title="Eliminar Vale">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        </div>
+    `, 'No hay vales registrados.');
 
   // 3. Render para IMPRESIÓN / PDF (Compact Grid - Ancho Completo)
   const printContainer = document.getElementById("print-vales-details");
@@ -157,6 +147,8 @@ window.agregarDesembolso = (e) => {
       importe,
     });
 
+    cajaService.saveDesembolsos(listaDesembolsos);
+
     conceptoIn.value = "";
     importeIn.value = "";
     conceptoIn.focus();
@@ -168,45 +160,30 @@ window.agregarDesembolso = (e) => {
 
 window.eliminarDesembolso = (id) => {
   listaDesembolsos = listaDesembolsos.filter((d) => d.id !== id);
+  cajaService.saveDesembolsos(listaDesembolsos);
   renderDesembolsos();
   calcularCaja();
 };
 
 function renderDesembolsos() {
   // 1. Render en Modal
-  const container = document.getElementById("listaDesembolsos");
-  const msg = document.getElementById("noDesembolsosMsg");
-  const totalLabel = document.getElementById("modalDesembolsosTotal");
-
-  if (container) {
-    if (listaDesembolsos.length === 0) {
-      container.innerHTML = "";
-      if (msg) msg.style.display = "block";
-    } else {
-      if (msg) msg.style.display = "none";
-      container.innerHTML = listaDesembolsos
-        .map(
-          (d) => `
-                <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
-                    <div class="d-flex flex-column" style="min-width: 0;">
-                        <span class="fw-bold text-dark small text-break" style="word-wrap: break-word;">${d.concepto}</span>
-                    </div>
-                    <div class="d-flex align-items-center flex-shrink-0 ms-2">
-                        <span class="fw-bold text-primary me-3">${Utils.formatCurrency(d.importe)}</span>
-                        <button class="btn btn-sm btn-outline-danger border-0 p-1" onclick="eliminarDesembolso(${d.id})" data-bs-toggle="tooltip" data-bs-title="Eliminar Desembolso">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    </div>
-                </div>
-            `,
-        )
-        .join("");
-    }
-  }
-
-  // 2. Calcular Total
   const total = listaDesembolsos.reduce((sum, d) => sum + d.importe, 0);
+  const totalLabel = document.getElementById("modalDesembolsosTotal");
   if (totalLabel) totalLabel.innerText = Utils.formatCurrency(total);
+
+  Ui.renderTable('listaDesembolsos', listaDesembolsos, (d) => `
+        <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+            <div class="d-flex flex-column" style="min-width: 0;">
+                <span class="fw-bold text-dark small text-break" style="word-wrap: break-word;">${d.concepto}</span>
+            </div>
+            <div class="d-flex align-items-center flex-shrink-0 ms-2">
+                <span class="fw-bold text-primary me-3">${Utils.formatCurrency(d.importe)}</span>
+                <button class="btn btn-sm btn-outline-danger border-0 p-1" onclick="eliminarDesembolso(${d.id})" data-bs-toggle="tooltip" data-bs-title="Eliminar Desembolso">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        </div>
+    `, 'No hay desembolsos registrados.');
 
   // 3. Render para IMPRESIÓN / PDF (Compact Grid - Ancho Completo)
   // Para impresión, mantenemos un toque distintivo pero sutil, o lo unificamos también?
@@ -243,8 +220,20 @@ function renderDesembolsos() {
  * INICIALIZACIÓN
  * Prepara la interfaz monetaria y configura los cálculos automáticos de turno y fecha.
  */
-export function inicializarCaja() {
+export async function inicializarCaja() {
+  await cajaService.init();
+  const savedData = cajaService.getSessionData();
+  
+  listaVales = savedData.vales || [];
+  listaDesembolsos = savedData.desembolsos || [];
+  
   generarInterfazCaja();
+
+  // Restaurar comentarios si existen
+  const comentariosInput = document.getElementById("caja_comentarios_cierre");
+  if (comentariosInput && savedData.comentarios) {
+    comentariosInput.value = savedData.comentarios;
+  }
 
   // Listener global para recalcular al escribir
   document.addEventListener("input", (e) => {
@@ -253,6 +242,8 @@ export function inicializarCaja() {
     }
   });
 
+  renderVales();
+  renderDesembolsos();
   calcularCaja();
 }
 
@@ -490,6 +481,13 @@ function calcularCaja() {
 
   // Sincronizar Conceptos Dinámicos (+ Concepto)
   sincronizarConceptosDinamicosImpresion();
+
+  // Persistir metadatos (fecha, turno, comentarios)
+  cajaService.saveMetadata({
+    fecha: document.getElementById("caja_fecha")?.value,
+    turno: document.getElementById("caja_turno")?.value,
+    comentarios: document.getElementById("caja_comentarios_cierre")?.value
+  });
 }
 
 function sincronizarConceptosDinamicosImpresion() {
@@ -560,7 +558,7 @@ function updateUIValue(id, val) {
 
 async function resetearCaja() {
   if (
-    await window.showConfirm(
+    await Ui.showConfirm(
       "¿Estás seguro de borrar todos los datos de la caja?",
     )
   ) {
@@ -573,12 +571,14 @@ async function resetearCaja() {
 
     listaVales = [];
     listaDesembolsos = [];
+    cajaService.reset();
+    
     renderVales();
     renderDesembolsos();
 
     actualizarDatosAutomaticosCaja();
     Utils.setVal("caja_sellos_precio", "1.50");
-    Utils.setVal("caja_fondo", "2000.00");
+    Utils.setVal("input_fondo_arqueo", "-2000.00");
 
     calcularCaja();
   }
@@ -587,9 +587,7 @@ async function resetearCaja() {
 function imprimirCierreCaja() {
   const user = sessionService.getUser();
   if (!user) {
-    alert(
-      "⚠️ No hay usuario seleccionado. Selecciona tu nombre en el menú superior.",
-    );
+    Ui.showToast("⚠️ No hay usuario seleccionado. Selecciona tu nombre en el menú superior.", "warning");
     return;
   }
 
@@ -616,202 +614,71 @@ function imprimirCierreCaja() {
 }
 
 /**
- * EXPORTAR PDF (html2pdf)
- * Crea un clon oculto de la interfaz, lo formatea para tamaño A4 y genera un PDF 
- * con el arqueo completo, preservando valores e incluso firmas.
+ * EXPORTAR PDF (PdfService)
+ * Genera un informe profesional de arqueo de caja utilizando el servicio centralizado.
  */
 async function guardarCajaPDF() {
   const user = sessionService.getUser();
   if (!user) {
-    alert("⚠️ No hay usuario seleccionado.");
+    Ui.showToast("⚠️ No hay usuario seleccionado.", "warning");
     return;
   }
 
-  const fecha = document.getElementById("caja_fecha")?.value || "fecha";
-  const turno = document.getElementById("caja_turno")?.value || "turno";
-  // 0. Asegurar que los datos están calculados
+  // Asegurar que los datos están calculados
   calcularCaja();
 
-  // --- FILENAME LOGIC FIX ---
-  let fechaVal = document.getElementById("caja_fecha")?.value;
-  let turnoVal = document.getElementById("caja_turno")?.value;
-
-  if (!fechaVal) {
-      fechaVal = new Date().toISOString().split('T')[0];
-  }
-  if (!turnoVal || turnoVal === "turno") {
-      const h = new Date().getHours();
-      turnoVal = (h >= 7 && h < 15) ? "MAÑANA" : (h >= 15 && h < 23) ? "TARDE" : "NOCHE";
-  }
-
-  const partes = fechaVal.split("-");
-  const fechaFormateada = partes.length === 3 ? `${partes[2]}-${partes[1]}-${partes[0]}` : fechaVal;
-  const filename = `${fechaFormateada}-${turnoVal}.pdf`;
-
-  // Sincronizar Comentarios (Textarea -> Div en reporte Real)
-  const comentariosVal = document.getElementById("caja_comentarios_cierre")?.value || "";
-  const printComentarios = document.getElementById("print-comentarios-caja");
-  if (printComentarios) {
-      printComentarios.innerText = comentariosVal;
-  }
-
-  // Sincronizar Cabeceras (DOM Real)
-  const dateEl = document.getElementById("print-date-caja");
-  const turnoEl = document.getElementById("print-turno-label");
-  const userEl = document.getElementById("print-repc-nombre-caja");
+  const fechaVal = document.getElementById("caja_fecha")?.value || Utils.getTodayISO();
+  const turnoVal = document.getElementById("caja_turno")?.value || "TURNO";
   
-  const ahora = new Date();
-  const fechaHoraStr = `${fechaFormateada} ${ahora.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+  // Limpiar y formatear nombre de archivo
+  const fechaPartes = fechaVal.split("-");
+  const fechaFormateada = fechaPartes.length === 3 ? `${fechaPartes[2]}-${fechaPartes[1]}-${fechaPartes[0]}` : fechaVal;
+  const filename = `ARQUEO_${fechaFormateada}_${turnoVal}.pdf`;
 
-  if (dateEl) dateEl.innerText = fechaHoraStr;
-  if (turnoEl) turnoEl.innerText = turnoVal;
-  if (userEl) userEl.innerText = user;
-
-  // 1. Crear Contenedor Temporal con el HTML limpio
+  // Obtener el HTML de la vista de impresión
   const sourceView = document.getElementById("caja-print-report-view");
-  if (!sourceView) return;
+  if (!sourceView) {
+      Ui.showToast("Error: No se encontró la vista de impresión.", "danger");
+      return;
+  }
 
-  const wrapper = document.createElement("div");
-  wrapper.className = "pdf-export";
-  wrapper.style.position = "fixed"; 
-  wrapper.style.left = "0";
-  wrapper.style.top = "0";
-  wrapper.style.zIndex = "9999"; 
-  wrapper.style.width = "100%"; 
-  wrapper.style.height = "100%"; 
-  wrapper.style.backgroundColor = "white"; 
-  wrapper.style.color = "black";
-  wrapper.style.padding = "20px";
-  wrapper.style.overflow = "auto";
-  wrapper.style.fontFamily = "Arial, sans-serif";
-  wrapper.style.boxSizing = "border-box";
-  
-  // Contenedor A4 (Estricto)
-  const a4Container = document.createElement("div");
-  a4Container.style.width = "210mm";
-  a4Container.style.minHeight = "297mm"; // A4 height
-  a4Container.style.backgroundColor = "white";
-  a4Container.style.boxShadow = "none"; 
-  a4Container.style.padding = "10mm"; 
-  // NO ZOOM
-  
-  // Estilos de compactación
-  const styles = `
+  // Preparar contenido para el servicio de PDF
+  const htmlContent = `
     <style>
-      .pdf-compact { font-family: Arial, sans-serif; color: #000; width: 100%; }
-      .pdf-compact h2 { font-size: 18pt !important; margin: 0 0 10px 0 !important; color: #0d6efd !important; }
-      .pdf-compact p { margin: 0 !important; font-size: 10pt !important; color: #666 !important; }
-      
-      .pdf-compact h4 { font-size: 12pt !important; margin: 0 !important; padding: 4px !important; }
-      .pdf-compact h5 { font-size: 10pt !important; margin: 8px 0 4px 0 !important; padding: 4px !important; background-color: #f0f0f0 !important; border-bottom: 1px solid #ccc !important; }
-      .pdf-compact h6 { font-size: 9pt !important; margin: 0 0 2px 0 !important; font-weight: bold !important; }
-      
-      .pdf-compact table { width: 100%; border-collapse: collapse; margin-bottom: 10px !important; table-layout: fixed !important; }
-      .pdf-compact td { padding: 3px 5px !important; font-size: 9pt !important; vertical-align: top; }
-      
-      .pdf-compact div { font-size: 9pt !important; }
-      
-      .pdf-compact .report-header-print { 
-          margin-bottom: 15px !important; 
-          padding-bottom: 10px !important; 
-          border-bottom: 2px solid #0d6efd !important; 
-          display: flex !important; 
-          justify-content: space-between !important; 
-      }
-      .pdf-compact .signature-area { 
-          margin-top: 30px !important; 
-          display: flex !important; 
-          justify-content: space-around !important; 
-      }
-      .pdf-compact hr { margin: 5px 0 !important; }
+        .pdf-content { font-size: 10pt; line-height: 1.4; }
+        .pdf-section { margin-bottom: 20px; border: 1px solid #eee; padding: 10px; border-radius: 5px; }
+        .pdf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .pdf-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .pdf-table td { padding: 4px; border-bottom: 1px solid #f0f0f0; }
+        .pdf-total-row { font-weight: bold; background: #f8f9fa; }
+        .text-success { color: #155724; }
+        .text-danger { color: #721c24; }
     </style>
+    <div class="pdf-content">
+        ${sourceView.innerHTML}
+    </div>
   `;
 
-  // Inyectar HTML
-  a4Container.innerHTML = styles + `<div class="pdf-compact">${sourceView.innerHTML}</div>`;
-  wrapper.appendChild(a4Container);
-  
-  // Mensaje de estado
-  const msg = document.createElement("div");
-  msg.innerHTML = '<div class="spinner-border text-primary me-2" role="status"></div>Generando PDF...';
-  msg.style.position = "fixed";
-  msg.style.top = "20px";
-  msg.style.left = "50%";
-  msg.style.transform = "translateX(-50%)";
-  msg.style.padding = "10px 20px";
-  msg.style.background = "rgba(255,255,255,0.9)";
-  msg.style.borderRadius = "30px";
-  msg.style.boxShadow = "0 4px 15px rgba(0,0,0,0.2)";
-  msg.style.fontWeight = "bold";
-  msg.style.zIndex = "10000";
-  wrapper.appendChild(msg);
+  // Notificar inicio
+  Ui.showToast("Generando reporte PDF profesional...", "info");
 
-  document.body.appendChild(wrapper);
+  const exito = await PdfService.generateReport({
+      title: "ARQUEO DE CAJA - CIERRE DE TURNO",
+      author: user,
+      htmlContent: htmlContent,
+      filename: filename,
+      metadata: {
+          "Turno": turnoVal,
+          "Fecha": fechaFormateada
+      }
+  });
 
-  // Guardar scroll actual y subir arriba del todo
-  const scrollY = window.scrollY;
-  window.scrollTo(0, 0);
-
-  // 4. Configurar PDF
-  const opt = {
-    margin: [0, 0, 0, 0], 
-    filename: filename,
-    image: { type: "jpeg", quality: 0.98 },
-    html2canvas: { 
-        scale: 2, 
-        useCORS: true, 
-        logging: true, 
-        scrollY: 0,
-        x: 0,
-        y: 0,
-        windowWidth: 800 
-    },
-    jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-  };
-
-  try {
-    // PAUSA DE SEGURIDAD PARA RENDERIZADO
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    if (window.showSaveFilePicker) {
-      // 1. Pedir archivo PRIMERO (dentro del "user gesture" del click)
-      const handle = await window.showSaveFilePicker({
-        suggestedName: filename,
-        types: [
-          {
-            description: "PDF Document",
-            accept: { "application/pdf": [".pdf"] },
-          },
-        ],
-      });
-
-      // 2. Generar PDF
-      const pdfBlob = await html2pdf().set(opt).from(a4Container).output("blob");
-      
-      // 3. Escribir
-      const writable = await handle.createWritable();
-      await writable.write(pdfBlob);
-      await writable.close();
-      await window.showAlert(`Guardado PDF: ${filename}`, "success");
-
-    } else {
-      // Fallback clásico
-      await html2pdf().set(opt).from(a4Container).save();
-      await window.showAlert(`Descargado PDF: ${filename}`, "success");
-    }
-  } catch (err) {
-    if (err.name !== "AbortError") {
-      console.error(err);
-      await window.showAlert("Error al generar PDF.", "error");
-    }
-  } finally {
-    // 5. Limpieza y Restauración de Scroll
-    if (document.body.contains(wrapper)) {
-        document.body.removeChild(wrapper);
-    }
-    window.scrollTo(0, scrollY);
+  if (exito) {
+      Ui.showToast("Reporte guardado correctamente.", "success");
+  } else {
+      Ui.showToast("Error al generar el PDF.", "danger");
   }
-} // End guardarCajaPDF
+}
 
 /**
  * REPORTE EMAIL (HTML Rico)

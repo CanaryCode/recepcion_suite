@@ -86,12 +86,11 @@ export async function inicializarRack() {
             // Allow UI to update before Alert (Alert blocks thread)
             // setTimeout ensures the render cycle finishes (checkbox becomes checked/unchecked)
             setTimeout(async () => {
-                const confirmed = await window.showConfirm(
+                const confirmed = await Ui.showConfirm(
                     `¿Estás seguro de modificar "${featureName}"?`
                 );
-
                 if (confirmed) {
-                    if (window.showAlert) window.showAlert("Modificación realizada", "success");
+                    Ui.showToast("Modificación realizada", "success");
                 } else {
                     // Revert
                     e.target.checked = !isNowChecked; 
@@ -160,7 +159,7 @@ function unlockRoomDetails() {
         document.getElementById('modal-room-status').focus();
     } else {
         // Wrong Code
-        alert('❌ Código incorrecto');
+        Ui.showToast('❌ Código incorrecto', 'danger');
         pinInput.value = '';
         pinInput.focus();
     }
@@ -174,7 +173,7 @@ async function saveRoomDetails() {
     if (!currentEditingRoom) return;
 
     // Confirmation Dialog
-    const confirmed = await window.showConfirm(
+    const confirmed = await Ui.showConfirm(
         "¿Estás seguro de modificar el estado de la habitación?\n\nEsta acción registrará cambios en el sistema."
     );
 
@@ -202,7 +201,7 @@ async function saveRoomDetails() {
     renderRack(); // Re-render to show changes
     
     // Success Message
-    await window.showAlert("✅ El estado ha sido modificado correctamente.", "success");
+    Ui.showToast("✅ El estado ha sido modificado correctamente.", "success");
 }
 
 function renderFilters() {
@@ -246,10 +245,12 @@ function initTooltips() {
     }
 }
 
+import { RackView } from '../core/RackView.js';
+
 function renderRack() {
     const container = document.getElementById('rack-grid-container');
     const countDisplay = document.getElementById('rack-count-display');
-    const printDate = document.getElementById('print-date-rack'); // For Print Header
+    const printDate = document.getElementById('print-date-rack');
     
     if (!container) return;
 
@@ -262,6 +263,8 @@ function renderRack() {
     const allRooms = rackService.getRoomsWithDetails();
     
     // FILTER LOGIC
+    // We pre-calculate map of valid rooms for efficient O(1) in the loop if needed,
+    // NO, we need to pass a "is this room in list" checker to the renderer.
     const filteredRooms = allRooms.filter(r => {
         // 0. Search Term
         if (currentFilters.searchTerm && !r.num.includes(currentFilters.searchTerm)) return false;
@@ -292,8 +295,6 @@ function renderRack() {
     // Update Counter
     if (countDisplay) countDisplay.innerText = filteredRooms.length;
 
-    container.innerHTML = '';
-
     if (filteredRooms.length === 0) {
         container.innerHTML = `
             <div class="text-center text-muted py-5">
@@ -303,54 +304,31 @@ function renderRack() {
         return;
     }
 
-    // Group by Floor
-    const floors = {};
-    const rangos = APP_CONFIG.HOTEL.STATS_CONFIG.RANGOS;
-    
-    rangos.forEach(r => {
-        floors[r.planta] = [];
-    });
+    // MAP FOR O(1) LOOKUP
+    const roomMap = new Map();
+    filteredRooms.forEach(r => roomMap.set(r.num, r));
 
-    filteredRooms.forEach(room => {
-        if (floors[room.planta]) {
-            floors[room.planta].push(room);
-        }
-    });
-
-    // Render Groups
-    Object.keys(floors).forEach(planta => {
-        const rooms = floors[planta];
-        if (rooms.length === 0) return;
-
-        const floorContainer = document.createElement('div');
-        floorContainer.className = 'mb-5';
-        floorContainer.innerHTML = `
+    // RENDER USING RACKVIEW ABSTRACTION
+    RackView.render(
+        'rack-grid-container', 
+        (numHab) => {
+            const roomData = roomMap.get(numHab);
+            if (!roomData) return null; // Don't render unmatched rooms
+            return generateRoomCard(roomData);
+        },
+        (planta) => `
             <h5 class="border-bottom pb-2 mb-3 text-secondary">
                 <i class="bi bi-layers-fill me-2"></i>Planta ${planta}
-            </h5>
-            <div class="d-flex flex-wrap gap-3">
-                ${rooms.map(r => generateRoomCard(r)).join('')}
-            </div>
-        `;
-        container.appendChild(floorContainer);
-    });
-    
-    // Init tooltips for new elements
-    if (window.initTooltips) {
-        window.initTooltips(container);
-    } else {
-        // Fallback (Should be covered by observer anyway, but rack is complex)
-    }
-    
-    // Add Click Listeners to cards (Delegation or direct?)
-    // Using onclick attribute in HTML string is easier here, but module scope is strict.
-    // We attach listener to container for delegation.
-    container.addEventListener('click', (e) => {
-        const card = e.target.closest('.room-card');
-        if (card && card.dataset.roomNum) {
-            openRoomDetails(card.dataset.roomNum);
-        }
-    });
+            </h5>`
+    );
+
+    // Add Click Listeners to cards (Delegation)
+    // IMPORTANT: RackView overwrites innerHTML, so we must re-attach or rely on delegation.
+    // The init function already attached a delegation listener to 'rack-grid-container'.
+    // BUT since we just cleared innerHTML, the listener is technically still on the parent...
+    // WAIT! If 'container' is 'rack-grid-container', the listener is attached to IT. 
+    // And that element is NOT replaced, only its children.
+    // So the listener defined in inicializarRack() persists. PERFECT.
 }
 
 function generateRoomCard(room) {

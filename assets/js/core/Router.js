@@ -13,6 +13,28 @@ export const Router = {
      */
     init: () => {
         window.navegarA = Router.navegarA;
+        
+        // GLOBAL EVENT LISTENER: Ensure only ONE tab pane is visible at a time
+        // This fixes the issue where dropdown tabs might not effectively hide the Dashboard or other views.
+        const tabElsp = document.querySelectorAll('button[data-bs-toggle="tab"]');
+        tabElsp.forEach(tabBtn => {
+            tabBtn.addEventListener('show.bs.tab', (event) => {
+                const targetId = event.target.getAttribute('data-bs-target');
+                if(!targetId) return;
+
+                // Force hide ALL other tab-panes
+                document.querySelectorAll('.tab-pane').forEach(pane => {
+                    if ('#' + pane.id !== targetId) {
+                        pane.classList.remove('show', 'active');
+                        pane.style.display = 'none'; // Force hide
+                    }
+                });
+                
+                // Ensure target is prepared to be shown
+                const targetPane = document.querySelector(targetId);
+                if(targetPane) targetPane.style.display = ''; 
+            });
+        });
     },
 
     /**
@@ -27,32 +49,42 @@ export const Router = {
     navegarA: (targetId) => {
         // Normalizar entrada: Asegurar que el ID empieza por '#'
         const selector = targetId.startsWith('#') ? targetId : '#' + targetId;
-        const cleanId = selector.replace('#', '');
+        
+        // 1. Ocultar todos los paneles (tab-pane) activos
+        // 1. Ocultar todos los paneles (tab-pane) activos
+        document.querySelectorAll('.tab-pane').forEach(pane => {
+            pane.classList.remove('show', 'active');
+            // Force reset style in case of inline styles or stuck states
+            pane.style.display = ''; 
+        });
 
-        // El sistema usa botones ocultos (ID 'tab-...') para activar pestañas de Bootstrap
-        // sin que el menú principal tenga que estar abierto.
-        const triggerEl = document.getElementById('tab-' + cleanId);
+        // 2. Quitar el color azul (active) de los botones del menú superior
+        document.querySelectorAll('#mainTabs .nav-link, #mainTabs .dropdown-item').forEach(btn => {
+            btn.classList.remove('active');
+        });
+
+        // 3. Buscar el disparador legítimo (el botón del menú principal)
+        // Preferimos el botón que ya existe en el DOM (en el dropdown) en lugar de uno oculto.
+        const triggerEl = document.querySelector(`button[data-bs-target="${selector}"]`);
 
         if (triggerEl) {
-            // Pasos de limpieza visual:
-            // -------------------------
-            // 1. Ocultar todos los paneles (tab-pane) activos
-            document.querySelectorAll('.tab-pane').forEach(pane => {
-                pane.classList.remove('show', 'active');
-            });
-
-            // 2. Quitar el color azul (active) de los botones del menú superior
-            document.querySelectorAll('#mainTabs .nav-link, #mainTabs .dropdown-item').forEach(btn => {
-                btn.classList.remove('active');
-            });
-
-            // 3. Activar la nueva pestaña a través de Bootstrap
-            const tab = bootstrap.Tab.getOrCreateInstance(triggerEl);
-            tab.show();
-
-            // 4. Refuerzo manual: Asegurar que el panel se ve (Bootstrap a veces falla en cascada)
-            const targetPane = document.querySelector(selector);
-            if (targetPane) targetPane.classList.add('show', 'active');
+            try {
+                // Intentar usar Bootstrap API
+                const tab = bootstrap.Tab.getOrCreateInstance(triggerEl);
+                tab.show();
+            } catch (e) {
+                console.warn("Bootstrap Tab error:", e);
+                // Fallback manual si Bootstrap falla (Illegal Invocation, etc.)
+                triggerEl.classList.add('active');
+            }
+        } 
+        
+        // 4. Refuerzo manual: Asegurar que el panel se ve
+        const targetPane = document.querySelector(selector);
+        if (targetPane) {
+            targetPane.classList.add('show', 'active');
+        } else {
+            console.error(`Router: Panel no encontrado ${selector}`);
         }
     }
 };

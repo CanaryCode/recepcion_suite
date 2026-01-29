@@ -75,8 +75,13 @@ let intervalId = null;
 
 function checkAlarmas() {
     const now = new Date();
-    const alarms = systemAlarmsService.getAlarms();
+    const alarms = systemAlarmsService.getAlarms() || []; // Safeguard against null
     let pendingToday = false;
+
+    if (!Array.isArray(alarms)) {
+        console.warn('SystemAlarms: Expected array but got', typeof alarms);
+        return; 
+    }
 
     alarms.forEach(alarm => {
         // Check trigger

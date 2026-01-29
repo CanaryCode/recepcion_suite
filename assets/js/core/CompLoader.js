@@ -14,20 +14,31 @@ export const CompLoader = {
      */
     loadComponent: async (id, path) => {
         try {
+            // Buscar el contenedor
+            const container = document.getElementById(id);
+            if (!container) {
+                console.warn(`CompLoader: No se encontró el contenedor con ID '${id}'`);
+                return;
+            }
+
+            // OPTIMIZACIÓN: Si ya tiene contenido (inyectado manualmente en index.html), no recargar.
+            // Esto mejora drásticamente la velocidad de arranque (Zero-Layout-Shift).
+            // REVERTIDO: Usuario reporta bucle/issues. Volvemos a carga forzada.
+            /* 
+            if (container.innerHTML.trim().length > 10) {
+                // console.log(`CompLoader: Saltando carga de [${id}], ya tiene contenido pre-inyectado.`);
+                return;
+            }
+            */
+
             // Realizar la petición web para obtener el archivo
             const response = await fetch(path);
             if (!response.ok) throw new Error(`No se pudo cargar el archivo: ${path}`);
             
             // Convertir la respuesta a texto puro (HTML)
             const html = await response.text();
-            
-            // Buscar el contenedor en la página y meter el HTML dentro
-            const container = document.getElementById(id);
-            if (container) {
-                container.innerHTML = html;
-            } else {
-                console.warn(`CompLoader: No se encontró el contenedor con ID '${id}'`);
-            }
+            container.innerHTML = html;
+
         } catch (error) {
             console.error(`Error crítico cargando el componente [${id}]:`, error);
         }

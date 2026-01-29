@@ -21,6 +21,8 @@ import { riuService } from './RiuService.js';
 import { transfersService } from './TransfersService.js';
 import { cenaFriaService } from './CenaFriaService.js';
 import { rackService } from './RackService.js';
+import { cajaService } from './CajaService.js';
+import { configService } from './ConfigService.js';
 
 class BackupService {
     constructor() {
@@ -39,7 +41,9 @@ class BackupService {
             { name: "RIU Class", svc: riuService },
             { name: "Transfers", svc: transfersService },
             { name: "Cenas Frias", svc: cenaFriaService },
-            { name: "Rack", svc: rackService }
+            { name: "Rack", svc: rackService },
+            { name: "Caja (Arqueo)", svc: cajaService },
+            { name: "Configuración", svc: configService }
         ];
     }
 

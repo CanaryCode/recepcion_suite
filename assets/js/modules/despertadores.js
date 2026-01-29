@@ -3,6 +3,8 @@ import { Utils } from '../core/Utils.js';
 import { despertadorService } from '../services/DespertadorService.js';
 import { sessionService } from '../services/SessionService.js';
 import { systemAlarmsService } from '../services/SystemAlarmsService.js';
+import { Ui } from '../core/Ui.js';
+import { RackView } from '../core/RackView.js';
 
 /**
  * MÓDULO DE DESPERTADORES Y ALARMAS (despertadores.js)
@@ -26,43 +28,48 @@ alarmaAudio.loop = true;             // Sonará en bucle hasta que se cierre el 
  * Configura el formulario, inyecta el modal de alarma y activa el verificador.
  */
 export async function inicializarDespertadores() {
-    // Garantizar carga autoritativa
     await despertadorService.init();
 
-    const form = document.getElementById('formNuevoDespertador');
-    if (form) {
-        form.removeEventListener('submit', manejarSubmitDespertador);
-        form.addEventListener('submit', manejarSubmitDespertador);
-    }
+    // 1. CONFIGURAR VISTAS (Conmutador)
+    Ui.setupViewToggle({
+        buttons: [
+            { id: 'btnVistaTrabajoDesp', viewId: 'despertadores-trabajo', onShow: mostrarDespertadores },
+            { id: 'btnVistaRackDesp', viewId: 'despertadores-rack', onShow: renderVistaRackDespertadores }
+        ]
+    });
+
+    // 2. AUTOCOMPLETE DE HABITACIONES
+    Ui.initRoomAutocomplete('lista-habs-desp');
+
+    // 3. GESTIÓN DE FORMULARIO (Asistente)
+    Ui.handleFormSubmission({
+        formId: 'formNuevoDespertador',
+        service: despertadorService,
+        idField: 'desp_hab',
+        mapData: (rawData) => ({
+            habitacion: rawData.desp_hab.toString().padStart(3, '0'),
+            hora: rawData.desp_hora,
+            comentario: rawData.desp_comentario
+        }),
+        onSuccess: () => {
+            const btnSubmit = document.getElementById('btnSubmitDespertador');
+            if (btnSubmit) btnSubmit.innerHTML = '<i class="bi bi-alarm-fill me-2"></i>Programar';
+            mostrarDespertadores();
+        }
+    });
 
     if (!document.getElementById('modalAlarmaDespertador')) {
         crearModalAlarma();
     }
 
-    // Configuración de visualización (Trabajo vs Rack)
+    // Estilo estándar
     document.getElementById('despertadores-trabajo')?.classList.add('content-panel');
     document.getElementById('despertadores-rack')?.classList.add('content-panel');
-
-    document.getElementById('btnVistaTrabajoDesp')?.addEventListener('click', () => cambiarVistaDespertadores('trabajo'));
-    document.getElementById('btnVistaRackDesp')?.addEventListener('click', () => cambiarVistaDespertadores('rack'));
-
-    // Rellenar buscador de habitaciones
-    const datalist = document.getElementById('lista-habs-desp');
-    if (datalist) {
-        datalist.innerHTML = '';
-        Utils.getHabitaciones().forEach(h => {
-            const opt = document.createElement('option');
-            opt.value = h.num;
-            datalist.appendChild(opt);
-        });
-    }
 
     mostrarDespertadores();
 
     /**
      * "DESBLOQUEO" DE AUDIO
-     * Los navegadores modernos prohíben el audio automático. 
-     * Al primer click del recepcionista en cualquier sitio, activamos el permiso.
      */
     document.addEventListener('click', () => {
         alarmaAudio.play().then(() => {
@@ -104,63 +111,13 @@ function crearModalAlarma() {
     });
 }
 
-function cambiarVistaDespertadores(vista) {
-    const btnTrabajo = document.getElementById('btnVistaTrabajoDesp');
-    const btnRack = document.getElementById('btnVistaRackDesp');
-    const divTrabajo = document.getElementById('despertadores-trabajo');
-    const divRack = document.getElementById('despertadores-rack');
-
-    if (vista === 'trabajo') {
-        btnTrabajo.classList.add('active');
-        btnRack.classList.remove('active');
-        divTrabajo.classList.remove('d-none');
-        divRack.classList.add('d-none');
-        mostrarDespertadores();
-    } else {
-        btnTrabajo.classList.remove('active');
-        btnRack.classList.add('active');
-        divTrabajo.classList.add('d-none');
-        divRack.classList.remove('d-none');
-        renderVistaRackDespertadores();
-    }
-}
-
-// ============================================================================
-// HANDLERS
-// ============================================================================
-
-function manejarSubmitDespertador(e) {
-    e.preventDefault();
-
-    // 1. Validar Usuario
-    const autor = Utils.validateUser();
-    if (!autor) return;
-
-    // 2. Validar Inputs
-    const habNum = document.getElementById('desp_hab').value.trim().padStart(3, '0');
-    const hora = document.getElementById('desp_hora').value;
-    const comentario = document.getElementById('desp_comentario').value.trim();
-
-    const validHabs = Utils.getHabitaciones().map(h => h.num);
-    if (!validHabs.includes(habNum)) {
-        alert(`Error: La habitación ${habNum} no existe.`);
-        return;
-    }
-
-    // 3. Guardar
-    despertadorService.saveDespertador({
-        habitacion: habNum,
-        hora,
-        comentario,
-        autor
-    });
-
-    // 4. Reset
-    e.target.reset();
-    const btnSubmit = document.getElementById('btnSubmitDespertador');
-    if (btnSubmit) btnSubmit.innerHTML = '<i class="bi bi-alarm-fill me-2"></i>Programar';
-    mostrarDespertadores();
-}
+/**
+ * Función global para facilitar el cambio programático
+ */
+window.cambiarVistaDespertadores = (vista) => {
+    const btn = vista === 'trabajo' ? 'btnVistaTrabajoDesp' : 'btnVistaRackDesp';
+    document.getElementById(btn)?.click();
+};
 
 // ============================================================================
 // RENDERIZADO
@@ -169,35 +126,19 @@ function manejarSubmitDespertador(e) {
 function mostrarDespertadores() {
     actualizarEstadoCampana(new Date());
     const despertadores = despertadorService.getDespertadores();
+    const sorted = [...despertadores].sort((a, b) => a.hora.localeCompare(b.hora));
 
     // Actualizar Dashboard (si existe)
-    const dashCol = document.getElementById('dash-col-despertadores');
-    const dashTabla = document.getElementById('dash-tabla-despertadores');
-    const dashCount = document.getElementById('dash-count-despertadores');
+    // USAR ABSTRACCIÓN DASHBOARD
+    Ui.updateDashboardWidget('despertadores', sorted, (d) => `
+        <tr onclick="irADespertador('${d.habitacion}')" style="cursor: pointer;">
+            <td class="fw-bold">${d.habitacion}</td>
+            <td class="text-end"><span class="badge bg-warning text-dark">${d.hora}</span></td>
+        </tr>
+    `);
 
-    if (dashCol) dashCol.classList.toggle('d-none', despertadores.length === 0);
-    if (dashCount) dashCount.innerText = despertadores.length;
-
-    if (dashTabla) {
-        dashTabla.innerHTML = '';
-        const sorted = [...despertadores].sort((a, b) => a.hora.localeCompare(b.hora));
-        sorted.forEach(d => {
-            dashTabla.innerHTML += `
-            <tr onclick="irADespertador('${d.habitacion}')" style="cursor: pointer;">
-                <td class="fw-bold">${d.habitacion}</td>
-                <td class="text-end"><span class="badge bg-warning text-dark">${d.hora}</span></td>
-            </tr>`;
-        });
-    }
-
-    // Tabla Principal
-    const tabla = document.getElementById('tablaDespertadoresActivos');
-    if (!tabla) return;
-    tabla.innerHTML = '';
-
-    const sorted = [...despertadores].sort((a, b) => a.hora.localeCompare(b.hora));
-    sorted.forEach(data => {
-        tabla.innerHTML += `
+    // Tabla Principal usando Ui.renderTable
+    Ui.renderTable('tablaDespertadoresActivos', sorted, (data) => `
         <tr id="desp-row-${data.habitacion}">
             <td class="fw-bold text-primary">${data.habitacion}</td>
             <td><span class="badge bg-warning text-dark fs-6"><i class="bi bi-clock me-1"></i>${data.hora}</span></td>
@@ -217,55 +158,42 @@ function mostrarDespertadores() {
                     <i class="bi bi-check-circle-fill"></i>
                 </button>
             </td>
-        </tr>`;
-    });
+        </tr>`, 
+        'No hay despertadores programados.'
+    );
 
     if (window.checkDailySummaryVisibility) window.checkDailySummaryVisibility();
 }
 
 function renderVistaRackDespertadores() {
-    const rackCont = document.getElementById('rack-desp-habitaciones');
     const statsCont = document.getElementById('desp-stats');
-    if (!rackCont || !statsCont) return;
-
-    const despertadores = despertadorService.getDespertadores();
-    const rangos = APP_CONFIG.HOTEL.STATS_CONFIG.RANGOS;
     
-    // Optimización 1: Convertir Array a Map para búsqueda O(1)
+    const despertadores = despertadorService.getDespertadores();
+    // Mapa para búsqueda O(1)
     const despMap = new Map();
     despertadores.forEach(d => despMap.set(d.habitacion, d));
 
-    let html = '';
-    
-    // Optimización 2: Construir string HTML en memoria
-    rangos.forEach(r => {
-        html += `<div class="w-100 mt-3 mb-2 d-flex align-items-center"><span class="badge bg-secondary me-2">Planta ${r.planta}</span><hr class="flex-grow-1 my-0 opacity-25"></div>`;
+    // USAR RACKVIEW ABSTRACTION
+    RackView.render('rack-desp-habitaciones', (num) => {
+        const data = despMap.get(num);
+        const colorClass = data ? 'bg-warning text-dark' : 'bg-white text-muted border';
 
-        for (let i = r.min; i <= r.max; i++) {
-            const num = i.toString().padStart(3, '0');
-            const data = despMap.get(num);
-            const colorClass = data ? 'bg-warning text-dark' : 'bg-white text-muted border';
-
-            html += `
-            <div class="d-flex align-items-center justify-content-center rounded rack-box ${colorClass}" 
-                 data-bs-toggle="tooltip" data-bs-title="${data ? 'Despertador: ' + data.hora + (data.comentario ? ' - ' + data.comentario : '') : 'Sin programar'}">
-                ${num}
-            </div>`;
-        }
+        return `
+        <div class="d-flex align-items-center justify-content-center rounded rack-box ${colorClass}" 
+             data-bs-toggle="tooltip" data-bs-title="${data ? 'Despertador: ' + data.hora + (data.comentario ? ' - ' + data.comentario : '') : 'Sin programar'}">
+            ${num}
+        </div>`;
     });
 
-    rackCont.innerHTML = html;
-
-    statsCont.innerHTML = `
-    <div class="col-md-4">
-        <div class="p-3 border rounded bg-warning text-dark text-center">
-            <div class="small fw-bold opacity-75">LLAMADAS PENDIENTES</div>
-            <div class="h3 mb-0 fw-bold">${despertadores.length}</div>
-        </div>
-    </div>`;
-    
-    // Reinicializar tooltips si es necesario (La función global MutationObserver se encarga, 
-    // pero si falla, aquí sería el lugar)
+    if (statsCont) {
+        statsCont.innerHTML = `
+        <div class="col-md-4">
+            <div class="p-3 border rounded bg-warning text-dark text-center">
+                <div class="small fw-bold opacity-75">LLAMADAS PENDIENTES</div>
+                <div class="h3 mb-0 fw-bold">${despertadores.length}</div>
+            </div>
+        </div>`;
+    }
 }
 
 /**
@@ -410,7 +338,7 @@ window.atenderAlarma = (id) => {
 
 window.borrarAlarmaDesdeModal = async (hab) => {
     if (await window.showConfirm("¿Eliminar esta alarma permanentemente? Ya no sonará mañana.")) {
-        despertadorService.removeDespertador(hab);
+        await despertadorService.removeDespertador(hab);
         atenderAlarma(hab); // Visualmente marcar como hecho
         mostrarDespertadores(); // Actualizar tabla de fondo
     }
@@ -423,7 +351,12 @@ window.borrarAlarmaDesdeModal = async (hab) => {
 function imprimirDespertadores() {
     const user = Utils.validateUser();
     if (!user) return;
-    Utils.printSection('print-date-despertadores', 'print-repc-nombre-despertadores', user);
+    Ui.preparePrintReport({
+        dateId: 'print-date-despertadores',
+        memberId: 'print-repc-nombre-despertadores',
+        memberName: user
+    });
+    window.print();
 }
 
 window.irADespertador = (hab) => {
@@ -440,7 +373,7 @@ window.irADespertador = (hab) => {
 };
 
 window.prepararEdicionDespertador = (hab) => {
-    const data = despertadorService.getDespertadorByHab(hab);
+    const data = despertadorService.getByHab(hab);
     if (data) {
         Utils.setVal('desp_hab', hab);
         Utils.setVal('desp_hora', data.hora);
@@ -462,13 +395,15 @@ window.prepararEdicionDespertador = (hab) => {
     }
 };
 
-window.eliminarDespertador = (hab) => {
-    despertadorService.removeDespertador(hab);
-    mostrarDespertadores();
+window.eliminarDespertador = async (hab) => {
+    if (await Ui.showConfirm(`¿Eliminar la alarma de la habitación ${hab}?`)) {
+        await despertadorService.removeDespertador(hab);
+        mostrarDespertadores();
+    }
 };
 
 window.limpiarDespertadoresPasados = async () => {
-    if (await window.showConfirm("¿Deseas limpiar todos los despertadores programados?")) {
+    if (await Ui.showConfirm("¿Deseas limpiar todos los despertadores programados?")) {
         despertadorService.clearAll();
         mostrarDespertadores();
     }

@@ -3,70 +3,59 @@ import { BaseService } from './BaseService.js';
 /**
  * SERVICIO DE NOTAS PERMANENTES (NotasService)
  * -------------------------------------------
- * Gestiona el tablón de anuncios o notas que no caducan cada día 
- * (ej: "Código de la puerta cambiado", "Recordar pedir llaves al 104").
+ * Gestiona el tablón de anuncios o notas que no caducan cada día.
  */
 class NotasService extends BaseService {
     constructor() {
         super('riu_notas_permanentes');
+        
+        // Esquema de validación para notas
+        this.schema = {
+            id: 'number',
+            texto: 'string',
+            autor: 'string',
+            fecha: 'string'
+        };
     }
 
-    /**
-     * INICIALIZACIÓN ASÍNCRONA
-     * Asegura que los datos esten cargados del servidor antes de pintar.
-     */
     async init() {
         await this.syncWithServer();
     }
 
     /**
      * OBTENER TODAS LAS NOTAS
-     * @returns {Object[]} Lista de notas guardadas.
      */
     getNotas() {
         return this.getAll();
     }
 
     /**
-     * GUARDAR CAMBIOS
+     * GUARDAR O ACTUALIZAR NOTA
      */
-    saveNotas(notas) {
-        this.saveAll(notas);
-    }
-
-    /**
-     * AÑADIR NOTA
-     * Coloca la nota al principio de la lista (lo más nuevo arriba).
-     */
-    addNota(nota) {
-        const current = this.getNotas();
-        current.unshift(nota);
-        this.saveNotas(current);
-    }
-
-    /**
-     * ACTUALIZAR NOTA
-     */
-    updateNota(notaActualizada) {
-        const current = this.getNotas().map(n =>
-            n.id === notaActualizada.id ? notaActualizada : n
-        );
-        this.saveNotas(current);
+    async saveNota(nota) {
+        if (!nota.id) nota.id = Date.now();
+        return this.update(nota.id, nota);
     }
 
     /**
      * ELIMINAR NOTA
      */
-    removeNota(id) {
-        const current = this.getNotas().filter(n => n.id !== id);
-        this.saveNotas(current);
+    async deleteNota(id) {
+        return this.delete(id);
     }
 
     /**
      * BUSCAR POR ID
      */
     getNotaById(id) {
-        return this.getNotas().find(n => n.id === id);
+        return this.getByKey(id);
+    }
+
+    /**
+     * GUARDAR TODAS (Reordenar)
+     */
+    async saveNotas(notas) {
+        return this.save(notas);
     }
 }
 

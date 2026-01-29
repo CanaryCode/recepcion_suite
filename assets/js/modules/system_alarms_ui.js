@@ -8,21 +8,64 @@
 
 import { systemAlarmsService } from '../services/SystemAlarmsService.js';
 import { Utils } from '../core/Utils.js';
-
+import { Ui } from '../core/Ui.js';
 export function inicializarSystemAlarmsUI() {
-    const form = document.getElementById('formSystemAlarm');
-    if (form) {
-        form.removeEventListener('submit', handleFormSubmit);
-        form.addEventListener('submit', handleFormSubmit);
-    }
+    // 1. GESTIÓN DE FORMULARIO (Ui.handleFormSubmission)
+    Ui.handleFormSubmission({
+        formId: 'formSystemAlarm',
+        service: systemAlarmsService,
+        idField: 'sys_alarm_id',
+        serviceIdField: 'id', // Mapping correcto para BaseService
+        mapData: (rawData) => {
+            const type = rawData.sys_alarm_type;
+            const newId = rawData.sys_alarm_id || `sys_${Date.now()}`;
+            let alarmData = {
+                id: newId,
+                hora: rawData.sys_alarm_hora,
+                mensaje: rawData.sys_alarm_msg,
+                titulo: rawData.sys_alarm_msg, // Required by Service Schema
+                type: type,
+                active: rawData.sys_alarm_active === 'on' || rawData.sys_alarm_active === true
+            };
+
+            if (type === 'date') {
+                alarmData.date = rawData.sys_alarm_date;
+            } else if (type === 'weekly') {
+                const days = [];
+                [0,1,2,3,4,5,6].forEach(d => {
+                    const ck = document.getElementById(`day-${d}`);
+                    if(ck && ck.checked) days.push(d);
+                });
+                alarmData.days = days;
+            } else {
+                alarmData.dias = 'todos'; // Legacy compatibility
+            }
+            return alarmData;
+        },
+        onSuccess: () => {
+            resetForm();
+            renderAlarmsList();
+        }
+    });
     
     // Configurar inputs visibilidad
     window.togglePeriodicidadInputs = togglePeriodicidadInputs;
     togglePeriodicidadInputs(); // Init state
 
-    // VISTAS (Trabajo vs Lista)
-    document.getElementById('btnVistaTrabajoAlarms')?.addEventListener('click', () => toggleView('trabajo'));
-    document.getElementById('btnVistaListaAlarms')?.addEventListener('click', () => toggleView('lista'));
+    // 1. CONFIGURAR VISTAS (Conmutador)
+    Ui.setupViewToggle({
+        buttons: [
+            { id: 'btnVistaTrabajoAlarms', viewId: 'formSystemAlarm-col', onShow: () => {
+                const listCol = document.getElementById('systemAlarms-list-col');
+                if(listCol) { listCol.classList.remove('col-12'); listCol.classList.add('col-md-7'); }
+            }},
+            { id: 'btnVistaListaAlarms', viewId: 'formSystemAlarm-col', onShow: () => {
+                const listCol = document.getElementById('systemAlarms-list-col');
+                if(listCol) { listCol.classList.remove('col-md-7'); listCol.classList.add('col-12'); }
+                document.getElementById('formSystemAlarm-col')?.classList.add('d-none');
+            }}
+        ]
+    });
 
     renderAlarmsList();
     
@@ -33,32 +76,13 @@ export function inicializarSystemAlarmsUI() {
     window.resetFormSystemAlarm = resetForm;
 }
 
-function toggleView(view) {
-    const btnTrabajo = document.getElementById('btnVistaTrabajoAlarms');
-    const btnLista = document.getElementById('btnVistaListaAlarms');
-    const formCol = document.querySelector('#formSystemAlarm')?.closest('.col-md-5');
-    const listCol = document.querySelector('#tableSystemAlarmsBody')?.closest('.col-md-7');
-
-    if (view === 'lista') {
-        // Vista Solo Lista
-        if(formCol) formCol.classList.add('d-none');
-        if(listCol) {
-            listCol.classList.remove('col-md-7');
-            listCol.classList.add('col-12');
-        }
-        btnTrabajo?.classList.remove('active');
-        btnLista?.classList.add('active');
-    } else {
-        // Vista Trabajo (Split)
-        if(formCol) formCol.classList.remove('d-none');
-        if(listCol) {
-            listCol.classList.remove('col-12');
-            listCol.classList.add('col-md-7');
-        }
-        btnLista?.classList.remove('active');
-        btnTrabajo?.classList.add('active');
-    }
-}
+/**
+ * Función global para facilitar el cambio programático
+ */
+window.toggleViewAlarms = (vista) => {
+    const btn = vista === 'trabajo' ? 'btnVistaTrabajoAlarms' : 'btnVistaListaAlarms';
+    document.getElementById(btn)?.click();
+};
 
 /**
  * CONFIGURAR VISIBILIDAD DE INPUTS
@@ -85,60 +109,9 @@ function togglePeriodicidadInputs() {
     }
 }
 
-function handleFormSubmit(e) {
-    e.preventDefault();
-
-    const id = document.getElementById('sys_alarm_id').value;
-    const hora = document.getElementById('sys_alarm_hora').value;
-    const msg = document.getElementById('sys_alarm_msg').value;
-    const type = document.getElementById('sys_alarm_type').value;
-    const active = document.getElementById('sys_alarm_active').checked;
-
-    if (!hora || !msg) return;
-
-    let alarmData = {
-        id: id || null,
-        hora,
-        mensaje: msg,
-        type,
-        active
-    };
-
-    if (type === 'date') {
-        alarmData.date = document.getElementById('sys_alarm_date').value;
-        if (!alarmData.date) {
-            alert("Selecciona una fecha");
-            return;
-        }
-    } else if (type === 'weekly') {
-        // Collect days
-        const days = [];
-        [0,1,2,3,4,5,6].forEach(d => {
-             if(document.getElementById(`day-${d}`).checked) days.push(d);
-        });
-        if (days.length === 0) {
-            alert("Selecciona al menos un día de la semana");
-            return;
-        }
-        alarmData.days = days;
-    } else {
-        // Daily
-        alarmData.dias = 'todos'; // Legacy compatibility
-    }
-
-    systemAlarmsService.saveAlarm(alarmData);
-
-    resetForm();
-    renderAlarmsList();
-    
-    if (window.showAlert) {
-        window.showAlert("Alarma guardada correctamente", "success");
-    } else {
-        alert("Alarma guardada correctamente");
-    }
-}
 
 function renderAlarmsList() {
+    updateBadge(); // Actualizar badge global
     const tbody = document.getElementById('tableSystemAlarmsBody');
     if (!tbody) return;
 
@@ -229,10 +202,12 @@ function editSystemAlarm(id) {
 }
 
 function deleteSystemAlarm(id) {
-    if (confirm("¿Borrar esta alarma del sistema?")) {
-        systemAlarmsService.deleteAlarm(id);
-        renderAlarmsList();
-    }
+    Ui.showConfirm("¿Borrar esta alarma del sistema?").then(confirmed => {
+        if (confirmed) {
+            systemAlarmsService.deleteAlarm(id);
+            renderAlarmsList();
+        }
+    });
 }
 
 function toggleActiveSystemAlarm(id) {
@@ -246,4 +221,23 @@ function resetForm() {
     togglePeriodicidadInputs();
     const btn = document.querySelector('#formSystemAlarm button[type="submit"]');
     if(btn) btn.innerHTML = '<i class="bi bi-plus-circle me-2"></i>Guardar Alarma';
+}
+
+function updateBadge() {
+    const alarmsData = systemAlarmsService.getAlarms() || []; 
+    const alarms = Array.isArray(alarmsData) ? alarmsData.filter(a => a.active) : [];
+    const badge = document.getElementById('badgeSystemAlarms');
+    const bellBtn = document.getElementById('btnSystemAlarms');
+    
+    if (!badge || !bellBtn) return;
+
+    if (alarms.length > 0) {
+        badge.classList.remove('d-none');
+        bellBtn.classList.remove('text-secondary');
+        bellBtn.classList.add('text-danger', 'animation-pulse');
+    } else {
+        badge.classList.add('d-none');
+        bellBtn.classList.remove('text-danger', 'animation-pulse');
+        bellBtn.classList.add('text-secondary');
+    }
 }

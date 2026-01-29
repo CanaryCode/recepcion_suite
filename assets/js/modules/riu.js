@@ -1,7 +1,9 @@
 import { APP_CONFIG } from '../core/Config.js';
 import { riuService } from '../services/RiuService.js';
 import { Utils } from '../core/Utils.js';
+import { Ui } from '../core/Ui.js';
 import { sessionService } from '../services/SessionService.js';
+import { PdfService } from '../core/PdfService.js';
 
 /**
  * MÓDULO DE GESTIÓN RIU CLASS (riu.js)
@@ -19,161 +21,126 @@ let riuChartInstance = null;
 // ==========================================
 
 export async function inicializarRiu() {
-    // Configurar Formulario
-    const form = document.getElementById('formCliente');
-    if (form) {
-        form.removeEventListener('submit', manejarSubmitCliente);
-        form.addEventListener('submit', manejarSubmitCliente);
-    }
+    await riuService.init();
 
-    // Configurar Botones de Acción
+    // 1. CONFIGURAR VISTAS (Conmutador)
+    Ui.setupViewToggle({
+        buttons: [
+            { id: 'btnVistaTrabajoRiu', viewId: 'riu-trabajo', onShow: mostrarClientes },
+            { id: 'btnVistaRackRiu', viewId: 'riu-rack', onShow: renderVistaRackRiu }
+        ]
+    });
+
+    // 2. CONFIGURAR FORMULARIO (Asistente)
+    Ui.handleFormSubmission({
+        formId: 'formCliente',
+        service: riuService,
+        idField: 'hab_id_hidden', // Usamos un campo oculto o normal para el ID
+        mapData: (rawData) => {
+            const habInput = rawData.habitacion.trim().padStart(3, '0');
+            const nHab = parseInt(habInput);
+
+            // Validar existencia de la habitación
+            const existe = APP_CONFIG.HOTEL.STATS_CONFIG.RANGOS.some(r => nHab >= r.min && nHab <= r.max);
+            if (!existe) {
+                Ui.showToast(`Error: La habitación ${habInput} no existe.`, 'danger');
+                return null;
+            }
+
+            // Validar duplicados (solo si es nuevo o cambia habitación)
+            const isEdit = !!rawData.hab_id_hidden;
+            if (!isEdit) {
+                const duplicada = riuService.getClientes().some(c => c.habitacion === habInput);
+                if (duplicada) {
+                    Ui.showToast(`Error: La habitación ${habInput} ya está registrada.`, 'warning');
+                    return null;
+                }
+            }
+
+            return {
+                id: isEdit ? parseInt(rawData.hab_id_hidden) : Date.now(),
+                nombre: rawData.nombre.trim(),
+                habitacion: habInput,
+                tipo_tarjeta: rawData.tipo_tarjeta,
+                fecha_entrada: rawData.fecha_entrada,
+                fecha_salida: rawData.fecha_salida,
+                comentarios: rawData.comentarios.trim()
+            };
+        },
+        onSuccess: () => {
+            const btn = document.getElementById('btnSubmitRiu');
+            if (btn) btn.innerHTML = '<i class="bi bi-person-check-fill me-2"></i>Registrar Cliente';
+            document.getElementById('hab_id_hidden').value = '';
+            establecerFechasPorDefecto();
+            mostrarClientes();
+            Ui.showToast("Cliente RIU registrado.");
+            // Si estamos en rack, actualizar (aunque handleViewToggle ya lo hace si está activo)
+            if (!document.getElementById('riu-rack').classList.contains('d-none')) {
+                renderVistaRackRiu();
+            }
+        }
+    });
+
+    // Botones extra
     document.getElementById('btnLimpiarSalidas')?.addEventListener('click', limpiarSalidasHoyManual);
     document.getElementById('btnEnviarReporte')?.addEventListener('click', enviarEmailDirecto);
     document.getElementById('btnImprimirRiu')?.addEventListener('click', imprimirRiu);
 
-    // Configurar Vistas
-    document.getElementById('riu-trabajo')?.classList.add('content-panel');
-    document.getElementById('riu-rack')?.classList.add('content-panel');
-
-    document.getElementById('btnVistaTrabajoRiu')?.addEventListener('click', () => cambiarVistaRiu('trabajo'));
-    document.getElementById('btnVistaRackRiu')?.addEventListener('click', () => cambiarVistaRiu('rack'));
-
     // Cargar datos iniciales
     await limpiarClientesCaducados();
-    await mostrarClientes();
-    establecerFechasPorDefecto();
-}
-
-function establecerFechasPorDefecto() {
-    const entrada = document.getElementById('fecha_entrada');
-    const salida = document.getElementById('fecha_salida');
-
-    if (entrada && salida) {
-        const hoy = new Date();
-        const semanaMas = new Date();
-        semanaMas.setDate(hoy.getDate() + 7);
-
-        entrada.value = Utils.getTodayISO();
-        salida.value = semanaMas.toISOString().split('T')[0];
-    }
-}
-
-// ==========================================
-// 2. HANDLERS (Manejo de Eventos)
-// ==========================================
-
-async function manejarSubmitCliente(e) {
-    e.preventDefault();
-
-    const habInput = document.getElementById('habitacion').value.trim().padStart(3, '0');
-    const nHab = parseInt(habInput);
-
-    // Validar usuario
-    const autor = Utils.validateUser();
-    if (!autor) return;
-
-    // Validar existencia de la habitación
-    const existe = APP_CONFIG.HOTEL.STATS_CONFIG.RANGOS.some(r => nHab >= r.min && nHab <= r.max);
-    if (!existe) {
-        alert(`Error: La habitación ${habInput} no existe en el Hotel Garoé.`);
-        return;
-    }
-
-    // Validar duplicados (solo si no es edición o si cambia la habitación)
-    let clientes = riuService.getClientes();
-    const duplicada = clientes.some(c => c.habitacion === habInput && c.id !== editId);
-    if (duplicada) {
-        alert(`Error: La habitación ${habInput} ya tiene un cliente registrado.`);
-        return;
-    }
-
-    // Normalizar visualmente
-    document.getElementById('habitacion').value = habInput;
-
-    const cliente = {
-        id: editId || Date.now(),
-        nombre: document.getElementById('nombre').value.trim(),
-        habitacion: habInput,
-        tipo_tarjeta: document.getElementById('tipo_tarjeta').value,
-        fecha_entrada: document.getElementById('fecha_entrada').value,
-        fecha_salida: document.getElementById('fecha_salida').value,
-        comentarios: document.getElementById('comentarios').value.trim(),
-        registrado_por: autor // Guardamos quién lo registró/modificó
-    };
-
-    if (editId) {
-        clientes = clientes.map(c => c.id === editId ? cliente : c);
-        riuService.saveClientes(clientes);
-        editId = null;
-        document.getElementById('btnSubmitRiu').innerHTML = '<i class="bi bi-person-check-fill me-2"></i>Registrar Cliente';
-    } else {
-        riuService.addCliente(cliente);
-    }
-
-    e.target.reset();
     establecerFechasPorDefecto();
     mostrarClientes();
-
-    // Si estamos en vista rack, actualizarla también
-    if (!document.getElementById('riu-rack').classList.contains('d-none')) {
-        renderVistaRackRiu();
-    }
 }
 
-function cambiarVistaRiu(vista) {
-    const btnTrabajo = document.getElementById('btnVistaTrabajoRiu');
-    const btnRack = document.getElementById('btnVistaRackRiu');
-    const divTrabajo = document.getElementById('riu-trabajo');
-    const divRack = document.getElementById('riu-rack');
-
-    if (vista === 'trabajo') {
-        btnTrabajo.classList.add('active');
-        btnRack.classList.remove('active');
-        divTrabajo.classList.remove('d-none');
-        divRack.classList.add('d-none');
-        mostrarClientes();
-    } else {
-        btnTrabajo.classList.remove('active');
-        btnRack.classList.add('active');
-        divTrabajo.classList.add('d-none');
-        divRack.classList.remove('d-none');
-        renderVistaRackRiu();
-    }
-}
+/**
+ * Función global para facilitar el cambio programático
+ */
+window.cambiarVistaRiu = (vista) => {
+    const btn = vista === 'trabajo' ? 'btnVistaTrabajoRiu' : 'btnVistaRackRiu';
+    document.getElementById(btn)?.click();
+};
 
 // ==========================================
 // 3. RENDERIZADO
 // ==========================================
 
+/**
+ * Muestra la lista de clientes registrados en el rack de RIU Class.
+ */
 export async function mostrarClientes() {
+    await riuService.init();
     const clientes = riuService.getClientes();
-    const tabla = document.getElementById('tablaCuerpo');
-    if (!tabla) return;
+    
+    // Filtro por habitación si se requiere (ej: desde el buscador del rack)
+    const busqueda = document.getElementById('searchRiu')?.value.toLowerCase() || "";
+    const filtered = busqueda 
+        ? clientes.filter(c => c.habitacion.toLowerCase().includes(busqueda) || c.nombre.toLowerCase().includes(busqueda))
+        : clientes;
 
-    tabla.innerHTML = '';
-
-    // Ordenar por habitación
-    clientes.sort((a, b) => a.habitacion.localeCompare(b.habitacion));
-
-    clientes.forEach(c => {
-        let badgeClass = 'bg-riu-class';
-        if (c.tipo_tarjeta === 'Oro') badgeClass = 'bg-riu-oro';
-        else if (c.tipo_tarjeta === 'Diamante') badgeClass = 'bg-riu-diamante';
-
-        tabla.innerHTML += `
-            <tr>
-                <td class="fw-bold">${c.nombre}</td>
-                <td><span class="badge bg-secondary">${c.habitacion}</span></td>
-                <td><span class="badge ${badgeClass}">${c.tipo_tarjeta}</span></td>
-                <td>${Utils.formatDate(c.fecha_salida)}</td>
-                <td class="small text-muted">${c.comentarios}</td>
-                <td class="text-end">
-                    <button onclick="prepararEdicionCliente(${c.id})" class="btn btn-sm btn-outline-primary border-0 me-1" data-bs-toggle="tooltip" data-bs-title="Editar"><i class="bi bi-pencil"></i></button>
-                    <button onclick="eliminarCliente(${c.id})" class="btn btn-sm btn-outline-danger border-0" data-bs-toggle="tooltip" data-bs-title="Eliminar"><i class="bi bi-trash"></i></button>
-                </td>
-            </tr>`;
-    });
+    Ui.renderTable('tablaCuerpo', filtered, renderFilaRiu, 'No hay clientes RIU registrados hoy.');
     actualizarEstadisticas(clientes);
+}
+
+/**
+ * RENDERIZAR FILA RIU (Helper para renderTable)
+ */
+function renderFilaRiu(c) {
+    let badgeClass = 'bg-riu-class';
+    if (c.tipo_tarjeta === 'Oro') badgeClass = 'bg-riu-oro';
+    else if (c.tipo_tarjeta === 'Diamante') badgeClass = 'bg-riu-diamante';
+
+    return `
+        <tr>
+            <td class="fw-bold">${c.nombre}</td>
+            <td><span class="badge bg-secondary">${c.habitacion}</span></td>
+            <td><span class="badge ${badgeClass}">${c.tipo_tarjeta}</span></td>
+            <td>${Utils.formatDate(c.fecha_salida)}</td>
+            <td class="small text-muted">${c.comentarios}</td>
+            <td class="text-end">
+                <button onclick="prepararEdicionCliente(${c.id})" class="btn btn-sm btn-outline-primary border-0 me-1" data-bs-toggle="tooltip" data-bs-title="Editar"><i class="bi bi-pencil"></i></button>
+                <button onclick="eliminarCliente(${c.id})" class="btn btn-sm btn-outline-danger border-0" data-bs-toggle="tooltip" data-bs-title="Eliminar"><i class="bi bi-trash"></i></button>
+            </td>
+        </tr>`;
 }
 
 /**
@@ -300,41 +267,42 @@ function actualizarEstadisticas(clientes) {
 // ==========================================
 
 export async function prepararEdicionCliente(id) {
-    const clientes = riuService.getClientes();
-    const c = clientes.find(item => item.id === id);
+    const c = riuService.getByKey(id);
     if (c) {
         cambiarVistaRiu('trabajo');
+        Utils.setVal('hab_id_hidden', c.id);
         Utils.setVal('nombre', c.nombre);
         Utils.setVal('habitacion', c.habitacion);
         Utils.setVal('tipo_tarjeta', c.tipo_tarjeta);
         Utils.setVal('fecha_entrada', c.fecha_entrada);
         Utils.setVal('fecha_salida', c.fecha_salida);
         Utils.setVal('comentarios', c.comentarios);
-        editId = id;
-        document.getElementById('btnSubmitRiu').innerHTML = '<i class="bi bi-pencil-square me-2"></i>Actualizar Cliente';
+        
+        const btn = document.getElementById('btnSubmitRiu');
+        if (btn) btn.innerHTML = '<i class="bi bi-pencil-square me-2"></i>Actualizar Cliente';
         document.getElementById('formCliente')?.scrollIntoView({ behavior: 'smooth' });
     }
 }
 
 export async function eliminarCliente(id) {
-    if (await window.showConfirm('¿Eliminar este registro de cliente?')) {
-        let clientes = riuService.getClientes();
-        clientes = clientes.filter(c => c.id !== id);
-        riuService.saveClientes(clientes);
+    const cliente = riuService.getByKey(id);
+    if (cliente && await Ui.showConfirm(`¿Eliminar registro de la habitación ${cliente.habitacion} (${cliente.nombre})?`)) {
+        await riuService.removeCliente(id);
+        Ui.showToast("Cliente eliminado.");
         mostrarClientes();
     }
-}
+};
 
 export async function limpiarClientesCaducados() {
     riuService.limpiarSalidas();
 }
 
 export async function limpiarSalidasHoyManual() {
-    if (await window.showConfirm('¿Deseas eliminar del listado a todos los clientes que tienen salida hoy?')) {
+    if (await Ui.showConfirm('¿Deseas eliminar del listado a todos los clientes que tienen salida hoy?')) {
         const hoy = Utils.getTodayISO();
-        let clientes = riuService.getClientes();
-        clientes = clientes.filter(c => c.fecha_salida !== hoy);
-        riuService.saveClientes(clientes);
+        const clientes = riuService.getClientes();
+        const filtrados = clientes.filter(c => c.fecha_salida !== hoy);
+        riuService.saveAll(filtrados);
         mostrarClientes();
     }
 }
@@ -415,11 +383,64 @@ function generarReporteHTML(clientes, ocupacion, totalHab) {
     `;
 }
 
-function imprimirRiu() {
-    const user = Utils.validateUser();
-    if (!user) return;
+/**
+ * IMPRIMIR REPORTE RIU CLASS (PdfService)
+ * Genera un informe PDF profesional con el estado actual de la ocupación RIU.
+ */
+async function imprimirRiu() {
+    const user = sessionService.getUser();
+    if (!user) {
+        Ui.showToast("⚠️ No hay usuario seleccionado.", "warning");
+        return;
+    }
 
-    Utils.printSection('print-date-riu', 'print-repc-nombre-riu', user);
+    // Preparar metadatos de impresión
+    Ui.preparePrintReport({
+        dateId: 'print-date-riu',
+        memberId: 'print-repc-nombre-riu',
+        memberName: user
+    });
+
+    const sourceView = document.getElementById('riu-trabajo'); // Usamos la vista de trabajo/lista
+    if (!sourceView) {
+        Ui.showToast("No se encontró la vista RIU para imprimir.", "danger");
+        return;
+    }
+
+    // Notificar al usuario
+    Ui.showToast("Generando reporte RIU en PDF...", "info");
+
+    const exito = await PdfService.generateReport({
+        title: "INFORME DE CONTROL RIU CLASS",
+        author: user,
+        htmlContent: `<div style="padding: 10px;">${sourceView.innerHTML}</div>`,
+        filename: `REPORT_RIU_${Utils.getTodayISO()}.pdf`,
+        metadata: {
+            "Total Socios": riuService.getClientes().length
+        }
+    });
+
+    if (exito) {
+        Ui.showToast("Reporte RIU generado con éxito.", "success");
+    } else {
+        window.print();
+    }
+}
+
+
+/**
+ * ESTABLECER FECHAS POR DEFECTO
+ * Pre-rellena los campos de fecha de entrada (hoy) y salida (mañana).
+ */
+function establecerFechasPorDefecto() {
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const fmt = (d) => d.toISOString().split('T')[0];
+
+    Utils.setVal('fecha_entrada', fmt(today));
+    Utils.setVal('fecha_salida', fmt(tomorrow));
 }
 
 // Exportar funciones para uso en HTML (OnClicks)

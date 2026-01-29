@@ -3,54 +3,36 @@ import { BaseService } from './BaseService.js';
 /**
  * SERVICIO DE CENAS FRÍAS (CenaFriaService)
  * ----------------------------------------
- * Gestiona las solicitudes de cenas frías (picnic o cena tardía) por habitación.
+ * Gestiona las solicitudes de cenas frías por habitación.
  */
 class CenaFriaService extends BaseService {
     constructor() {
         super('riu_cenas_frias', {}); // Estructura: { "Hab": { pax: 2, obs: "..." } }
-    }
-
-    async init() {
-        await this.syncWithServer();
-    }
-
-    /**
-     * OBTENER TODAS LAS SOLICITUDES
-     */
-    getCenas() {
-        return this.getAll();
+        
+        // Esquema para validación de cenas frías
+        this.schema = {
+            pax: 'number',
+            obs: 'string'
+        };
     }
 
     /**
-     * GUARDAR CAMBIOS
+     * AÑADIR O ACTUALIZAR CENA
      */
-    saveCenas(data) {
-        this.saveAll(data);
-    }
-
-    /**
-     * AÑADIR CENA A UNA HABITACIÓN
-     */
-    addCena(hab, data) {
-        const current = this.getCenas();
-        current[hab] = data;
-        this.saveCenas(current);
+    async addCena(hab, data) {
+        return this.setByKey(hab, data);
     }
 
     /**
      * ELIMINAR CENA
      */
-    removeCena(hab) {
-        const current = this.getCenas();
-        delete current[hab];
-        this.saveCenas(current);
+    async removeCena(hab) {
+        return this.removeByKey(hab);
     }
 
-    /**
-     * VACIAR LISTA
-     */
-    clearCenas() {
-        this.saveCenas({});
+    // Alias para compatibilidad
+    getCenas() {
+        return this.getAll();
     }
 }
 

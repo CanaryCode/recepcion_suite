@@ -1,14 +1,14 @@
+import { Utils } from '../core/Utils.js';
+import { APP_CONFIG } from '../core/Config.js';
+import { Ui } from '../core/Ui.js';
+import { RackView } from '../core/RackView.js';
+import { atencionesService } from '../services/AtencionesService.js';
+
 /**
  * MÓDULO DE GESTIÓN DE ATENCIONES VIP (atenciones.js)
  * --------------------------------------------------
- * Controla el registro y visualización de servicios especiales para habitaciones
- * (Fruta, Cava, Flores, etc.). Permite gestionar los pedidos pendientes y 
- * visualizarlos de forma gráfica en un rack dedicado para el departamento de pisos.
+ * Controla el registro y visualización de servicios especiales para habitaciones.
  */
-
-import { atencionesService } from '../services/AtencionesService.js';
-import { Utils } from '../core/Utils.js';
-import { APP_CONFIG } from '../core/Config.js';
 
 const ICONOS_ATENCION = {
     "Fruta": "bi-apple", "Fruta Especial": "bi-basket2", "Cava": "bi-cup-straw",
@@ -18,217 +18,168 @@ const ICONOS_ATENCION = {
     "Tarta": "bi-cake2", "Tarjeta": "bi-card-text", "Regalo Niños": "bi-robot"
 };
 
-// ============================================================================
-// INICIALIZACIÓN
-// ============================================================================
-
 export async function inicializarAtenciones() {
-    // Garantizar carga de datos
     await atencionesService.init();
 
-    const form = document.getElementById('formNuevaAtencion');
-    if (form) form.addEventListener('submit', manejarSubmitAtencion);
+    // 1. CONFIGURAR VISTAS
+    Ui.setupViewToggle({
+        buttons: [
+            { id: 'btnVistaTrabajo', viewId: 'atenciones-trabajo', onShow: mostrarAtenciones },
+            { id: 'btnVistaRack', viewId: 'atenciones-rack', onShow: renderVistaRack }
+        ]
+    });
 
-    document.getElementById('btnResetAtenciones')?.addEventListener('click', resetearAtenciones);
+    // 2. AUTOCOMPLETE
+    Ui.initRoomAutocomplete('lista-habs-atenciones');
+
+    // 3. GESTIÓN DE FORMULARIO (Ui.handleFormSubmission)
+    Ui.handleFormSubmission({
+        formId: 'formNuevaAtencion',
+        service: atencionesService,
+        idField: 'atencion_hab', // Usamos la hab como ID para atenciones
+        mapData: (rawData) => {
+            const autor = Utils.validateUser();
+            if (!autor) return null;
+
+            const hab = rawData.atencion_hab.trim().padStart(3, '0');
+            const seleccionadas = Array.from(document.querySelectorAll('.check-atencion:checked')).map(cb => cb.value);
+            const comentario = rawData.atencion_comentario.trim();
+
+            if (seleccionadas.length === 0 && comentario === "") {
+                Ui.showToast("Seleccione al menos una atención o escriba un comentario.", "warning");
+                return null;
+            }
+
+            return {
+                hab,
+                tipos: seleccionadas,
+                comentario,
+                autor,
+                timestamp: Date.now()
+            };
+        },
+        onSuccess: () => {
+            const btnSubmit = document.getElementById('btnSubmitAtenciones');
+            if (btnSubmit) btnSubmit.innerHTML = '<i class="bi bi-save-fill me-2"></i>Registrar Atención';
+            mostrarAtenciones();
+        }
+    });
 
     document.getElementById('atenciones-trabajo')?.classList.add('content-panel');
     document.getElementById('atenciones-rack')?.classList.add('content-panel');
 
-    document.getElementById('btnVistaTrabajo')?.addEventListener('click', () => cambiarVistaAtenciones('trabajo'));
-    document.getElementById('btnVistaRack')?.addEventListener('click', () => cambiarVistaAtenciones('rack'));
-
-    const datalist = document.getElementById('lista-habs-atenciones');
-    if (datalist) {
-        datalist.innerHTML = '';
-        Utils.getHabitaciones().forEach(h => {
-            const opt = document.createElement('option');
-            opt.value = h.num;
-            datalist.appendChild(opt);
-        });
-    }
-    await mostrarAtenciones();
+    mostrarAtenciones();
 }
-
-function cambiarVistaAtenciones(vista) {
-    const btnTrabajo = document.getElementById('btnVistaTrabajo');
-    const btnRack = document.getElementById('btnVistaRack');
-    const divTrabajo = document.getElementById('atenciones-trabajo');
-    const divRack = document.getElementById('atenciones-rack');
-
-    if (vista === 'trabajo') {
-        btnTrabajo.classList.add('active'); btnRack.classList.remove('active');
-        divTrabajo.classList.remove('d-none'); divRack.classList.add('d-none');
-        mostrarAtenciones();
-    } else {
-        btnTrabajo.classList.remove('active'); btnRack.classList.add('active');
-        divTrabajo.classList.add('d-none'); divRack.classList.remove('d-none');
-        renderVistaRack();
-    }
-}
-
-// ============================================================================
-// HANDLERS
-// ============================================================================
-
-/**
- * REGISTRO DE ATENCIÓN
- * Captura las selecciones de iconos y el comentario, persistiendo los datos
- * a través del servicio de Atenciones.
- */
-async function manejarSubmitAtencion(e) {
-    e.preventDefault();
-    const habNum = document.getElementById('atencion_hab').value.trim().padStart(3, '0');
-    // Ensure properly formatted value stays in input
-    Utils.setVal('atencion_hab', habNum);
-
-    // 1. Validar Usuario
-    const autor = Utils.validateUser();
-    if (!autor) return;
-
-    // 2. Validar Habitación
-    const validHabs = Utils.getHabitaciones().map(h => h.num);
-    if (!validHabs.includes(habNum)) {
-        alert("Error: La habitación " + habNum + " no existe.");
-        return;
-    }
-
-    const seleccionadas = Array.from(document.querySelectorAll('.check-atencion:checked')).map(cb => cb.value);
-    const comentario = document.getElementById('atencion_comentario').value.trim();
-
-    if (seleccionadas.length > 0 || comentario !== "") {
-        await atencionesService.addAtencion(habNum, seleccionadas, comentario, autor);
-    } else {
-        await atencionesService.removeAtencion(habNum);
-    }
-
-    e.target.reset();
-    const btnSubmit = document.getElementById('btnSubmitAtenciones');
-    if (btnSubmit) btnSubmit.innerHTML = '<i class="bi bi-save-fill me-2"></i>Registrar Atención';
-    await mostrarAtenciones();
-}
-
-// ============================================================================
-// RENDERIZADO
-// ============================================================================
 
 async function mostrarAtenciones() {
-    const tabla = document.getElementById('tablaAtencionesActivas');
-    if (!tabla) return;
     const atenciones = await atencionesService.getAtenciones();
-
-    const dashCol = document.getElementById('dash-col-atenciones');
-    const dashTabla = document.getElementById('dash-tabla-atenciones');
-    const dashCount = document.getElementById('dash-count-atenciones');
-
-    if (dashCol) {
-        const numAtenciones = Object.keys(atenciones).length;
-        dashCol.classList.toggle('d-none', numAtenciones === 0);
-        if (dashCount) dashCount.innerText = numAtenciones;
-        
-        if (dashTabla) {
-            dashTabla.innerHTML = '';
-            Object.keys(atenciones).sort().forEach(hab => {
-                const data = atenciones[hab];
-                const lista = Array.isArray(data) ? data : (data.tipos || []);
-                dashTabla.innerHTML += `
-                    <tr onclick="navegarA('#atenciones-content')" style="cursor: pointer;">
-                        <td class="fw-bold text-primary">${hab}</td>
-                        <td class="text-end small">${lista.length} ítems</td>
-                    </tr>`;
-            });
-        }
-    }
-
-    let html = '';
-    Object.keys(atenciones).sort().forEach(hab => {
+    const listaDatos = Object.keys(atenciones).sort().map(hab => {
         const data = atenciones[hab];
-        const lista = Array.isArray(data) ? data : (data.tipos || []);
-        const comentario = Array.isArray(data) ? "" : (data.comentario || "");
-        html += `<tr><td class="fw-bold text-primary">${hab}</td><td>${lista.map(a => `<span class="badge bg-info text-dark me-1"><i class="bi ${ICONOS_ATENCION[a] || 'bi-tag'} me-1"></i>${a}</span>`).join('')}</td><td class="small text-muted">${comentario}</td><td class="text-end"><button onclick="prepararEdicionAtencion('${hab}')" class="btn btn-sm btn-outline-primary border-0 me-1"><i class="bi bi-pencil"></i></button><button onclick="eliminarAtencionHab('${hab}')" class="btn btn-sm btn-outline-danger border-0"><i class="bi bi-trash"></i></button></td></tr>`;
+        return {
+            hab,
+            tipos: Array.isArray(data) ? data : (data.tipos || []),
+            comentario: Array.isArray(data) ? "" : (data.comentario || ""),
+            autor: data.autor || 'N/A'
+        };
     });
-    tabla.innerHTML = html;
+
+    // Dashboard
+    Ui.updateDashboardWidget('atenciones', listaDatos, (item) => `
+        <tr onclick="navegarA('#atenciones-content')" style="cursor: pointer;">
+            <td class="fw-bold text-primary">${item.hab}</td>
+            <td class="text-end small">${item.tipos.length} ítems</td>
+        </tr>`);
 
     if (window.checkDailySummaryVisibility) window.checkDailySummaryVisibility();
+
+    // Tabla Principal
+    Ui.renderTable('tablaAtencionesActivas', listaDatos, (item) => {
+        const badges = item.tipos.map(a => 
+            `<span class="badge bg-info text-dark me-1"><i class="bi ${ICONOS_ATENCION[a] || 'bi-tag'} me-1"></i>${a}</span>`
+        ).join('');
+        
+        return `
+            <tr>
+                <td class="fw-bold text-primary">${item.hab}</td>
+                <td>${badges}</td>
+                <td class="small text-muted">${item.comentario}</td>
+                <td class="text-end">
+                    <button onclick="prepararEdicionAtencion('${item.hab}')" class="btn btn-sm btn-outline-primary border-0 me-1" title="Editar"><i class="bi bi-pencil"></i></button>
+                    <button onclick="eliminarAtencionHab('${item.hab}')" class="btn btn-sm btn-outline-danger border-0" title="Borrar"><i class="bi bi-trash"></i></button>
+                </td>
+            </tr>`;
+    }, 'No hay habitaciones con atenciones pendientes.');
 }
 
-/**
- * VISTA RACK DE ATENCIONES
- * Renderiza el estado del hotel coloreando las habitaciones con atenciones 
- * pendientes. Incluye tooltips con el desglose de productos.
- */
 async function renderVistaRack() {
-    const rackCont = document.getElementById('rack-habitaciones');
+    const atenciones = await atencionesService.getAtenciones();
     const statsCont = document.getElementById('atenciones-stats');
-    if (!rackCont || !statsCont) return;
-
-    const atenciones = await atencionesService.getAtenciones();
-    const rangos = APP_CONFIG.HOTEL.STATS_CONFIG.RANGOS;
-    const totalHabs = rangos.reduce((acc, r) => acc + (r.max - r.min + 1), 0);
-
-    let rackHtml = '';
-    rangos.forEach(r => {
-        rackHtml += `<div class="w-100 mt-3 mb-2 d-flex align-items-center"><span class="badge bg-secondary me-2">Planta ${r.planta}</span><hr class="flex-grow-1 my-0 opacity-25"></div>`;
-        for (let i = r.min; i <= r.max; i++) {
-            const num = i.toString().padStart(3, '0');
-            const data = atenciones[num];
-            const lista = data ? (Array.isArray(data) ? data : data.tipos) : null;
-            const colorClass = lista ? 'bg-primary text-white' : 'bg-white text-muted border';
-
-            let tooltip = 'Libre';
-            if (lista) {
-                tooltip = lista.join(', ');
-                if (data && data.comentario) tooltip += ` (${data.comentario})`;
-            }
-
-            rackHtml += `<div class="d-flex align-items-center justify-content-center rounded rack-box ${colorClass}" data-bs-toggle="tooltip" data-bs-title="${tooltip}">${num}</div>`;
+    
+    RackView.render('rack-habitaciones', (numHab) => {
+        const data = atenciones[numHab];
+        const lista = data ? (Array.isArray(data) ? data : data.tipos) : null;
+        const colorClass = lista ? 'bg-primary text-white' : 'bg-white text-muted border';
+        
+        let tooltip = 'Libre';
+        if (lista) {
+            tooltip = lista.join(', ');
+            if (data && data.comentario) tooltip += ` (${data.comentario})`;
         }
+
+        return `<div class="d-flex align-items-center justify-content-center rounded rack-box ${colorClass}" data-bs-toggle="tooltip" data-bs-title="${tooltip}">${numHab}</div>`;
     });
-    rackCont.innerHTML = rackHtml;
 
-    const habsConAtencion = Object.keys(atenciones).length;
-    statsCont.innerHTML = `<div class="col-md-3"><div class="p-2 border rounded bg-light text-center h-100"><div class="small text-muted fw-bold">HAB. CON ATENCIÓN</div><div class="h5 mb-0 fw-bold">${habsConAtencion} / ${totalHabs}</div></div></div>`;
-}
-
-// ============================================================================
-// ACCIONES GLOBALES
-// ============================================================================
-
-export async function prepararEdicionAtencion(hab) {
-    const atenciones = await atencionesService.getAtenciones();
-    const data = atenciones[hab];
-    if (data) {
-        const lista = Array.isArray(data) ? data : (data.tipos || []);
-        Utils.setVal('atencion_hab', hab);
-        Utils.setVal('atencion_comentario', data.comentario || "");
-
-        const btn = document.getElementById('btnSubmitAtenciones');
-        if (btn) btn.innerHTML = '<i class="bi bi-pencil-square me-2"></i>Actualizar Atención';
-        document.getElementById('atencion_hab').focus();
+    if (statsCont) {
+        const habsConAtencion = Object.keys(atenciones).length;
+        const totalHabs = Utils.getHabitaciones().length;
+        statsCont.innerHTML = `<div class="col-md-3"><div class="p-2 border rounded bg-light text-center h-100"><div class="small text-muted fw-bold">HAB. CON ATENCIÓN</div><div class="h5 mb-0 fw-bold">${habsConAtencion} / ${totalHabs}</div></div></div>`;
     }
 }
 
-export async function eliminarAtencionHab(hab) {
-    if (confirm(`¿Eliminar atenciones de la habitación ${hab}?`)) {
+// === ACCIONES GLOBALES ===
+
+window.prepararEdicionAtencion = async (hab) => {
+    const data = await atencionesService.getByKey(hab);
+    if (!data) return;
+
+    Utils.setVal('atencion_hab', hab);
+    Utils.setVal('atencion_comentario', data.comentario || "");
+
+    // Marcar checkboxes
+    const tipos = Array.isArray(data) ? data : (data.tipos || []);
+    document.querySelectorAll('.check-atencion').forEach(cb => {
+        cb.checked = tipos.includes(cb.value);
+    });
+
+    const btn = document.getElementById('btnSubmitAtenciones');
+    if (btn) btn.innerHTML = '<i class="bi bi-pencil-square me-2"></i>Actualizar Atención';
+    
+    document.getElementById('btnVistaTrabajo').click();
+    document.getElementById('atencion_hab').focus();
+};
+
+window.eliminarAtencionHab = async (hab) => {
+    if (await Ui.showConfirm(`¿Eliminar atenciones de la habitación ${hab}?`)) {
         await atencionesService.removeAtencion(hab);
         mostrarAtenciones();
     }
-}
+};
 
-async function resetearAtenciones() {
-    if (await window.showConfirm("¿Estás seguro de borrar TODAS las atenciones?")) {
-        await atencionesService.clearAll();
+window.resetearAtenciones = async () => {
+    if (await Ui.showConfirm("¿Estás seguro de borrar TODAS las atenciones?")) {
+        await atencionesService.clear();
         mostrarAtenciones();
     }
-}
+};
 
-function imprimirAtenciones() {
+window.imprimirAtenciones = () => {
     const user = Utils.validateUser();
     if (!user) return;
-    Utils.printSection('print-date-atenciones', 'print-repc-nombre-atenciones', user);
-}
-
-// Expose globals
-window.prepararEdicionAtencion = prepararEdicionAtencion;
-window.eliminarAtencionHab = eliminarAtencionHab;
-window.resetearAtenciones = resetearAtenciones;
-window.imprimirAtenciones = imprimirAtenciones;
+    
+    Ui.preparePrintReport({
+        dateId: 'print-date-atenciones',
+        memberId: 'print-repc-nombre-atenciones',
+        memberName: user
+    });
+    window.print();
+};

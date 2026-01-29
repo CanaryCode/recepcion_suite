@@ -22,17 +22,35 @@ export async function inicializarAgenda() {
     formAgenda = document.getElementById('formAgenda');
     agendaCuerpo = document.getElementById('agendaCuerpo');
 
-    // 1. Inicialización Robusta (Carga del servidor + Verificación)
+    // 1. Inicialización Robusta
     await agendaService.init();
 
-    // 2. Preparar el selector de teléfonos dinámico
+    // 2. CONFIGURAR VISTAS (Conmutador)
+    // 2. CONFIGURAR VISTAS (Conmutador)
+    Ui.setupViewToggle({
+        buttons: [
+            { id: 'btnVistaTrabajoAgenda', viewId: 'formAgenda-col', onShow: () => {
+                const listCol = document.getElementById('agenda-list-col');
+                document.querySelector('.row')?.classList.remove('d-none'); // Show main row
+                if(listCol) { listCol.classList.remove('col-12'); listCol.classList.add('col-md-8'); }
+            }},
+            { id: 'btnVistaListaAgenda', viewId: 'formAgenda-col', onShow: () => {
+                const listCol = document.getElementById('agenda-list-col');
+                document.querySelector('.row')?.classList.remove('d-none'); // Show main row
+                if(listCol) { listCol.classList.remove('col-md-8'); listCol.classList.add('col-12'); }
+                document.getElementById('formAgenda-col')?.classList.add('d-none');
+            }}
+        ]
+    });
+
+    // 3. Preparar el selector de teléfonos dinámico
     const wrapper = document.getElementById('telefonos-wrapper');
     if (wrapper) {
         wrapper.innerHTML = '<label class="form-label small d-flex justify-content-between mb-1">Teléfonos <button type="button" class="btn btn-sm btn-outline-secondary border-0 py-0" onclick="agregarCampoTelefono()"><i class="bi bi-plus-circle"></i></button></label>';
         agregarCampoTelefono();
     }
 
-    // 3. Cargar la lista de países (Banderas y Prefijos)
+    // 4. Cargar la lista de países (Banderas y Prefijos)
     const datalist = document.getElementById('paises-list');
     if (datalist && datalist.options.length === 0) {
         APP_CONFIG.AGENDA.PAISES.forEach(p => {
@@ -43,61 +61,87 @@ export async function inicializarAgenda() {
         });
     }
 
-    // 4. Configurar Eventos (Listeners)
-    const catSelect = document.getElementById('agenda_categoria');
-    if (catSelect) {
-        catSelect.removeEventListener('change', actualizarVisibilidadCampos);
-        catSelect.addEventListener('change', actualizarVisibilidadCampos);
-    }
+    // 6. Configurar Eventos y Formulario
+    document.getElementById('agenda_categoria')?.addEventListener('change', actualizarVisibilidadCampos);
+    document.getElementById('searchAgenda')?.addEventListener('input', manejarBusqueda);
 
-    if (formAgenda) {
-        formAgenda.removeEventListener('submit', manejarSubmitAgenda);
-        formAgenda.addEventListener('submit', manejarSubmitAgenda);
-    }
+    Ui.handleFormSubmission({
+        formId: 'formAgenda',
+        service: agendaService,
+        idField: 'id',
+        mapData: (rawData) => {
+            // Recopilar Teléfonos de los campos dinámicos (No están en rawData porque son dinámicos y no tienen name/id estándar que parseamos)
+            const telefonos = Array.from(document.querySelectorAll('#telefonos-wrapper .tel-entry')).map(entry => {
+                const pref = entry.querySelector('.agenda-prefijo').value;
+                const pais = APP_CONFIG.AGENDA.PAISES.find(p => p.c === pref);
+                return {
+                    tipo: entry.querySelector('.agenda-tipo').value,
+                    prefijo: pref,
+                    numero: entry.querySelector('.agenda-numero').value,
+                    flag: pais ? pais.f : ""
+                };
+            });
 
-    const searchInput = document.getElementById('searchAgenda');
-    if (searchInput) {
-        searchInput.removeEventListener('input', manejarBusqueda);
-        searchInput.addEventListener('input', manejarBusqueda);
-    }
+            const nombre = rawData.agenda_nombre.trim();
+            const vinculo = rawData.agenda_vinculo;
+            const categoria = rawData.agenda_categoria;
 
-    // 5. Mostrar la lista inicial
+            if (!nombre || !vinculo || !categoria) {
+                Ui.showToast("Rellene los campos obligatorios.", "warning");
+                return null;
+            }
+
+            // Validación de Formato
+            for (const t of telefonos) {
+                const numLimpio = t.numero.replace(/[\s-]/g, '');
+                const esValido = t.tipo === 'Ext' ? /^\d{2,6}$/.test(numLimpio) : /^\d{7,15}$/.test(numLimpio);
+                if (!esValido) {
+                    Ui.showToast(`El contacto "${t.numero}" no es válido.`, "error");
+                    return null;
+                }
+            }
+
+            return {
+                id: editIdAgenda || Date.now(),
+                nombre: nombre,
+                telefonos: telefonos,
+                email: rawData.agenda_email,
+                web: rawData.agenda_web,
+                direccion: {
+                    pais: rawData.agenda_pais,
+                    ciudad: rawData.agenda_ciudad,
+                    calle: rawData.agenda_calle,
+                    numero: rawData.agenda_numero_calle,
+                    cp: rawData.agenda_cp
+                },
+                vinculo: vinculo,
+                categoria: categoria,
+                comentarios: rawData.agenda_comentarios,
+                favorito: !!rawData.agenda_favorito
+            };
+        },
+        onSuccess: () => {
+            editIdAgenda = null;
+            document.getElementById('btnAgendaSubmit').innerHTML = '<i class="bi bi-person-plus-fill me-2"></i>Guardar Contacto';
+            mostrarContactos();
+            actualizarVisibilidadCampos();
+        }
+    });
+
+    // 7. Mostrar la lista inicial
     await mostrarContactos();
     actualizarVisibilidadCampos();
-
-    // 6. Configurar IntersectionObserver para Scroll Infinito
     setupIntersectionObserver();
-
-    // 7. Configurar Filtros Avanzados y Ordenación
     setupAdvancedFilters();
-
-    // Botones de cambio de vista (Trabajo vs Lista completa)
-    document.getElementById('btnVistaTrabajoAgenda')?.addEventListener('click', () => toggleViewAgenda('trabajo'));
-    document.getElementById('btnVistaListaAgenda')?.addEventListener('click', () => toggleViewAgenda('lista'));
 }
 
 /**
- * CAMBIAR VISTA DE LA AGENDA
- * Permite ocultar el formulario para ver la lista de contactos en pantalla completa.
+ * Función global para facilitar el cambio programático
  */
-window.toggleViewAgenda = function(view) {
-    const btnTrabajo = document.getElementById('btnVistaTrabajoAgenda');
-    const btnLista = document.getElementById('btnVistaListaAgenda');
-    const formCol = document.getElementById('formAgenda')?.closest('.col-md-4');
-    const listCol = document.getElementById('agenda-list-col');
-
-    if (view === 'lista') {
-        if(formCol) formCol.classList.add('d-none');
-        if(listCol) { listCol.classList.remove('col-md-8'); listCol.classList.add('col-12'); }
-        btnTrabajo?.classList.remove('active');
-        btnLista?.classList.add('active');
-    } else {
-        if(formCol) formCol.classList.remove('d-none');
-        if(listCol) { listCol.classList.remove('col-12'); listCol.classList.add('col-md-8'); }
-        btnLista?.classList.remove('active');
-        btnTrabajo?.classList.add('active');
-    }
-}
+window.toggleViewAgenda = (vista) => {
+    const btn = vista === 'trabajo' ? 'btnVistaTrabajoAgenda' : 'btnVistaListaAgenda';
+    document.getElementById(btn)?.click();
+};
 
 function manejarBusqueda(e) {
     // El evento 'input' del buscador ahora también llama a mostrarContactos sin argumentos,
@@ -106,78 +150,10 @@ function manejarBusqueda(e) {
 }
 
 /**
- * PROCESAR FORMULARIO (Guardar/Editar)
- * Recopila los datos del formulario, valida teléfonos y extensiones, y guarda en el servicio.
+ * PROCESAR FORMULARIO (DEPRECADO - Usando Ui.handleFormSubmission)
  */
 async function manejarSubmitAgenda(e) {
-    e.preventDefault();
-
-    // 1. Recopilar Teléfonos de los campos dinámicos
-    const telefonos = Array.from(document.querySelectorAll('#telefonos-wrapper .tel-entry')).map(entry => {
-        const pref = entry.querySelector('.agenda-prefijo').value;
-        const pais = APP_CONFIG.AGENDA.PAISES.find(p => p.c === pref);
-        return {
-            tipo: entry.querySelector('.agenda-tipo').value,
-            prefijo: pref,
-            numero: entry.querySelector('.agenda-numero').value,
-            flag: pais ? pais.f : ""
-        };
-    });
-
-    // 2. Validaciones básicas de campos obligatorios
-    const nombre = document.getElementById('agenda_nombre').value.trim();
-    const vinculo = document.getElementById('agenda_vinculo').value;
-    const categoria = document.getElementById('agenda_categoria').value;
-
-    if (!nombre || !vinculo || !categoria) {
-        alert("Por favor, rellene los campos obligatorios: Nombre, Vínculo y Categoría.");
-        return;
-    }
-
-    // 3. Validación de Formato de Teléfonos/Extensiones
-    for (const t of telefonos) {
-        const numLimpio = t.numero.replace(/[\s-]/g, '');
-        const esValido = t.tipo === 'Ext' ? /^\d{2,6}$/.test(numLimpio) : /^\d{7,15}$/.test(numLimpio);
-
-        if (!esValido) {
-            alert(`El contacto "${t.numero}" no es válido. Las extensiones tienen 2-6 dígitos y los teléfonos 7-15.`);
-            return;
-        }
-    }
-
-    // 4. Crear Objeto Contacto
-    const contacto = {
-        id: editIdAgenda || Date.now(),
-        nombre: nombre,
-        telefonos: telefonos,
-        email: document.getElementById('agenda_email').value,
-        web: document.getElementById('agenda_web').value,
-        direccion: {
-            pais: document.getElementById('agenda_pais').value,
-            ciudad: document.getElementById('agenda_ciudad').value,
-            calle: document.getElementById('agenda_calle').value,
-            numero: document.getElementById('agenda_numero_calle').value,
-            cp: document.getElementById('agenda_cp').value
-        },
-        vinculo: vinculo,
-        categoria: categoria,
-        comentarios: document.getElementById('agenda_comentarios').value,
-        favorito: document.getElementById('agenda_favorito').checked
-    };
-
-    // 5. Guardar en el Servicio
-    let contactos = await agendaService.getAll();
-    if (editIdAgenda) {
-        contactos = contactos.map(c => c.id === editIdAgenda ? contacto : c);
-        editIdAgenda = null;
-        document.getElementById('btnAgendaSubmit').innerHTML = '<i class="bi bi-person-plus-fill me-2"></i>Guardar Contacto';
-    } else {
-        contactos.push(contacto);
-    }
-
-    await agendaService.save(contactos);
-    formAgenda.reset();
-    inicializarAgenda(); 
+    // Ya no se usa, mantenido solo por si acaso durante transición
 }
 
 /**
@@ -453,86 +429,62 @@ function updateObserver() {
 function renderListaContactos(append = false) {
     if (!agendaCuerpo) return;
     
-    // Si no es append, limpiar todo primero
-    if (!append) {
-        agendaCuerpo.innerHTML = '';
-        visibleCount = Math.min(PAGE_SIZE, currentFilteredContacts.length > 0 ? currentFilteredContacts.length : PAGE_SIZE);
-    }
-
-    // Calcular qué trozo ("chunk") mostrar
-    // Si es append, mostramos desde el último visible hasta el nuevo límite.
-    // Si es reset, mostramos desde 0 hasta el límite.
-    
-    // FIX: Asegurar que no pedimos más de lo que hay
     const total = currentFilteredContacts.length;
     const start = append ? Math.max(0, visibleCount - PAGE_SIZE) : 0;
     const end = Math.min(visibleCount, total);
-    
-    // Si start >= end y es append, no hay nada que pintar
-    if (append && start >= end) return;
-
     const slice = currentFilteredContacts.slice(start, end);
-    
-    // Generar fragmento de documento
-    const fragment = document.createDocumentFragment();
 
-    slice.forEach(c => {
-        const tr = document.createElement('tr');
-        if (c.favorito) tr.className = 'table-warning';
-
-        const favIcon = c.favorito ? '<i class="bi bi-star-fill text-warning me-1"></i>' : '';
-        let telList = (c.telefonos || []).map(t => `
-            <div class="small fw-bold">
-                <span class="text-muted" style="font-size: 0.7rem;">${t.tipo}:</span> 
-                <span class="text-primary">${t.tipo === 'Tel' ? (t.flag || '') + ' ' + (t.prefijo || '') : ''} ${t.numero || ''}</span>
-            </div>`).join('');
-
-        const emailHtml = c.email ? `<div class="small text-muted"><i class="bi bi-envelope me-1"></i>${c.email}</div>` : '';
-        const webHtml = c.web ? `<div class="small text-muted"><i class="bi bi-globe me-1"></i><a href="${c.web}" target="_blank" class="text-decoration-none">${c.web}</a></div>` : '';
-
-        let addressHtml = '';
-        if (c.direccion && (c.direccion.calle || c.direccion.ciudad)) {
-            const d = c.direccion;
-            addressHtml = `<div class="small text-muted"><i class="bi bi-geo-alt me-1"></i>${d.calle || ''} ${d.numero || ''}, ${d.cp || ''} ${d.ciudad || ''} (${d.pais || ''})</div>`;
-        }
-
-        const commHtml = c.comentarios ? `<div class="small fst-italic text-secondary mt-1 border-top pt-1">${c.comentarios}</div>` : '';
-        
-        // Safety checks for undefined classes
-        const vinculoClass = { "Empresa": "bg-secondary", "Cliente": "bg-info", "Hotel": "bg-primary", "Otro": "bg-light text-dark border" }[c.vinculo] || "bg-dark";
-        const catClass = { "Urgencia": "bg-danger", "Información": "bg-primary", "Extensión": "bg-success" }[c.categoria] || "bg-secondary";
-
-        tr.innerHTML = `
-                <td style="width: 30%">
-                    <div class="d-flex align-items-center">${favIcon}<i class="bi bi-person-badge me-2 text-muted"></i><strong>${c.nombre}</strong></div>
-                    ${commHtml}
-                </td>
-                <td style="width: 12%"><span class="badge ${vinculoClass}">${c.vinculo}</span></td>
-                <td style="width: 12%"><span class="badge ${catClass}">${c.categoria}</span></td>
-                <td style="width: 26%">${telList}${emailHtml}${webHtml}${addressHtml}</td>
-                <td style="width: 20%">
-                    <button onclick="prepararEdicionAgenda(${c.id})" class="btn btn-sm btn-outline-primary border-0 me-1"><i class="bi bi-pencil"></i></button>
-                    <button onclick="eliminarContacto(${c.id})" class="btn btn-sm btn-outline-danger border-0"><i class="bi bi-trash"></i></button>
-                </td>`;
-        
-        fragment.appendChild(tr);
-    });
-
-    // Antes de añadir las nuevas filas, quitamos el loader viejo si existe
-    const existingSentinel = document.getElementById('sentinel-loader');
-    if (existingSentinel) existingSentinel.remove();
-
-    // Añadir el fragmento al DOM
-    agendaCuerpo.appendChild(fragment);
+    Ui.renderTable('agendaCuerpo', slice, renderFilaContacto, 'No se encontraron contactos.', append);
 
     // Si aún quedan elementos por mostrar, ponemos el loader al final
     if (visibleCount < total) {
-        const sentinelRow = Ui.createSentinelRow('sentinel-loader', 'Cargando más contactos...');
+        const sentinelRow = Ui.createSentinelRow('sentinel-loader', 'Cargando más contactos...', 5);
         agendaCuerpo.appendChild(sentinelRow);
-        
-        // Reconexión gestionada por Ui, pero aseguramos
         if (infiniteScrollController) infiniteScrollController.reconnect();
     }
+}
+
+/**
+ * RENDERIZAR FILA DE CONTACTO (Helper para renderTable)
+ */
+function renderFilaContacto(c) {
+    const favIcon = c.favorito ? '<i class="bi bi-star-fill text-warning me-1"></i>' : '';
+    const telList = (c.telefonos || []).map(t => `
+        <div class="small fw-bold">
+            <span class="text-muted" style="font-size: 0.7rem;">${t.tipo}:</span> 
+            <span class="text-primary">${t.tipo === 'Tel' ? (t.flag || '') + ' ' + (t.prefijo || '') : ''} ${t.numero || ''}</span>
+        </div>`).join('');
+
+    const emailHtml = c.email ? `<div class="small text-muted"><i class="bi bi-envelope me-1"></i>${c.email}</div>` : '';
+    const webHtml = c.web ? `<div class="small text-muted"><i class="bi bi-globe me-1"></i><a href="${c.web}" target="_blank" class="text-decoration-none">${c.web}</a></div>` : '';
+
+    let addressHtml = '';
+    if (c.direccion && (c.direccion.calle || c.direccion.ciudad)) {
+        const d = c.direccion;
+        addressHtml = `<div class="small text-muted"><i class="bi bi-geo-alt me-1"></i>${d.calle || ''} ${d.numero || ''}, ${d.cp || ''} ${d.ciudad || ''} (${d.pais || ''})</div>`;
+    }
+
+    const commHtml = c.comentarios ? `<div class="small fst-italic text-secondary mt-1 border-top pt-1 text-truncate" style="max-width: 300px;">${c.comentarios}</div>` : '';
+    
+    const vinculoClass = { "Empresa": "bg-secondary", "Cliente": "bg-info", "Hotel": "bg-primary", "Otro": "bg-light text-dark border" }[c.vinculo] || "bg-dark";
+    const catClass = { "Urgencia": "bg-danger", "Información": "bg-primary", "Extensión": "bg-success" }[c.categoria] || "bg-secondary";
+
+    const trClass = c.favorito ? 'table-warning' : '';
+
+    return `
+        <tr class="${trClass}">
+            <td style="width: 30%">
+                <div class="d-flex align-items-center">${favIcon}<i class="bi bi-person-badge me-2 text-muted"></i><strong>${c.nombre}</strong></div>
+                ${commHtml}
+            </td>
+            <td style="width: 12%"><span class="badge ${vinculoClass}">${c.vinculo}</span></td>
+            <td style="width: 12%"><span class="badge ${catClass}">${c.categoria}</span></td>
+            <td style="width: 26%">${telList}${emailHtml}${webHtml}${addressHtml}</td>
+            <td style="width: 20%">
+                <button onclick="prepararEdicionAgenda(${c.id})" class="btn btn-sm btn-outline-primary border-0 me-1"><i class="bi bi-pencil"></i></button>
+                <button onclick="eliminarContacto(${c.id})" class="btn btn-sm btn-outline-danger border-0"><i class="bi bi-trash"></i></button>
+            </td>
+        </tr>`;
 }
 
 window.cargarMasContactos = function() {
@@ -591,10 +543,8 @@ export async function prepararEdicionAgenda(id) {
  * ELIMINAR CONTACTO
  */
 export async function eliminarContacto(id) {
-    if (confirm("¿Eliminar este contacto?")) {
-        let contactos = await agendaService.getAll();
-        contactos = contactos.filter(c => c.id !== id);
-        await agendaService.save(contactos);
+    if (await Ui.showConfirm("¿Eliminar este contacto?")) {
+        agendaService.removeContacto(id);
         mostrarContactos();
     }
 }
@@ -628,4 +578,7 @@ window.eliminarContacto = eliminarContacto;
 window.exportarAgendaCSV = exportarAgendaCSV;
 window.agregarCampoTelefono = agregarCampoTelefono;
 window.actualizarBandera = actualizarBandera;
+
+
+
 window.toggleTelExt = toggleTelExt;

@@ -3,6 +3,9 @@
 import { inicializarAgenda } from './modules/agenda.js';
 import { inicializarCaja } from './modules/caja.js';
 import { inicializarCobro } from './modules/cobro.js';
+import { Ui } from './core/Ui.js'; // Import Ui FIRST
+
+import { clock } from './modules/clock.js';
 import { inicializarAtenciones } from './modules/atenciones.js';
 import { inicializarSafe } from './modules/safe.js';
 import { inicializarDespertadores } from './modules/despertadores.js';
@@ -37,6 +40,7 @@ window.Utils = Utils;
  * Se ejecuta cuando el navegador termina de cargar el HTML básico.
  */
 document.addEventListener('DOMContentLoaded', async () => {
+    try {
     // FIX: Desactivar autocompletado globalmente para prevenir "basura" en los inputs
     try {
         document.querySelectorAll('form, input').forEach(el => el.setAttribute('autocomplete', 'off'));
@@ -61,6 +65,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // 1. Inicializar Sistemas Base
+    console.log("Initializing App...");
+
+    // 1. Initialize UI Helpers (Toasts, etc.)
+    Ui.init();
+
+
+
+    // 3. Initialize Clock
+    clock.init();
     Modal.init();  // Activa el soporte para ventanas modales personalizadas
     Router.init(); // Activa la detección de cambios en las pestañas
     Search.init(); // Activa el buscador de módulos
@@ -187,6 +200,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         }, 2000);
 
     }, 100);
+
+    } catch (criticalError) {
+        console.error("CRITICAL BOOT ERROR:", criticalError);
+        alert(`FALLO ARRANQUE: ${criticalError.message}\nVer consola para más detalles.`);
+    }
 });
 
 // MODAL LAUNCHER FUNCTION
@@ -467,23 +485,7 @@ function updateUserUI(name) {
     }
 }
 
-// Global Navigation Helper
-window.navegarA = (tabSelector) => {
-    // 1. Activate Tab
-    const triggerEl = document.querySelector(`button[data-bs-target="${tabSelector}"]`);
-    if (triggerEl) {
-        const tab = bootstrap.Tab.getOrCreateInstance(triggerEl);
-        tab.show();
-    } else {
-        console.warn(`navegarA: No tab trigger found for selector ${tabSelector}`);
-        // Fallback: try to find the tab pane directly and add class
-        const tabPane = document.querySelector(tabSelector);
-        if (tabPane) {
-            // This is a rough fallback, better to use the trigger
-            tabPane.classList.add('show', 'active');
-        }
-    }
-};
+
 
 /**
  * CONTROL DE VISIBILIDAD DEL DASHBOARD

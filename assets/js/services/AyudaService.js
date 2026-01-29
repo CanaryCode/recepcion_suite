@@ -9,6 +9,13 @@ import { BaseService } from './BaseService.js';
 class AyudaService extends BaseService {
     constructor() {
         super('guia_operativa', { mañana: [], tarde: [], noche: [] });
+        
+        // Esquema para validación de la guía operativa por turnos
+        this.schema = {
+            mañana: 'object',
+            tarde: 'object',
+            noche: 'object'
+        };
     }
 
     /**
@@ -35,7 +42,7 @@ class AyudaService extends BaseService {
 
         // 2. MIGRACIÓN: Si no hay datos, buscar si existen en la versión antigua del programa
         const oldKey = `riu_guia_${turno}`;
-        const oldData = localStorage.getItem(oldKey);
+        const oldData = LocalStorage.get(oldKey);
         if (oldData) {
             try {
                 const parsed = JSON.parse(oldData);

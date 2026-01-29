@@ -4,11 +4,20 @@ import { BaseService } from './BaseService.js';
  * SERVICIO DE TRASLADOS (TransfersService)
  * ---------------------------------------
  * Gestiona la agenda de llegadas y salidas de clientes que requieren transfer.
- * Extiende BaseService para garantizar consistencia y persistencia en JSON.
  */
 class TransfersService extends BaseService {
     constructor() {
-        super('riu_transfers', []); // Key matches standard JSON file in storage
+        super('riu_transfers');
+        
+        // Esquema para validación de servicios de traslados (taxis/bus)
+        this.schema = {
+            id: 'number',
+            habitacion: 'any',
+            pax: 'number',
+            fecha: 'string',
+            hora: 'string',
+            tipo: 'string'
+        };
     }
 
     async init() {
@@ -17,10 +26,9 @@ class TransfersService extends BaseService {
 
     /**
      * OBTENER TODOS LOS TRASLADOS
-     * Los devuelve ordenados por fecha y hora para que los más cercanos aparezcan primero.
      */
-    getAll() {
-        const items = super.getAll() || [];
+    getTransfers() {
+        const items = this.getAll() || [];
         return items.sort((a, b) => {
             const dateA = new Date(`${a.fecha}T${a.hora}`);
             const dateB = new Date(`${b.fecha}T${b.hora}`);
@@ -28,41 +36,29 @@ class TransfersService extends BaseService {
         });
     }
 
-    getById(id) {
-        return this.getAll().find(i => i.id === id);
+    /**
+     * GUARDAR O ACTUALIZAR TRASLADO
+     */
+    async saveTransfer(item) {
+        if (!item.id) item.id = Date.now();
+        return this.update(item.id, item);
     }
 
-    addTransfer(item) {
-        const current = this.getAll();
-        current.push(item);
-        this.saveAll(current);
-    }
-
-    updateTransfer(updatedItem) {
-        const current = this.getAll();
-        const index = current.findIndex(i => i.id === updatedItem.id);
-        if (index !== -1) {
-            current[index] = updatedItem;
-            this.saveAll(current);
-            return true;
-        }
-        return false;
-    }
-
-    deleteTransfer(id) {
-        const current = this.getAll().filter(i => i.id !== id);
-        this.saveAll(current);
+    /**
+     * ELIMINAR TRASLADO
+     */
+    async deleteTransfer(id) {
+        return this.delete(id);
     }
     
     /**
      * LIMPIEZA DE HISTORIAL
-     * Borra automáticamente los transfers de hace más de una semana.
      */
-    cleanupOld(daysToKeep = 7) {
+    async cleanupOld(daysToKeep = 7) {
         const cutoff = new Date();
         cutoff.setDate(cutoff.getDate() - daysToKeep);
         
-        const current = this.getAll();
+        const current = this.getTransfers();
         const initialLen = current.length;
         
         const filtered = current.filter(i => {
@@ -71,7 +67,7 @@ class TransfersService extends BaseService {
         });
         
         if (filtered.length !== initialLen) {
-            this.saveAll(filtered);
+            return this.save(filtered);
         }
     }
 }

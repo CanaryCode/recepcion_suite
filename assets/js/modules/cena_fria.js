@@ -1,163 +1,90 @@
 import { Utils } from '../core/Utils.js';
 import { APP_CONFIG } from '../core/Config.js';
+import { Ui } from '../core/Ui.js';
 import { cenaFriaService } from '../services/CenaFriaService.js';
 
 /**
  * MÓDULO DE CENAS FRÍAS (cena_fria.js)
  * -----------------------------------
- * Gestiona los pedidos de picnic o cena embolsada para clientes que llegan tarde
- * o salen temprano. Sincroniza los datos con el servicio de persistencia y 
- * permite la visualización rápida por habitación.
+ * Gestiona los pedidos de picnic o cena embolsada para clientes.
  */
 
-// ============================================================================
-// INICIALIZACIÓN
-// ============================================================================
-
 export async function inicializarCenaFria() {
-    // Garantizar datos de disco
     await cenaFriaService.init();
 
-    const form = document.getElementById('formNuevaCena');
-    if (form) {
-        form.addEventListener('submit', manejarSubmitCenaFria);
-    }
+    // 1. CONFIGURAR VISTAS (Conmutador)
+    Ui.setupViewToggle({
+        buttons: [
+            { id: 'btnVistaTrabajoCena', viewId: 'cena-fria-trabajo', onShow: mostrarCenasFrias },
+            { id: 'btnVistaRackCena', viewId: 'cena-fria-rack', onShow: renderVistaRackCenaFria }
+        ]
+    });
 
-    // Ocultar selectores del DOM (Ya usa global)
+    // 2. AUTOCOMPLETE DE HABITACIONES
+    Ui.initRoomAutocomplete('lista-habs-cena');
+
+    // 3. GESTIÓN DE FORMULARIO (Asistente)
+    Ui.handleFormSubmission({
+        formId: 'formNuevaCena',
+        service: cenaFriaService,
+        idField: 'cena_hab',
+        mapData: (data) => ({
+            pax: data.cena_pax,
+            obs: data.cena_obs
+        }),
+        onSuccess: () => {
+            const btnSubmit = document.getElementById('btnSubmitCena');
+            if (btnSubmit) btnSubmit.innerHTML = '<i class="bi bi-save-fill me-2"></i>Guardar';
+            mostrarCenasFrias();
+        }
+    });
+
+    // Ocultar selectores antiguos del DOM (Ya usa global)
     document.getElementById('cena_autor')?.parentElement?.classList.add('d-none');
-    document.getElementById('cena_autor_otro_container')?.classList.add('d-none');
-
-    // --- BARRA DE HERRAMIENTAS UNIFICADA ---
+    
+    // Paneles con estilo estándar
     document.getElementById('cena-fria-trabajo')?.classList.add('content-panel');
     document.getElementById('cena-fria-rack')?.classList.add('content-panel');
 
-    document.getElementById('btnVistaTrabajoCena')?.addEventListener('click', () => cambiarVistaCenaFria('trabajo'));
-    document.getElementById('btnVistaRackCena')?.addEventListener('click', () => cambiarVistaCenaFria('rack'));
-
-    const datalist = document.getElementById('lista-habs-cena');
-    if (datalist) {
-        datalist.innerHTML = '';
-        Utils.getHabitaciones().forEach(h => {
-            const opt = document.createElement('option');
-            opt.value = h.num;
-            datalist.appendChild(opt);
-        });
-    }
     mostrarCenasFrias();
 }
-
-function cambiarVistaCenaFria(vista) {
-    const btnTrabajo = document.getElementById('btnVistaTrabajoCena');
-    const btnRack = document.getElementById('btnVistaRackCena');
-    const divTrabajo = document.getElementById('cena-fria-trabajo');
-    const divRack = document.getElementById('cena-fria-rack');
-
-    if (vista === 'trabajo') {
-        btnTrabajo.classList.add('active'); btnRack.classList.remove('active');
-        divTrabajo.classList.remove('d-none'); divRack.classList.add('d-none');
-        mostrarCenasFrias();
-    } else {
-        btnTrabajo.classList.remove('active'); btnRack.classList.add('active');
-        divTrabajo.classList.add('d-none'); divRack.classList.remove('d-none');
-        renderVistaRackCenaFria();
-    }
-}
-
-// ============================================================================
-// HANDLERS
-// ============================================================================
 
 /**
- * REGISTRO DE CENA FRÍA
- * Valida la habitación y el usuario antes de guardar el pedido en el servicio.
+ * RENDERIZADO DE TABLA Y DASHBOARD
  */
-function manejarSubmitCenaFria(e) {
-    e.preventDefault();
-    const habNum = document.getElementById('cena_hab').value.trim().padStart(3, '0');
-    const pax = document.getElementById('cena_pax').value;
-    const obs = document.getElementById('cena_obs').value.trim();
-
-    // 1. Validar Usuario
-    const autor = Utils.validateUser();
-    if (!autor) return;
-
-    // 2. Validar Habitación
-    const validHabs = Utils.getHabitaciones().map(h => h.num);
-    if (!validHabs.includes(habNum)) { alert(`Error: La habitación ${habNum} no existe.`); return; }
-
-    // 3. Guardar con Servicio (Persistence + Backup)
-    const cenas = cenaFriaService.getCenas();
-    cenas[habNum] = { pax, obs, autor };
-    cenaFriaService.saveCenas(cenas);
-
-    e.target.reset();
-    const btnSubmit = document.getElementById('btnSubmitCena');
-    if (btnSubmit) btnSubmit.innerHTML = '<i class="bi bi-save-fill me-2"></i>Guardar';
-
-    mostrarCenasFrias();
-}
-
-// ============================================================================
-// RENDERIZADO
-// ============================================================================
-
 function mostrarCenasFrias() {
     const cenas = cenaFriaService.getCenas();
+    const listaCenas = Object.keys(cenas).sort().map(hab => ({ hab, ...cenas[hab] }));
 
-    // Actualizar Dashboard
-    const dashCol = document.getElementById('dash-col-cenas');
-    const dashTabla = document.getElementById('dash-tabla-cenas');
-    const dashCount = document.getElementById('dash-count-cenas');
-
-    if (dashCol) {
-        const tieneDatos = Object.keys(cenas).length > 0;
-        dashCol.classList.toggle('d-none', !tieneDatos);
-    }
-
-    if (dashCount) dashCount.innerText = Object.keys(cenas).length;
-
-    if (dashTabla) {
-        dashTabla.innerHTML = '';
-        Object.keys(cenas).sort().forEach(hab => {
-            const data = cenas[hab];
-            dashTabla.innerHTML += `
-                <tr onclick="irACenaFria('${hab}')" style="cursor: pointer;">
-                    <td class="fw-bold">${hab}</td>
-                    <td class="text-end"><span class="badge bg-light text-dark border">${data.pax} pax</span></td>
-                </tr>`;
-        });
-    }
+    // A. Actualizar Dashboard (API Ui)
+    Ui.updateDashboardWidget('cenas', listaCenas, (item) => `
+        <tr onclick="irACenaFria('${item.hab}')" style="cursor: pointer;">
+            <td class="fw-bold">${item.hab}</td>
+            <td class="text-end"><span class="badge bg-light text-dark border">${item.pax} pax</span></td>
+        </tr>`);
 
     if (window.checkDailySummaryVisibility) window.checkDailySummaryVisibility();
 
-    const tabla = document.getElementById('tablaCenaActivos');
-    if (!tabla) return;
-    tabla.innerHTML = '';
-
-    Object.keys(cenas).sort().forEach(hab => {
-        const data = cenas[hab];
-        tabla.innerHTML += `
-            <tr id="cena-row-${hab}">
-                <td class="fw-bold text-primary">${hab}</td>
-                <td><span class="badge bg-light text-dark border">${data.pax} pax</span></td>
-                <td class="text-muted small">
-                    ${data.obs || '-'}
-                    <div class="text-info mt-1" style="font-size: 0.65rem;">
-                        <i class="bi bi-person-fill me-1"></i>${data.autor || 'N/A'}
-                    </div>
-                </td>
-                <td class="text-end">
-                    <button onclick="prepararEdicionCenaFria('${hab}')" class="btn btn-sm btn-outline-primary border-0 me-1"><i class="bi bi-pencil"></i></button>
-                    <button onclick="eliminarCenaFria('${hab}')" class="btn btn-sm btn-outline-danger border-0"><i class="bi bi-trash"></i></button>
-                </td>
-            </tr>`;
-    });
+    // B. Actualizar Tabla Principal (API Ui)
+    Ui.renderTable('tablaCenaActivos', listaCenas, (item) => `
+        <tr id="cena-row-${item.hab}">
+            <td class="fw-bold text-primary">${item.hab}</td>
+            <td><span class="badge bg-light text-dark border">${item.pax} pax</span></td>
+            <td class="text-muted small">
+                ${item.obs || '-'}
+                <div class="text-info mt-1" style="font-size: 0.65rem;">
+                    <i class="bi bi-person-fill me-1"></i>${item.autor || 'N/A'}
+                </div>
+            </td>
+            <td class="text-end">
+                <button onclick="prepararEdicionCenaFria('${item.hab}')" class="btn btn-sm btn-outline-primary border-0 me-1"><i class="bi bi-pencil"></i></button>
+                <button onclick="eliminarCenaFria('${item.hab}')" class="btn btn-sm btn-outline-danger border-0"><i class="bi bi-trash"></i></button>
+            </td>
+        </tr>`, 'No hay pedidos de cena fría para hoy.');
 }
 
 /**
  * VISTA RACK DE CENAS FRÍAS
- * Muestra el hotel planta por planta, destacando en color púrpura las habitaciones 
- * que tienen pendiente la entrega de una cena fría.
  */
 function renderVistaRackCenaFria() {
     const rackCont = document.getElementById('rack-cena-habitaciones');
@@ -165,29 +92,30 @@ function renderVistaRackCenaFria() {
     if (!rackCont || !statsCont) return;
 
     const cenas = cenaFriaService.getCenas();
-    const rangos = APP_CONFIG.HOTEL.STATS_CONFIG.RANGOS;
+    const habsList = Utils.getHabitaciones();
     let totalPax = 0;
+    let lastPlanta = -1;
 
     let html = '';
-    rangos.forEach(r => {
-        html += `<div class="w-100 mt-3 mb-2 d-flex align-items-center"><span class="badge bg-secondary me-2">Planta ${r.planta}</span><hr class="flex-grow-1 my-0 opacity-25"></div>`;
-
-        for (let i = r.min; i <= r.max; i++) {
-            const num = i.toString().padStart(3, '0');
-            const data = cenas[num];
-            const colorClass = data ? 'bg-indigo text-white' : 'bg-white text-muted border'; // bg-indigo custom class or style needed?
-            // Using style as in original for now or assuming custom css exists. Original had inline style.
-            const style = data ? 'background-color: #6610f2 !important;' : '';
-
-            if (data) totalPax += parseInt(data.pax);
-
-            html += `
-                <div class="d-flex align-items-center justify-content-center rounded rack-box ${colorClass}" 
-                     style="${style}" 
-                     data-bs-toggle="tooltip" data-bs-title="${data ? 'Pax: ' + data.pax + (data.obs ? ' | Obs: ' + data.obs : '') : 'Sin pedido'}">
-                    ${num}
-                </div>`;
+    habsList.forEach(h => {
+        if (h.planta !== lastPlanta) {
+            html += `<div class="w-100 mt-3 mb-2 d-flex align-items-center"><span class="badge bg-secondary me-2">Planta ${h.planta}</span><hr class="flex-grow-1 my-0 opacity-25"></div>`;
+            lastPlanta = h.planta;
         }
+
+        const data = cenas[h.num];
+        const hasData = !!data;
+        const colorClass = hasData ? 'text-white' : 'bg-white text-muted border';
+        const style = hasData ? 'background-color: #6610f2 !important;' : '';
+
+        if (hasData) totalPax += parseInt(data.pax);
+
+        html += `
+            <div class="d-flex align-items-center justify-content-center rounded rack-box ${colorClass}" 
+                 style="${style}" 
+                 data-bs-toggle="tooltip" data-bs-title="${hasData ? 'Pax: ' + data.pax + (data.obs ? ' | Obs: ' + data.obs : '') : 'Sin pedido'}">
+                ${h.num}
+            </div>`;
     });
     
     rackCont.innerHTML = html;
@@ -207,44 +135,32 @@ function renderVistaRackCenaFria() {
         </div>`;
 }
 
-// ============================================================================
-// ACCIONES GLOBALES
-// ============================================================================
-
-function imprimirCenasFrias() {
-    const user = Utils.validateUser();
-    if (!user) return;
-    Utils.printSection('print-date-cena', 'print-repc-nombre-cena', user);
-    
-    // Populate signature field manually as printSection only handles one user field
-    const firmaEl = document.getElementById('print-repc-nombre-cena-firma');
-    if (firmaEl) firmaEl.innerText = user;
-}
+// === ACCIONES GLOBALES ===
 
 window.prepararEdicionCenaFria = (hab) => {
-    const cenas = cenaFriaService.getCenas();
-    const data = cenas[hab];
-    if (data) {
-        document.getElementById('cena_hab').value = hab;
-        document.getElementById('cena_pax').value = data.pax;
-        document.getElementById('cena_obs').value = data.obs || '';
+    const data = cenaFriaService.getByKey(hab);
+    if (!data) return;
 
-        const btnSubmit = document.getElementById('btnSubmitCena');
-        if (btnSubmit) btnSubmit.innerHTML = '<i class="bi bi-pencil-square me-2"></i>Actualizar Cena';
-        cambiarVistaCenaFria('trabajo');
-    }
+    document.getElementById('cena_hab').value = hab;
+    document.getElementById('cena_pax').value = data.pax;
+    document.getElementById('cena_obs').value = data.obs || '';
+
+    const btnSubmit = document.getElementById('btnSubmitCena');
+    if (btnSubmit) btnSubmit.innerHTML = '<i class="bi bi-pencil-square me-2"></i>Actualizar Cena';
+    
+    document.getElementById('btnVistaTrabajoCena').click();
 };
 
-window.eliminarCenaFria = (hab) => {
-    const cenas = cenaFriaService.getCenas();
-    delete cenas[hab];
-    cenaFriaService.saveCenas(cenas);
-    mostrarCenasFrias();
+window.eliminarCenaFria = async (hab) => {
+    if (await Ui.showConfirm(`¿Eliminar el pedido de la habitación ${hab}?`)) {
+        cenaFriaService.removeByKey(hab);
+        mostrarCenasFrias();
+    }
 };
 
 window.irACenaFria = (hab) => {
     navegarA('#cena-fria-content');
-    cambiarVistaCenaFria('trabajo');
+    document.getElementById('btnVistaTrabajoCena').click();
     setTimeout(() => {
         const row = document.getElementById(`cena-row-${hab}`);
         if (row) {
@@ -256,11 +172,24 @@ window.irACenaFria = (hab) => {
 };
 
 window.limpiarCenasFrias = async () => {
-    if (await window.showConfirm("¿Deseas borrar todos los pedidos de cena fría?")) {
-        cenaFriaService.clearCenas();
+    if (await Ui.showConfirm("¿Deseas borrar TODOS los pedidos de cena fría?")) {
+        cenaFriaService.clear(); // BaseService clear resets everything
         mostrarCenasFrias();
     }
 };
 
-window.cambiarVistaCenaFria = cambiarVistaCenaFria;
-window.imprimirCenasFrias = imprimirCenasFrias;
+window.imprimirCenasFrias = () => {
+    const user = Utils.validateUser();
+    if (!user) return;
+
+    Ui.preparePrintReport({
+        dateId: 'print-date-cena',
+        memberId: 'print-repc-nombre-cena',
+        memberName: user,
+        extraMappings: {
+            'print-repc-nombre-cena-firma': user
+        }
+    });
+
+    window.print();
+};

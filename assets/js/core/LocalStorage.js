@@ -13,10 +13,20 @@ export const LocalStorage = {
     get: (key, defaultValue = null) => {
         try {
             const item = localStorage.getItem(key);
+            
+            // SELF-HEALING: Detectar corrupción de datos
+            if (item === "[object Object]") {
+                console.warn(`LocalStorage: Corrupt data detected for '${key}'. Resetting.`);
+                localStorage.removeItem(key);
+                return defaultValue;
+            }
+
             // Si el dato existe, lo convertimos de texto a objeto/lista
             return item ? JSON.parse(item) : defaultValue;
         } catch (e) {
             console.error(`Error leyendo '${key}' del almacenamiento local:`, e);
+            // Si hay error de sintaxis, borrar para evitar bucle infinito
+            try { localStorage.removeItem(key); } catch(ex) {}
             return defaultValue;
         }
     },

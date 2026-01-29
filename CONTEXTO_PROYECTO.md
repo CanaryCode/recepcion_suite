@@ -24,7 +24,8 @@
 - **Configuración**: Todas las constantes (nombres, precios, configuraciones del hotel) DEBEN estar en `config.json` y cargarse vía `Config.js`. NO harcodear valores.
 - **Persistencia (Autoridad JSON)**:
   - **Ubicación**: Todos los datos residen en la carpeta `storage/` en formato `.json`. Este directorio es la **BASE DE DATOS REAL** y única fuente de verdad.
-  - **Sin Caché**: La aplicación **prohíbe el uso de caché del navegador** o LocalStorage como fuente persistente. LocalStorage se usa solo como "espejo" temporal por velocidad, pero el archivo JSON en disco siempre manda.
+  - **Sin Caché**: La aplicación **prohíbe el uso de caché del navegador** o el acceso directo a `localStorage` como fuente persistente. Los archivos JSON en disco son la autoridad.
+  - **LocalStorage Abstraction**: Es **OBLIGATORIO** usar el wrapper `core/LocalStorage.js` para cualquier persistencia temporal. El uso directo de `localStorage.getItem/setItem` está **PROHIBIDO** para mantener la coherencia arquitectónica.
   - **Timestamp Anti-Caché**: Todas las peticiones `GET` a la API deben incluir un timestamp (`?_t=...`) para forzar al navegador a ignorar su memoria caché.
 - **Configurabilidad (Adaptabilidad Hotelera)**:
   - Cualquier variable o lista de opciones que sea específica de este hotel (ej: Destinos de transfer, departamentos, tipos de habitación, precios...) **DEBE SER CONFIGURABLE** desde `config.json` y editable desde el módulo de Configuración.
@@ -281,18 +282,44 @@ Para mantener la consistencia en la selección de activos y recursos del sistema
 
 La aplicación utiliza un sistema de persistencia **JSON-agnóstico**. El backend no tiene esquemas fijos; simplemente guarda y entrega archivos JSON según lo solicite el frontend.
 
-### 8.1. Endpoints Genéricos (CRUD)
+### 8.1. Endpoints Modulares (Express)
 
-Todas las operaciones de datos se centralizan en la ruta `/api/data/` mediante el servicio `Api.js`.
+Desde la **Iteración 5**, el servidor utiliza **Express.js** con rutas modulares para mayor escalabilidad y limpieza.
 
-| Operación  | Método | Endpoint             | Descripción                                                                |
-| :--------- | :----- | :------------------- | :------------------------------------------------------------------------- |
-| **READ**   | `GET`  | `/api/data/:archivo` | Obtiene el contenido completo de `storage/:archivo.json`.                  |
-| **UPDATE** | `POST` | `/api/data/:archivo` | Sobrescribe el archivo completo con el JSON enviado en el cuerpo (`body`). |
-| **CREATE** | `POST` | `/api/data/:archivo` | Si el archivo no existe, la API lo crea con los datos enviados.            |
-| **DELETE** | `POST` | `/api/data/:archivo` | Generalmente se borra enviando un array vacío `[]` o un objeto nulo `{}`.  |
+| Área         | Prefijo API         | Descripción                                                           |
+| :----------- | :------------------ | :-------------------------------------------------------------------- |
+| **STORAGE**  | `/api/storage/:key` | CRUD de archivos JSON en `storage/`. Source of Truth.                 |
+| **SYSTEM**   | `/api/system/`      | Comandos de SO: `launch` (ejecutar apps) y `list-files` (explorador). |
+| **HEARTBIT** | `/api/heartbeat/`   | Mantiene el servidor activo (timeout de 24h para cierre automático).  |
+| **HEALTH**   | `/api/health/`      | Estado del servidor y versión.                                        |
 
-### 8.2. Esquema de Datos (Flexible)
+### 8.2. BaseService (Capa de Servicio Evolucionada)
+
+Todos los servicios de datos extienden de `BaseService.js`. Tras la refactorización, el servicio incluye métodos semánticos que eliminan la necesidad de manipular arrays manualmente en cada módulo:
+
+- `init()`: Carga inicial y sincronización automática con el servidor.
+- `add(item)`: Añade un elemento a la lista (Array).
+- `update(id, data, idField)`: Busca y actualiza un registro en un array. Si no existe, lo añade.
+- `delete(id, idField)`: Elimina un registro de un array.
+- `getByKey(key)`: Para datos tipo objeto, recupera el valor de una clave.
+- `setByKey(key, value)`: Para datos tipo objeto, establece o actualiza una clave.
+- `removeByKey(key)`: Elimina una clave de un objeto de datos.
+- `syncWithServer()`: Sincronización en segundo plano con prioridad al disco (JSON Authority).
+
+### 8.4. Capa de Validación (Schema) [NUEVO]
+
+Para garantizar la integridad de los datos, `BaseService` permite definir un `schema` en sus clases hijas. El sistema valida automáticamente los tipos de datos antes de cualquier operación de guardado.
+
+```javascript
+// Ejemplo en ChildService.js
+this.schema = {
+  id: "number",
+  concepto: "string",
+  importe: "number",
+};
+```
+
+### 8.3. Esquema de Datos (Flexible)
 
 No existe un "JSON maestro" de especificación porque cada módulo define su propia estructura. Sin embargo, el estándar seguido por los módulos (ej: `AgendaService`, `NotesService`) es:
 
@@ -337,6 +364,30 @@ Para evitar duplicidad de código y asegurar consistencia, se ha creado una API 
 
 2.  **Spinners y Sentinels**:
     - Usar `Ui.createSentinelRow(id, texto, colspan)` para generar filas de carga estandarizadas.
+    - Usar `Ui.renderTable(tbodyId, data, rowRenderer, emptyMsg, append)` para generar tablas de forma limpia y consistente.
+    - Usar `Ui.updateDashboardWidget(moduleName, data, rowRenderer)` para actualizar contadores y tablas del dashboard.
+    - Usar `Ui.setupViewToggle({ buttons: [...] })`: Gestiona el cambio entre vista "Trabajo" y "Listado/Rack" automáticamente, manejando clases `active` y `d-none`.
+    - Usar `Ui.initRoomAutocomplete(datalistId)`: Popula rápidamente selectores de habitación con datos de `Config.js`.
+
+3.  **Gestión de Formularios (Standard submission)**:
+    - Usar `Ui.handleFormSubmission({ formId, service, idField, mapData, onSuccess })`.
+    - Este helper automatiza: Validación de usuario (recaudador), extracción de `FormData`, validación de habitación (si el `idField` es una hab), timestamp de actualización y notificación de éxito.
+    - Soporta mapeo personalizado de datos y callbacks de éxito para refrescar la UI.
+
+4.  Notificaciones y Confirmaciones:
+
+- Usar `Ui.showToast(message, type)`: Muestra una alerta visual no bloqueante (success, warning, error, info). Sustituye `window.showAlert`.
+- Usar `Ui.showConfirm(message)`: Muestra un diálogo de confirmación asíncrono. Sustituye al `confirm()` nativo.
+- Usar `Ui.showPrompt(message, type)`: Solicita entrada de texto al usuario (ej: contraseñas). Sustituye al `prompt()` nativo.
+
+5. Reportes e Impresión (PdfService):
+
+- Usar `Ui.preparePrintReport({ dateId, memberId, memberName, extraMappings })`: Centraliza la preparación de metadatos de impresión.
+- Usar `PdfService.generateReport({ title, author, htmlContent, filename, metadata })`: **ESTÁNDAR OBLIGATORIO** para generar reportes PDF profesionales. Sustituye la lógica manual de `html2pdf.js` en los módulos. Centraliza cabeceras, logos y pie de página.
+
+6.  **Vistas Complejas (RackView)**:
+    - **Módulo**: `assets/js/core/RackView.js`.
+    - **Uso**: `RackView.render(containerId, itemRenderer, floorRenderer, floorFilter)` para pintar el estado del hotel (habitaciones). Soporta filtros.
 
 ## 11. Solución de Problemas (Troubleshooting)
 

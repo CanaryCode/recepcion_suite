@@ -113,7 +113,7 @@
                         <label class="form-label small fw-bold">Icono</label>
                         <div class="input-group input-group-sm">
                             <input type="text" id="newLauncherIcon" class="form-control" placeholder="Ej: box-arrow-up-right">
-                            <button class="btn btn-outline-secondary" type="button" onclick="openIconSelector('newLauncherIcon')">
+                            <button class="btn btn-outline-secondary" type="button" onclick="MediaPicker.pickIcon('newLauncherIcon')">
                                 <i class="bi bi-search"></i>
                             </button>
                         </div>
@@ -254,27 +254,4 @@
     </form>
 </div>
 
-<!-- MODAL NAVEGADOR DE ARCHIVOS WEB (Replazo del nativo) -->
-<div class="modal fade" id="modalFileBrowser" tabindex="-1" aria-hidden="true" style="z-index: 10060;">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-dark text-white py-2">
-                <h6 class="modal-title fw-bold"><i class="bi bi-folder2-open me-2"></i>Explorador del Sistema</h6>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-0">
-                <div class="bg-light p-2 border-bottom d-flex gap-2 align-items-center">
-                    <button class="btn btn-sm btn-outline-secondary" onclick="FileBrowser.up()"><i class="bi bi-arrow-up"></i></button>
-                    <input type="text" id="fb-current-path" class="form-control form-control-sm fw-bold" readonly value="C:\">
-                </div>
-                <div id="fb-list" class="list-group list-group-flush overflow-auto" style="height: 350px;">
-                    <!-- Items -->
-                </div>
-            </div>
-            <div class="modal-footer py-1 bg-light">
-                <small class="text-muted me-auto">Selecciona un archivo .exe</small>
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
-            </div>
-        </div>
-    </div>
-</div>
+<!-- MODAL FILE BROWSER REMOVED (Replaced by MediaPicker.js) -->

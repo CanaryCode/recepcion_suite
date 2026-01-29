@@ -160,7 +160,7 @@ function mostrarSugerenciaCambio(cantidad) {
 }
 
 async function resetearCobro() {
-    if (await window.showConfirm("¿Deseas limpiar la operación actual?")) {
+    if (await Ui.showConfirm("¿Deseas limpiar la operación actual?")) {
         document.getElementById('cobro_total_a_cobrar').value = '';
         document.querySelectorAll('.input-cobro-recibido, .input-cobro-entregado').forEach(i => i.value = '');
         calcularCobro();

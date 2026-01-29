@@ -16,14 +16,10 @@ class SessionService {
      * OBTENER USUARIO ACTUAL
      * @returns {string|null} El nombre del recepcionista o null si nadie se ha identificado.
      */
-    /**
-     * OBTENER USUARIO ACTUAL
-     * @returns {string|null} El nombre del recepcionista o null si nadie se ha identificado.
-     */
     getUser() {
         // Migración: Si existe en LocalStorage (versión antigua), limpiarlo para respetar nueva política
-        if (localStorage.getItem(this.STORAGE_KEY)) {
-            localStorage.removeItem(this.STORAGE_KEY);
+        if (LocalStorage.get(this.STORAGE_KEY)) {
+            LocalStorage.remove(this.STORAGE_KEY);
         }
         return sessionStorage.getItem(this.STORAGE_KEY);
     }

@@ -48,12 +48,12 @@ export async function toggleEdicionPrecios() {
         modoEdicionPrecios = false;
         renderPrecios();
     } else {
-        const pass = await window.showPrompt("🔒 Contraseña de administrador:", "password");
+        const pass = await Ui.showPrompt("🔒 Contraseña de administrador:", "password");
         if (pass === PASSWORD_EDICION) {
             modoEdicionPrecios = true;
             renderPrecios();
         } else if (pass !== null) {
-            window.showAlert("Contraseña incorrecta", "error");
+            Ui.showToast("Contraseña incorrecta", "danger");
         }
     }
 }
@@ -66,7 +66,7 @@ export function agregarPrecio(e) {
     const comentario = document.getElementById('new-precio-comentario').value;
 
     if (nombre && precio) {
-        preciosService.addPrecio({
+        preciosService.savePrecio({
             id: Date.now(),
             nombre,
             precio,
@@ -80,8 +80,8 @@ export function agregarPrecio(e) {
 }
 
 export async function eliminarPrecio(id) {
-    if (await window.showConfirm("¿Eliminar este producto de la lista?")) {
-        preciosService.removePrecio(id);
+    if (await Ui.showConfirm("¿Eliminar este producto de la lista?")) {
+        await preciosService.deletePrecio(id);
         renderPrecios();
     }
 }
@@ -95,7 +95,7 @@ export function guardarPrecio(id, campo, valor) {
     const p = preciosService.getPrecioById(id);
     if (p) {
         p[campo] = valor.trim();
-        preciosService.updatePrecio(p);
+        preciosService.savePrecio(p);
     }
 }
 

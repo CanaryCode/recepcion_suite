@@ -2,6 +2,7 @@ import { APP_CONFIG } from '../core/Config.js';
 import { Utils } from '../core/Utils.js';
 import { estanciaService } from '../services/EstanciaService.js';
 import { sessionService } from '../services/SessionService.js';
+import { Ui } from '../core/Ui.js';
 
 /**
  * MÓDULO DE CONTROL DE ESTANCIA (OCUPACIÓN)
@@ -14,12 +15,34 @@ const MESES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "
 let chartEstancia = null; // Instancia de la gráfica actual
 
 export function inicializarEstancia() {
-    const form = document.getElementById('formEstancia');
-    if (form) {
-        form.addEventListener('submit', manejarSubmitEstancia);
-        const now = new Date();
-        document.getElementById('estancia_fecha').value = now.toISOString().split('T')[0];
-    }
+    // 1. GESTIÓN DE FORMULARIO (Ui.handleFormSubmission)
+    Ui.handleFormSubmission({
+        formId: 'formEstancia',
+        service: estanciaService,
+        idField: 'estancia_fecha',
+        mapData: (rawData) => {
+            const ocupadas = parseInt(rawData.estancia_ocupadas) || 0;
+            const rangos = APP_CONFIG.HOTEL.STATS_CONFIG.RANGOS;
+            const totalHab = rangos.reduce((acc, r) => acc + (r.max - r.min + 1), 0);
+            const vacias = totalHab - ocupadas;
+
+            return {
+                fecha: rawData.estancia_fecha,
+                ocupadas,
+                vacias,
+                totalHab
+            };
+        },
+        onSuccess: () => {
+            mostrarEstancia();
+            // Resetear bloqueo y fecha a hoy por seguridad
+            const fechaInput = document.getElementById('estancia_fecha');
+            fechaInput.value = new Date().toISOString().split('T')[0];
+            fechaInput.setAttribute('readonly', true);
+            const icon = document.getElementById('iconLockFecha');
+            if (icon) icon.className = 'bi bi-lock-fill';
+        }
+    });
 
     // Configurar el botón de bloqueo de fecha
     document.getElementById('btnToggleLockFecha')?.addEventListener('click', toggleLockFecha);
@@ -93,32 +116,6 @@ function cambiarVistaEstancia(vista) {
 // HANDLERS
 // ============================================================================
 
-/**
- * GUARDAR REGISTRO
- * Calcula habitaciones vacías restando del total y guarda en el servicio.
- */
-function manejarSubmitEstancia(e) {
-    e.preventDefault();
-    const fecha = document.getElementById('estancia_fecha').value;
-    const ocupadas = parseInt(document.getElementById('estancia_ocupadas').value) || 0;
-
-    const rangos = APP_CONFIG.HOTEL.STATS_CONFIG.RANGOS;
-    const totalHab = rangos.reduce((acc, r) => acc + (r.max - r.min + 1), 0);
-    const vacias = totalHab - ocupadas;
-
-    estanciaService.saveRegistro({ fecha, ocupadas, vacias, totalHab });
-
-    window.showAlert("Registro guardado correctamente.", "success");
-
-    mostrarEstancia();
-    e.target.reset();
-
-    // Resetear bloqueo y fecha a hoy por seguridad
-    document.getElementById('estancia_fecha').value = new Date().toISOString().split('T')[0];
-    document.getElementById('estancia_fecha').setAttribute('readonly', true);
-    const icon = document.getElementById('iconLockFecha');
-    if (icon) icon.className = 'bi bi-lock-fill';
-}
 
 // ============================================================================
 // RENDERIZADO
@@ -146,12 +143,18 @@ function mostrarEstancia() {
         dataByDay[d] = r;
     });
 
-    tabla.innerHTML = '';
     let sumaOcupadas = 0, sumaVacias = 0, sumaTotal = 0, diasContados = 0;
     const diasEnMes = new Date(year, parseInt(month) + 1, 0).getDate();
-
+    
+    // Generar array de días para la tabla
+    const listaDias = [];
     for (let d = 1; d <= diasEnMes; d++) {
-        const data = dataByDay[d];
+        listaDias.push({ d, data: dataByDay[d] });
+    }
+
+    Ui.renderTable('tablaEstanciaCuerpo', listaDias, (item) => {
+        const { d, data } = item;
+        
         if (data) {
             const libres = data.totalHab - data.ocupadas - data.vacias;
             const porcentaje = ((data.ocupadas / data.totalHab) * 100).toFixed(1);
@@ -161,7 +164,7 @@ function mostrarEstancia() {
             sumaTotal += data.totalHab;
             diasContados++;
 
-            tabla.innerHTML += `
+            return `
                 <tr>
                     <td class="fw-bold text-start ps-4">Día ${d}</td>
                     <td>${data.ocupadas}</td>
@@ -173,9 +176,9 @@ function mostrarEstancia() {
                     </td>
                 </tr>`;
         } else {
-            tabla.innerHTML += `<tr class="text-muted opacity-50"><td class="text-start ps-4">Día ${d}</td><td colspan="5">Sin registro</td></tr>`;
+            return `<tr class="text-muted opacity-50"><td class="text-start ps-4">Día ${d}</td><td colspan="5">Sin registro</td></tr>`;
         }
-    }
+    });
 
     if (diasContados > 0) {
         const promOcupacion = ((sumaOcupadas / sumaTotal) * 100).toFixed(1);
@@ -311,8 +314,8 @@ function imprimirEstancia() {
 }
 
 window.eliminarDiaEstancia = async (fecha) => {
-    if (await window.showConfirm(`¿Eliminar el registro de fecha ${fecha}?`)) {
-        estanciaService.removeRegistro(fecha);
+    if (await Ui.showConfirm(`¿Eliminar el registro de fecha ${fecha}?`)) {
+        await estanciaService.removeRegistro(fecha);
         mostrarEstancia();
     }
 };

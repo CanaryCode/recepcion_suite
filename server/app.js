@@ -1,267 +1,62 @@
-// --- MÓDULOS DEL NÚCLEO DE NODE.JS ---
-const http = require('http'); // Para crear el servidor web
-const fs = require('fs');     // Para interactuar con el sistema de archivos
-const path = require('path'); // Para manejar rutas de archivos
-const url = require('url');   // Para analizar las URLs de las peticiones
+const express = require('express');
+const path = require('path');
+const cors = require('cors');
 
-const PORT = 3000; // Puerto donde escuchará el servidor
-const STORAGE_DIR = path.join(__dirname, '../storage'); // Carpeta para guardar los datos JSON
-let shutdownTimer = null; // Timer para el auto-cierre
+// Import modular routes
+const storageRoutes = require('./routes/storage');
+const systemRoutes = require('./routes/system');
+const heartbeatRoutes = require('./routes/heartbeat');
 
-// Utilidad: Asegura que la carpeta de almacenamiento existe; si no, la crea.
-const ensureStorageDir = () => {
-    if (!fs.existsSync(STORAGE_DIR)) {
-        fs.mkdirSync(STORAGE_DIR, { recursive: true });
-    }
-};
+const app = express();
+const PORT = 3000;
 
-// Utilidad: Configura las cabeceras CORS para permitir peticiones desde el navegador.
-const setCorsHeaders = (res) => {
-    res.setHeader('Access-Control-Allow-Origin', '*'); // Perteniente a cualquier origen
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-};
+// --- MIDDLEWARE ---
+app.use(cors()); // Permite peticiones desde cualquier origen
+app.use(express.json({ limit: '50mb' })); // Middleware para parsear JSON (con límite aumentado para backups)
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// --- CREACIÓN DEL SERVIDOR PRINCIPAL ---
-const server = http.createServer((req, res) => {
-    setCorsHeaders(res); // Aplicar permisos CORS
+// Logging middleware (opcional, para depuración)
+app.use((req, res, next) => {
+    console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+    next();
+});
 
-    // Manejar peticiones de "pre-vuelo" (necesario para navegadores modernos)
-    if (req.method === 'OPTIONS') {
-        res.writeHead(204);
-        res.end();
-        return;
-    }
-
-    const parsedUrl = url.parse(req.url, true);
-    const pathname = parsedUrl.pathname;
-
-    // API de salud: Comprobar rápidamente si el servidor responde
-    if (pathname === '/api/health') {
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ status: 'ok', message: 'Vanilla Node Server Running' }));
-        return;
-    }
-
-    // API de HEARTBEAT (Latido): Evita que el servidor se cierre por inactividad
-    if (pathname === '/api/heartbeat') {
-        // Resetear el timer de muerte súbita
-        if (shutdownTimer) clearTimeout(shutdownTimer);
-        
-        // Configurar nuevo timer de 24 HORAS (Persistencia total durante el turno)
-        shutdownTimer = setTimeout(() => {
-            console.log('No heartbeat received for 24 hours. Shutting down...');
-            process.exit(0);
-        }, 86400000); 
-
-        res.writeHead(200, { 'Content-Type': 'text/plain' });
-        res.end('OK');
-        return;
-    }
-
-    // API de Almacenamiento: /api/storage/:key
-    // Permite guardar y leer archivos JSON en la carpeta storage.
-    const storageMatch = pathname.match(/^\/api\/storage\/([\w-]+)$/);
-    if (storageMatch) {
-        const key = storageMatch[1];
-        const filePath = path.join(STORAGE_DIR, `${key}.json`);
-
-        // Leer datos (GET)
-        if (req.method === 'GET') {
-            fs.readFile(filePath, 'utf8', (err, data) => {
-                if (err) {
-                    if (err.code === 'ENOENT') {
-                        if (key === 'config') {
-                            // FIX CRITICO: Si falta config.json, devolver un objeto válido con defaults
-                            // Esto evita que versiones antiguas del frontend crasheen por null
-                            res.writeHead(200, { 'Content-Type': 'application/json' });
-                            res.end(JSON.stringify({ 
-                                SYSTEM: { API_URL: '/api', USE_SYNC_SERVER: true },
-                                HOTEL: { RECEPCIONISTAS: [] }
-                            }));
-                        } else {
-                            res.writeHead(200, { 'Content-Type': 'application/json' });
-                            res.end('null'); // Para otros archivos, null es aceptable
-                        }
-                    } else {
-                        res.writeHead(500);
-                        res.end(JSON.stringify({ error: 'Read error' }));
-                    }
-                } else {
-                    res.writeHead(200, { 'Content-Type': 'application/json' });
-                    res.end(data);
-                }
-            });
-            return;
-        }
-
-        // Guardar datos (POST)
-        if (req.method === 'POST') {
-            ensureStorageDir();
-            let body = '';
-            
-            req.on('data', chunk => {
-                body += chunk.toString();
-            });
-
-            req.on('end', () => {
-                try {
-                    // Validar que los datos recibidos sean JSON válido
-                    const json = JSON.parse(body); 
-                    
-                    // Escribir el archivo en disco (formateado con 2 espacios)
-                    fs.writeFile(filePath, JSON.stringify(json, null, 2), (err) => {
-                        if (err) {
-                            res.writeHead(500);
-                            res.end(JSON.stringify({ error: 'Write error' }));
-                        } else {
-                            res.writeHead(200, { 'Content-Type': 'application/json' });
-                            res.end(JSON.stringify({ success: true, timestamp: new Date() }));
-                        }
-                    });
-                } catch (e) {
-                    res.writeHead(400);
-                    res.end(JSON.stringify({ error: 'Invalid JSON' }));
-                }
-            });
-            return;
-        }
-    }
-
-    // API de Lanzamiento (Launcher): /api/launch
-    // Permite abrir ejecutables de Windows desde la App web.
-    if (pathname === '/api/launch' && req.method === 'POST') {
-        let body = '';
-        req.on('data', chunk => body += chunk.toString());
-        req.on('end', () => {
-            try {
-                const { command } = JSON.parse(body);
-                if (!command) throw new Error('No command provided');
-
-                // Ejecuta un comando en el sistema operativo
-                // Nota: Usamos 'start' para que la app lanzada sea independiente del servidor.
-                require('child_process').exec(`start "" "${command}"`, (err) => {
-                    if (err) {
-                        console.error('Launch error:', err);
-                        res.writeHead(500);
-                        res.end(JSON.stringify({ error: err.message }));
-                    } else {
-                        res.writeHead(200, { 'Content-Type': 'application/json' });
-                        res.end(JSON.stringify({ success: true }));
-                    }
-                });
-            } catch (e) {
-                res.writeHead(400);
-                res.end(JSON.stringify({ error: e.message }));
-            }
-        });
-        return;
-    }
-
-    // API de Explorador de Archivos (v4.0): /api/system/list-files
-    // Permite listar el contenido de cualquier carpeta del PC.
-    if (pathname === '/api/system/list-files' && req.method === 'POST') {
-        let body = '';
-        req.on('data', chunk => body += chunk.toString());
-        req.on('end', () => {
-            try {
-                const { currentPath } = JSON.parse(body || '{}');
-                const targetPath = currentPath || 'C:\\';
-                
-                // Lee el directorio físicamente
-                fs.readdir(targetPath, { withFileTypes: true }, (err, dirents) => {
-                    if (err) {
-                        res.writeHead(500);
-                        res.end(JSON.stringify({ error: err.message }));
-                        return;
-                    }
-
-                    // Transforma los datos en un formato fácil de usar por el frontend
-                    const items = dirents.map(dirent => {
-                        return {
-                            name: dirent.name,
-                            isDirectory: dirent.isDirectory(),
-                            path: path.join(targetPath, dirent.name)
-                        };
-                    });
-
-                    // Orden: Carpetas primero, luego archivos
-                    items.sort((a, b) => {
-                        if (a.isDirectory === b.isDirectory) return a.name.localeCompare(b.name);
-                        return a.isDirectory ? -1 : 1;
-                    });
-
-                    res.writeHead(200, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ 
-                        path: targetPath,
-                        items: items
-                    }));
-                });
-            } catch (e) {
-                res.writeHead(400);
-                res.end(JSON.stringify({ error: 'Invalid JSON' }));
-            }
-        });
-        return;
-    }
-
-    // --- SERVIDOR DE ARCHIVOS ESTÁTICOS (HTML, JS, CSS, IMÁGENES) ---
-    // Limpia la ruta para evitar ataques de seguridad (Directory Traversal)
-    let safePath = path.normalize(pathname).replace(/^(\.\.[\/\\])+/, '');
-    if (safePath === '/' || safePath === '\\') safePath = '/index.html';
-    
-    safePath = safePath.replace(/^[\/\\]/, '');
-    const fileLoc = path.join(__dirname, '../', safePath);
-    
-    // Debug: Muestra en la terminal qué archivo se está pidiendo
-    console.log(`Request: ${pathname} -> Serving: ${fileLoc}`);
-
-    // Verifica si el archivo existe
-    fs.stat(fileLoc, (err, stats) => {
-        if (!err && stats.isFile()) {
-            const ext = path.extname(fileLoc);
-            // Diccionario de tipos de contenido
-            const mimeTypes = {
-                '.html': 'text/html',
-                '.js': 'text/javascript',
-                '.css': 'text/css',
-                '.json': 'application/json',
-                '.png': 'image/png',
-                '.jpg': 'image/jpg',
-                '.gif': 'image/gif',
-            };
-            const contentType = mimeTypes[ext] || 'application/octet-stream';
-
-            // Lee y envía el archivo al navegador
-            res.writeHead(200, { 'Content-Type': contentType });
-            fs.createReadStream(fileLoc).pipe(res);
-        } else {
-            // Si el archivo no existe, error 404
-            res.writeHead(404);
-            res.end('Not Found');
-        }
+// --- API ROUTES ---
+app.get('/api/health', (req, res) => {
+    res.json({ 
+        status: 'ok', 
+        message: 'Modular Express Server Running',
+        version: '5.0 [EXPRESS REFIT]'
     });
 });
 
-// --- INICIO DEL SERVIDOR ---
-server.on('error', (e) => {
-    if (e.code === 'EADDRINUSE') {
-        console.error('CRITICAL ERROR: Port 3000 is already in use by another program.');
-        console.error('Please close other instances of the application and try again.');
-    } else {
-        console.error('Server error:', e);
-    }
+app.use('/api/storage', storageRoutes);
+app.use('/api/system', systemRoutes);
+app.use('/api/heartbeat', heartbeatRoutes);
+
+// --- STATIC FILES ---
+// Servidor de archivos estáticos para el frontend
+const frontendPath = path.join(__dirname, '../');
+app.use(express.static(frontendPath));
+
+// Fallback para SPA (aunque el index.html está en la raíz, express.static ya lo sirve si safePath era '/')
+app.get('*', (req, res) => {
+    res.sendFile(path.join(frontendPath, 'index.html'));
 });
 
-server.listen(PORT, () => {
-    console.log(`ZERO-DEPENDENCY Server running at http://localhost:${PORT}`);
-    console.log('SERVER VERSION 4.1 [STABILITY PATCH]'); 
-    console.log(`Storage endpoint: http://localhost:${PORT}/api/storage/KEY`);
+// --- ERROR HANDLING ---
+app.use((err, req, res, next) => {
+    console.error('Unhandled Error:', err);
+    res.status(500).json({ 
+        error: 'Internal Server Error', 
+        message: err.message 
+    });
+});
 
-    // Iniciar el timer de muerte súbita (se cancelará si llega un heartbeat)
-    // Aumentado a 60 segundos por si el navegador tarda en abrir/cargar
-    shutdownTimer = setTimeout(() => {
-         console.log('Initial startup timeout. No client connected within 60s. Shutting down...');
-         process.exit(0);
-    }, 60000); 
+// --- START SERVER ---
+app.listen(PORT, () => {
+    console.log(`========================================`);
+    console.log(`  HOTEL MANAGER SERVER v5.0 [EXPRESS]`);
+    console.log(`  Running at http://localhost:${PORT}`);
+    console.log(`========================================`);
 });

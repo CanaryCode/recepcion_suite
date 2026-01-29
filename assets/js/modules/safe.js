@@ -1,5 +1,6 @@
 import { APP_CONFIG } from '../core/Config.js';
 import { Utils } from '../core/Utils.js';
+import { Ui } from '../core/Ui.js';
 import { safeService } from '../services/SafeService.js';
 import { sessionService } from '../services/SessionService.js';
 
@@ -17,92 +18,50 @@ let safeChartInstance = null; // Instancia de la gráfica de ocupación de cajas
 // INICIALIZACIÓN
 // ============================================================================
 
-export function inicializarSafe() {
-    const form = document.getElementById('formNuevoSafe');
-    if (form) {
-        form.removeEventListener('submit', manejarSubmitSafe); // Evitar duplicados
-        form.addEventListener('submit', manejarSubmitSafe);
-        Utils.setVal('safe_fecha_inicio', Utils.getTodayISO());
-    }
+export async function inicializarSafe() {
+    await safeService.init ? await safeService.init() : null; // Ensure sync if available
 
-    // Configurar botones de vista
-    document.getElementById('btnVistaTrabajoSafe')?.addEventListener('click', () => cambiarVistaSafe('trabajo'));
-    document.getElementById('btnVistaRackSafe')?.addEventListener('click', () => cambiarVistaSafe('rack'));
-
-    // Poblar datalist de habitaciones
-    const datalist = document.getElementById('lista-habs-safe');
-    if (datalist) {
-        datalist.innerHTML = '';
-        Utils.getHabitaciones().forEach(h => {
-            const opt = document.createElement('option');
-            opt.value = h.num;
-            datalist.appendChild(opt);
-        });
-    }
-
-    mostrarSafeRentals();
-}
-
-function cambiarVistaSafe(vista) {
-    const btnTrabajo = document.getElementById('btnVistaTrabajoSafe');
-    const btnRack = document.getElementById('btnVistaRackSafe');
-    const divTrabajo = document.getElementById('safe-trabajo');
-    const divRack = document.getElementById('safe-rack');
-
-    if (vista === 'trabajo') {
-        btnTrabajo.classList.add('active');
-        btnRack.classList.remove('active');
-        divTrabajo.classList.remove('d-none');
-        divRack.classList.add('d-none');
-        mostrarSafeRentals();
-    } else {
-        btnTrabajo.classList.remove('active');
-        btnRack.classList.add('active');
-        divTrabajo.classList.add('d-none');
-        divRack.classList.remove('d-none');
-        renderVistaRackSafe();
-    }
-}
-
-// ============================================================================
-// HANDLERS
-// ============================================================================
-
-function manejarSubmitSafe(e) {
-    e.preventDefault();
-
-    // 1. Validar Usuario
-    const autor = Utils.validateUser();
-    if (!autor) return;
-
-    // 2. Validar Inputs
-    const habNum = document.getElementById('safe_hab').value.trim().padStart(3, '0');
-    const nombre = document.getElementById('safe_nombre').value.trim();
-    const fechaInicio = document.getElementById('safe_fecha_inicio').value;
-    const comentario = document.getElementById('safe_comentario').value.trim();
-
-    const validHabs = Utils.getHabitaciones().map(h => h.num);
-    if (!validHabs.includes(habNum)) {
-        alert(`Error: La habitación ${habNum} no existe.`);
-        return;
-    }
-
-    // 3. Guardar
-    safeService.saveRental({
-        habitacion: habNum,
-        nombre,
-        fechaInicio,
-        comentario,
-        autor
+    // 1. CONFIGURAR VISTAS (Conmutador)
+    Ui.setupViewToggle({
+        buttons: [
+            { id: 'btnVistaTrabajoSafe', viewId: 'safe-trabajo', onShow: mostrarSafeRentals },
+            { id: 'btnVistaRackSafe', viewId: 'safe-rack', onShow: renderVistaRackSafe }
+        ]
     });
 
-    // 4. Reset
-    e.target.reset();
-    const btnSubmit = e.target.querySelector('button[type="submit"]');
-    if (btnSubmit) btnSubmit.innerHTML = '<i class="bi bi-save-fill me-2"></i>Guardar';
+    // 2. AUTOCOMPLETE DE HABITACIONES
+    Ui.initRoomAutocomplete('lista-habs-safe');
+
+    // 3. GESTIÓN DE FORMULARIO (Asistente)
+    Ui.handleFormSubmission({
+        formId: 'formNuevoSafe',
+        service: safeService,
+        idField: 'safe_hab',
+        mapData: (rawData) => ({
+            habitacion: rawData.safe_hab.toString().padStart(3, '0'),
+            nombre: rawData.safe_nombre.trim(),
+            fechaInicio: rawData.safe_fecha_inicio,
+            comentario: rawData.safe_comentario.trim()
+        }),
+        onSuccess: () => {
+            const btnSubmit = document.querySelector('#formNuevoSafe button[type="submit"]');
+            if (btnSubmit) btnSubmit.innerHTML = '<i class="bi bi-save-fill me-2"></i>Guardar';
+            Utils.setVal('safe_fecha_inicio', Utils.getTodayISO());
+            mostrarSafeRentals();
+        }
+    });
+
     Utils.setVal('safe_fecha_inicio', Utils.getTodayISO());
     mostrarSafeRentals();
 }
+
+/**
+ * Función global para facilitar el cambio programático
+ */
+window.cambiarVistaSafe = (vista) => {
+    const btn = vista === 'trabajo' ? 'btnVistaTrabajoSafe' : 'btnVistaRackSafe';
+    document.getElementById(btn)?.click();
+};
 
 // ============================================================================
 // RENDERIZADO
@@ -119,38 +78,49 @@ function calcularDias(fechaInicio) {
     return Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
 }
 
+/**
+ * Muestra la lista de alquileres de cajas fuertes en el rack y tabla.
+ */
 function mostrarSafeRentals() {
-    const tabla = document.getElementById('tablaSafeActivos');
-    if (!tabla) return;
-
     const rentals = safeService.getRentals();
-    rentals.sort((a, b) => a.habitacion.localeCompare(b.habitacion));
+    
+    // 1. Mostrar en Tabla (Lista)
+    Ui.renderTable('safe-tbody', rentals, renderFilaSafe, 'No hay alquileres registrados.');
+    
+    // 2. Renderizar Rack
+    renderSafeRack();
+    
+    // 3. Totales
+    actualizarTotalesSafe(rentals);
+}
 
-    tabla.innerHTML = '';
+/**
+ * RENDERIZAR FILA SAFE (Helper para renderTable)
+ */
+function renderFilaSafe(data) {
+    const h = data.habitacion;
+    const dias = calcularDias(data.fechaInicio);
+    const precio = APP_CONFIG.SAFE?.PRECIO_DIARIO || 2.00;
+    const total = dias * precio;
 
-    rentals.forEach(data => {
-        const dias = calcularDias(data.fechaInicio);
-        const total = dias * (APP_CONFIG.SAFE?.PRECIO_DIARIO || 2.00);
-
-        tabla.innerHTML += `
-            <tr>
-                <td class="fw-bold text-primary">${data.habitacion}</td>
-                <td>${data.nombre}</td>
-                <td>${Utils.formatDate(data.fechaInicio)}</td>
-                <td><span class="badge bg-light text-dark border">${dias} días</span></td>
-                <td class="fw-bold text-success">${Utils.formatCurrency(total)}</td>
-                <td class="small text-muted">
-                    ${data.comentario || ''}
-                    <div class="text-info mt-1" style="font-size: 0.65rem;">
-                        <i class="bi bi-person-fill me-1"></i>${data.autor || 'N/A'}
-                    </div>
-                </td>
-                <td class="text-end">
-                    <button onclick="prepararEdicionSafe('${data.habitacion}')" class="btn btn-sm btn-outline-primary border-0 me-1"><i class="bi bi-pencil"></i></button>
-                    <button onclick="eliminarSafe('${data.habitacion}')" class="btn btn-sm btn-outline-danger border-0"><i class="bi bi-trash"></i></button>
-                </td>
-            </tr>`;
-    });
+    return `
+        <tr>
+            <td class="fw-bold text-primary">${h}</td>
+            <td>${data.nombre}</td>
+            <td>${Utils.formatDate(data.fechaInicio)}</td>
+            <td><span class="badge bg-light text-dark border">${dias} días</span></td>
+            <td class="fw-bold text-success">${Utils.formatCurrency(total)}</td>
+            <td class="small text-muted">
+                ${data.comentario || ''}
+                <div class="text-info mt-1" style="font-size: 0.65rem;">
+                    <i class="bi bi-person-fill me-1"></i>${data.autor || 'N/A'}
+                </div>
+            </td>
+            <td class="text-end">
+                <button onclick="prepararEdicionSafe('${h}')" class="btn btn-sm btn-outline-primary border-0 me-1"><i class="bi bi-pencil"></i></button>
+                <button onclick="finalizarAlquiler('${h}')" class="btn btn-sm btn-outline-danger border-0"><i class="bi bi-trash"></i></button>
+            </td>
+        </tr>`;
 }
 
 /**
@@ -158,18 +128,13 @@ function mostrarSafeRentals() {
  * Muestra el hotel planta por planta, marcando en azul las habitaciones que 
  * tienen el servicio de caja fuerte activo en el momento.
  */
-function renderVistaRackSafe() {
+function renderSafeRack() {
     const rackCont = document.getElementById('rack-safe-habitaciones');
-    const statsCont = document.getElementById('safe-stats');
-    if (!rackCont || !statsCont) return;
+    if (!rackCont) return;
 
     const rentals = safeService.getRentals();
     const rangos = APP_CONFIG.HOTEL.STATS_CONFIG.RANGOS;
-    const totalHabs = rangos.reduce((acc, r) => acc + (r.max - r.min + 1), 0);
-    const habsConSafe = rentals.length;
-    const habsSinSafe = totalHabs - habsConSafe;
-    let totalRecaudado = 0;
-
+    
     let html = '';
     rangos.forEach(r => {
         html += `<div class="w-100 mt-3 mb-2 d-flex align-items-center"><span class="badge bg-secondary me-2">Planta ${r.planta}</span><hr class="flex-grow-1 my-0 opacity-25"></div>`;
@@ -178,8 +143,6 @@ function renderVistaRackSafe() {
             const num = i.toString().padStart(3, '0');
             const data = rentals.find(item => item.habitacion === num);
             const colorClass = data ? 'bg-info text-white' : 'bg-white text-muted border';
-
-            if (data) totalRecaudado += calcularDias(data.fechaInicio) * (APP_CONFIG.SAFE?.PRECIO_DIARIO || 2.00);
 
             html += `
                 <div class="d-flex align-items-center justify-content-center rounded rack-box ${colorClass}" 
@@ -190,6 +153,25 @@ function renderVistaRackSafe() {
     });
     
     rackCont.innerHTML = html;
+}
+
+/**
+ * Actualiza los totales y la gráfica de estadísticas de cajas fuertes.
+ * @param {Array} rentals - La lista actual de alquileres de cajas fuertes.
+ */
+function actualizarTotalesSafe(rentals) {
+    const statsCont = document.getElementById('safe-stats');
+    if (!statsCont) return;
+
+    const rangos = APP_CONFIG.HOTEL.STATS_CONFIG.RANGOS;
+    const totalHabs = rangos.reduce((acc, r) => acc + (r.max - r.min + 1), 0);
+    const habsConSafe = rentals.length;
+    const habsSinSafe = totalHabs - habsConSafe;
+    let totalRecaudado = 0;
+
+    rentals.forEach(data => {
+        totalRecaudado += calcularDias(data.fechaInicio) * (APP_CONFIG.SAFE?.PRECIO_DIARIO || 2.00);
+    });
 
     statsCont.innerHTML = `
         <div class="col-md-3">
@@ -242,11 +224,17 @@ function renderVistaRackSafe() {
 function imprimirSafe() {
     const user = Utils.validateUser();
     if (!user) return;
-    Utils.printSection('print-date-safe', 'print-repc-nombre-safe', user);
+
+    Ui.preparePrintReport({
+        dateId: 'print-date-safe',
+        memberId: 'print-repc-nombre-safe',
+        memberName: user
+    });
+    window.print();
 }
 
 window.prepararEdicionSafe = (hab) => {
-    const data = safeService.getRentalByHab(hab);
+    const data = safeService.getByHab(hab);
     if (data) {
         Utils.setVal('safe_hab', hab);
         Utils.setVal('safe_nombre', data.nombre);
@@ -259,11 +247,13 @@ window.prepararEdicionSafe = (hab) => {
     }
 };
 
-window.eliminarSafe = async (hab) => {
-    if (await window.showConfirm(`¿Finalizar alquiler de la habitación ${hab}?`)) {
-        safeService.removeRental(hab);
+window.finalizarAlquiler = async (hab) => {
+    if (await Ui.showConfirm(`¿Finalizar alquiler de la habitación ${hab}?`)) {
+        await safeService.removeRental(hab);
+        Ui.showToast("Alquiler finalizado.");
         mostrarSafeRentals();
     }
 };
 
 window.imprimirSafe = imprimirSafe;
+window.renderVistaRackSafe = renderSafeRack; // Fix ReferenceError

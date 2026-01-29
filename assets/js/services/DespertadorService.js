@@ -4,21 +4,21 @@ import { BaseService } from './BaseService.js';
  * SERVICIO DE DESPERTADORES (DespertadorService)
  * --------------------------------------------
  * Gestiona el listado de llamadas de despertador solicitadas por los clientes.
- * Permite anotar la habitación, la hora y observaciones especiales.
  */
 class DespertadorService extends BaseService {
     constructor() {
         super('riu_despertadores');
-    }
-
-    async init() {
-        await this.syncWithServer();
+        
+        // Esquema para validación de llamadas de despertador
+        this.schema = {
+            habitacion: 'any', // Puede ser string o number
+            hora: 'string',
+            comentarios: 'string'
+        };
     }
 
     /**
      * OBTENER TODOS LOS DESPERTADORES
-     * Incluye una lógica de migración para convertir el antiguo formato de objeto 
-     * al nuevo formato de lista (Array), que es más flexible para filtros.
      */
     getDespertadores() {
         const data = this.getAll();
@@ -29,56 +29,32 @@ class DespertadorService extends BaseService {
                 habitacion: hab,
                 ...data[hab]
             }));
-            this.saveAll(asArray);
+            this.save(asArray);
             return asArray;
         }
         return data || [];
     }
 
     /**
-     * GUARDAR LISTA COMPLETA
-     */
-    saveDespertadores(list) {
-        this.saveAll(list);
-    }
-
-    /**
      * GUARDAR O ACTUALIZAR DESPERTADOR
-     * Si la habitación ya tiene una hora anotada, la sobrecribe.
      */
-    saveDespertador(item) {
-        let list = this.getDespertadores();
-        const existingIndex = list.findIndex(d => d.habitacion === item.habitacion);
-
-        if (existingIndex >= 0) {
-            list[existingIndex] = item;
-        } else {
-            list.push(item);
-        }
-
-        this.saveDespertadores(list);
+    async saveDespertador(item) {
+        return this.update(item.habitacion, item, 'habitacion');
     }
 
     /**
      * ELIMINAR DESPERTADOR
      */
-    removeDespertador(habNum) {
-        const list = this.getDespertadores().filter(d => d.habitacion !== habNum);
-        this.saveDespertadores(list);
+    async removeDespertador(habNum) {
+        return this.delete(habNum, 'habitacion');
     }
 
     /**
      * BUSCAR POR HABITACIÓN
      */
-    getDespertadorByHab(habNum) {
-        return this.getDespertadores().find(d => d.habitacion === habNum);
-    }
-
-    /**
-     * LIMPIAR TODA LA LISTA (Reset diario)
-     */
-    clearAll() {
-        this.clear();
+    getByHab(habNum) {
+        const all = this.getDespertadores();
+        return all.find(x => x.habitacion == habNum);
     }
 }
 

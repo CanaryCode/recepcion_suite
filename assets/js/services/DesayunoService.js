@@ -3,55 +3,31 @@ import { BaseService } from './BaseService.js';
 /**
  * SERVICIO DE DESAYUNOS (DesayunoService)
  * --------------------------------------
- * Gestiona las peticiones de desayunos tempranos (Early Breakfast) 
- * solicitados por clientes que salen antes de que abra el buffet.
+ * Gestiona las peticiones de desayunos tempranos.
  */
 class DesayunoService extends BaseService {
     constructor() {
         super('riu_desayunos', {}); // Estructura: { "Hab": { pax: 1, hora: "06:30" } }
-    }
-
-    async init() {
-        await this.syncWithServer();
-    }
-
-    /**
-     * OBTENER TODOS LOS DESAYUNOS
-     */
-    getDesayunos() {
-        return this.getAll();
+        
+        // Esquema para validación de desayunos tempranos
+        this.schema = {
+            pax: 'number',
+            hora: 'string'
+        };
     }
 
     /**
-     * GUARDAR CAMBIOS
+     * AÑADIR O ACTUALIZAR PEDIDO
      */
-    saveDesayunos(data) {
-        this.saveAll(data);
-    }
-
-    /**
-     * AÑADIR PEDIDO
-     */
-    addDesayuno(hab, data) {
-        const current = this.getDesayunos();
-        current[hab] = data;
-        this.saveDesayunos(current);
+    async addDesayuno(hab, data) {
+        return this.setByKey(hab, data);
     }
 
     /**
      * ELIMINAR PEDIDO
      */
-    removeDesayuno(hab) {
-        const current = this.getDesayunos();
-        delete current[hab];
-        this.saveDesayunos(current);
-    }
-
-    /**
-     * VACIAR LISTA (Reset diario)
-     */
-    clearDesayunos() {
-        this.saveDesayunos({});
+    async removeDesayuno(hab) {
+        return this.removeByKey(hab);
     }
 }
 

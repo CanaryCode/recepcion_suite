@@ -1,190 +1,115 @@
 import { Utils } from '../core/Utils.js';
 import { APP_CONFIG } from '../core/Config.js';
+import { Ui } from '../core/Ui.js';
 import { desayunoService } from '../services/DesayunoService.js';
 
 /**
  * MÓDULO DE DESAYUNOS TEMPRANOS (desayuno.js)
  * ------------------------------------------
  * Gestiona las peticiones de desayuno antes de la apertura del comedor.
- * Permite registrar la hora específica y el número de comensales, 
- * sincronizando esta información con el dashboard y el rack visual.
  */
-
-// ============================================================================
-// INICIALIZACIÓN
-// ============================================================================
 
 export async function inicializarDesayuno() {
-    // Garantizar datos de disco
     await desayunoService.init();
 
-    const form = document.getElementById('formNuevoDesayuno');
-    if (form) {
-        form.removeEventListener('submit', manejarSubmitDesayuno);
-        form.addEventListener('submit', manejarSubmitDesayuno);
-    }
+    // 1. CONFIGURAR VISTAS (Conmutador)
+    Ui.setupViewToggle({
+        buttons: [
+            { id: 'btnVistaTrabajoDesayuno', viewId: 'desayuno-trabajo', onShow: mostrarDesayunos },
+            { id: 'btnVistaRackDesayuno', viewId: 'desayuno-rack', onShow: renderVistaRackDesayuno }
+        ]
+    });
 
-    document.getElementById('btnVistaTrabajoDesayuno')?.addEventListener('click', () => cambiarVistaDesayuno('trabajo'));
-    document.getElementById('btnVistaRackDesayuno')?.addEventListener('click', () => cambiarVistaDesayuno('rack'));
+    // 2. AUTOCOMPLETE DE HABITACIONES
+    Ui.initRoomAutocomplete('lista-habs-desayuno');
 
-    const datalist = document.getElementById('lista-habs-desayuno');
-    if (datalist) {
-        datalist.innerHTML = '';
-        Utils.getHabitaciones().forEach(h => {
-            const opt = document.createElement('option');
-            opt.value = h.num;
-            datalist.appendChild(opt);
-        });
-    }
+    // 3. GESTIÓN DE FORMULARIO (Asistente)
+    Ui.handleFormSubmission({
+        formId: 'formNuevoDesayuno',
+        service: desayunoService,
+        idField: 'desayuno_hab',
+        mapData: (data) => ({
+            pax: data.desayuno_pax,
+            hora: data.desayuno_hora,
+            obs: data.desayuno_obs
+        }),
+        onSuccess: () => {
+            const btnSubmit = document.getElementById('btnSubmitDesayuno');
+            if (btnSubmit) btnSubmit.innerHTML = '<i class="bi bi-save-fill me-2"></i>Guardar';
+            mostrarDesayunos();
+        }
+    });
 
     mostrarDesayunos();
 }
-
-function cambiarVistaDesayuno(vista) {
-    const btnTrabajo = document.getElementById('btnVistaTrabajoDesayuno');
-    const btnRack = document.getElementById('btnVistaRackDesayuno');
-    const divTrabajo = document.getElementById('desayuno-trabajo');
-    const divRack = document.getElementById('desayuno-rack');
-
-    if (vista === 'trabajo') {
-        btnTrabajo.classList.add('active'); btnRack.classList.remove('active');
-        divTrabajo.classList.remove('d-none'); divRack.classList.add('d-none');
-        mostrarDesayunos();
-    } else {
-        btnTrabajo.classList.remove('active'); btnRack.classList.add('active');
-        divTrabajo.classList.add('d-none'); divRack.classList.remove('d-none');
-        renderVistaRackDesayuno();
-    }
-}
-
-// ============================================================================
-// HANDLERS
-// ============================================================================
-
-function manejarSubmitDesayuno(e) {
-    e.preventDefault();
-
-    // 1. Validar Usuario
-    const autor = Utils.validateUser();
-    if (!autor) return;
-
-    // 2. Validar Inputs
-    const habNum = document.getElementById('desayuno_hab').value.trim().padStart(3, '0');
-    const pax = document.getElementById('desayuno_pax').value;
-    const hora = document.getElementById('desayuno_hora').value;
-    const obs = document.getElementById('desayuno_obs').value.trim();
-
-    const validHabs = Utils.getHabitaciones().map(h => h.num);
-    if (!validHabs.includes(habNum)) {
-        alert(`Error: La habitación ${habNum} no existe.`);
-        return;
-    }
-
-    // 3. Guardar
-    desayunoService.addDesayuno(habNum, { pax, hora, obs, autor });
-
-    // 4. Reset
-    e.target.reset();
-    const btnSubmit = document.getElementById('btnSubmitDesayuno');
-    if (btnSubmit) btnSubmit.innerHTML = '<i class="bi bi-save-fill me-2"></i>Guardar';
-    mostrarDesayunos();
-}
-
-// ============================================================================
-// RENDERIZADO
-// ============================================================================
 
 /**
- * RENDER TABLA PRINCIPAL
- * Muestra el listado de desayunos ordenados por hora, facilitando el control
- * operativo para el turno de noche/mañana.
+ * RENDERIZADO DE TABLA Y DASHBOARD
  */
 function mostrarDesayunos() {
-    const desayunos = desayunoService.getDesayunos();
+    const desayunos = desayunoService.getAll();
+    const listaDesayunos = Object.keys(desayunos)
+        .sort((a, b) => (desayunos[a].hora || "99:99").localeCompare(desayunos[b].hora || "99:99"))
+        .map(hab => ({ hab, ...desayunos[hab] }));
 
-    // Dashboard
-    const dashCol = document.getElementById('dash-col-desayunos');
-    const dashTabla = document.getElementById('dash-tabla-desayunos');
-    const dashCount = document.getElementById('dash-count-desayunos');
-
-    if (dashCol) dashCol.classList.toggle('d-none', Object.keys(desayunos).length === 0);
-    if (dashCount) dashCount.innerText = Object.keys(desayunos).length;
-
-    if (dashTabla) {
-        dashTabla.innerHTML = '';
-        const sortedHabs = Object.keys(desayunos).sort((a, b) => (desayunos[a].hora || "99:99").localeCompare(desayunos[b].hora || "99:99"));
-
-        if (sortedHabs.length === 0) {
-            dashTabla.innerHTML = '<tr><td colspan="2" class="text-center text-muted small py-2">No hay pedidos</td></tr>';
-        }
-
-        sortedHabs.forEach(hab => {
-            dashTabla.innerHTML += `
-                <tr onclick="irADesayuno('${hab}')" style="cursor: pointer;">
-                    <td class="fw-bold">${hab}</td>
-                    <td class="text-end"><span class="badge bg-danger">${desayunos[hab].hora || '--:--'}</span></td>
-                </tr>`;
-        });
-    }
+    // A. Dashboard (API Ui)
+    Ui.updateDashboardWidget('desayunos', listaDesayunos, (item) => `
+        <tr onclick="irADesayuno('${item.hab}')" style="cursor: pointer;">
+            <td class="fw-bold">${item.hab}</td>
+            <td class="text-end"><span class="badge bg-danger">${item.hora || '--:--'}</span></td>
+        </tr>`);
 
     if (window.checkDailySummaryVisibility) window.checkDailySummaryVisibility();
 
-    // Tabla Principal
-    const tabla = document.getElementById('tablaDesayunoActivos');
-    if (!tabla) return;
-    tabla.innerHTML = '';
-
-    Object.keys(desayunos).sort((a, b) => (desayunos[a].hora || "99:99").localeCompare(desayunos[b].hora || "99:99")).forEach(hab => {
-        const data = desayunos[hab];
-        tabla.innerHTML += `
-            <tr id="desayuno-row-${hab}">
-                <td class="fw-bold text-primary">${hab}</td>
-                <td><span class="badge bg-light text-dark border">${data.pax} pax</span></td>
-                <td><span class="badge bg-info text-dark"><i class="bi bi-clock me-1"></i>${data.hora}</span></td>
-                <td class="text-muted small">
-                    ${data.obs || '-'}
-                    <div class="text-info mt-1" style="font-size: 0.65rem;">
-                        <i class="bi bi-person-fill me-1"></i>${data.autor || 'N/A'}
-                    </div>
-                </td>
-                <td class="text-end">
-                    <button onclick="eliminarDesayuno('${hab}')" class="btn btn-sm btn-outline-danger border-0"><i class="bi bi-trash"></i></button>
-                </td>
-            </tr>`;
-    });
+    // B. Tabla Principal (API Ui)
+    Ui.renderTable('tablaDesayunoActivos', listaDesayunos, (item) => `
+        <tr id="desayuno-row-${item.hab}">
+            <td class="fw-bold text-primary">${item.hab}</td>
+            <td><span class="badge bg-light text-dark border">${item.pax} pax</span></td>
+            <td><span class="badge bg-info text-dark"><i class="bi bi-clock me-1"></i>${item.hora}</span></td>
+            <td class="text-muted small">
+                ${item.obs || '-'}
+                <div class="text-info mt-1" style="font-size: 0.65rem;">
+                    <i class="bi bi-person-fill me-1"></i>${item.autor || 'N/A'}
+                </div>
+            </td>
+            <td class="text-end">
+                <button onclick="eliminarDesayuno('${item.hab}')" class="btn btn-sm btn-outline-danger border-0"><i class="bi bi-trash"></i></button>
+            </td>
+        </tr>`, 'No hay pedidos de desayuno registrados.');
 }
 
 /**
  * VISTA RACK DE DESAYUNOS
- * Muestra el hotel con las habitaciones coloreadas en verde si tienen 
- * un desayuno programado para la mañana siguiente.
  */
 function renderVistaRackDesayuno() {
     const rackCont = document.getElementById('rack-desayuno-habitaciones');
     const statsCont = document.getElementById('desayuno-stats');
     if (!rackCont || !statsCont) return;
 
-    const desayunos = desayunoService.getDesayunos();
-    const rangos = APP_CONFIG.HOTEL.STATS_CONFIG.RANGOS;
+    const desayunos = desayunoService.getAll();
+    const habsList = Utils.getHabitaciones();
     let totalPax = 0;
+    let lastPlanta = -1;
 
     let html = '';
-    rangos.forEach(r => {
-        html += `<div class="w-100 mt-3 mb-2 d-flex align-items-center"><span class="badge bg-secondary me-2">Planta ${r.planta}</span><hr class="flex-grow-1 my-0 opacity-25"></div>`;
-
-        for (let i = r.min; i <= r.max; i++) {
-            const num = i.toString().padStart(3, '0');
-            const data = desayunos[num];
-            const colorClass = data ? 'bg-success text-white' : 'bg-white text-muted border';
-
-            if (data) totalPax += parseInt(data.pax);
-
-            html += `
-                <div class="d-flex align-items-center justify-content-center rounded rack-box ${colorClass}" 
-                     data-bs-toggle="tooltip" data-bs-title="${data ? 'Pax: ' + data.pax + ' | Hora: ' + data.hora + (data.obs ? ' | Obs: ' + data.obs : '') : 'Sin pedido'}">
-                    ${num}
-                </div>`;
+    habsList.forEach(h => {
+        if (h.planta !== lastPlanta) {
+            html += `<div class="w-100 mt-3 mb-2 d-flex align-items-center"><span class="badge bg-secondary me-2">Planta ${h.planta}</span><hr class="flex-grow-1 my-0 opacity-25"></div>`;
+            lastPlanta = h.planta;
         }
+
+        const data = desayunos[h.num];
+        const hasData = !!data;
+        const colorClass = hasData ? 'bg-success text-white' : 'bg-white text-muted border';
+
+        if (hasData) totalPax += parseInt(data.pax);
+
+        html += `
+            <div class="d-flex align-items-center justify-content-center rounded rack-box ${colorClass}" 
+                 data-bs-toggle="tooltip" data-bs-title="${hasData ? 'Pax: ' + data.pax + ' | Hora: ' + data.hora + (data.obs ? ' | Obs: ' + data.obs : '') : 'Sin pedido'}">
+                ${h.num}
+            </div>`;
     });
     
     rackCont.innerHTML = html;
@@ -204,35 +129,18 @@ function renderVistaRackDesayuno() {
         </div>`;
 }
 
-// ============================================================================
-// ACCIONES GLOBALES
-// ============================================================================
+// === ACCIONES GLOBALES ===
 
-function imprimirDesayunos() {
-    const user = Utils.validateUser();
-    if (!user) return;
-    Utils.printSection('print-date-desayuno', 'print-repc-nombre-desayuno', user);
-    // Nota: print-time-desayuno se puede manejar dentro de printSection o separado. 
-    // Utils.printSection maneja date y user. Hora actual la pone en dateElementId si se pasa, pero aquí hay dos elementos fecha y hora.
-    // printSection pone fecha Y hora en dateElementId.
-    // Si queremos separarlo, lo hacemos manual o actualizamos Utils.
-    // Por simplicidad, Utils.printSection pone "Fecha Hora". Si el layout de impresión espera dos elementos separados, tal vez esto sobrescriba.
-    // Revisando Utils: `const dateStr = now.toLocaleDateString() + ' ' + now.toLocaleTimeString(...)` -> `el.innerText = dateStr`
-    // Si el HTML tiene elementos separados, Utils.printSection unifica.
-    // El código original hacía: `dateEl` -> Fecha, `timeEl` -> Hora.
-    // Utils pone todo junto.
-    // Dejarlo con Utils está bien para estandarizar, o si es crítico el layout, ajustamos manualmente aquí.
-    // Vamos a usar Utils para simplificar, el resultado "Fecha Hora" en un solo sitio suele ser aceptable.
-    // Si print-time-desayuno queda vacío no pasa nada.
-}
-
-window.eliminarDesayuno = (hab) => {
-    desayunoService.removeDesayuno(hab);
-    mostrarDesayunos();
+window.eliminarDesayuno = async (hab) => {
+    if (await Ui.showConfirm(`¿Eliminar el pedido de desayuno de la hab. ${hab}?`)) {
+        desayunoService.removeByKey(hab);
+        mostrarDesayunos();
+    }
 };
 
 window.irADesayuno = (hab) => {
     navegarA('#desayuno-content');
+    document.getElementById('btnVistaTrabajoDesayuno').click();
     setTimeout(() => {
         const row = document.getElementById(`desayuno-row-${hab}`);
         if (row) {
@@ -244,11 +152,14 @@ window.irADesayuno = (hab) => {
 };
 
 window.limpiarDesayunos = async () => {
-    if (await window.showConfirm("¿Deseas borrar todos los pedidos de desayuno?")) {
-        desayunoService.clearDesayunos();
+    if (await Ui.showConfirm("¿Deseas borrar TODOS los pedidos de desayuno?")) {
+        desayunoService.clear();
         mostrarDesayunos();
     }
 };
 
-window.cambiarVistaDesayuno = cambiarVistaDesayuno;
-window.imprimirDesayunos = imprimirDesayunos;
+window.imprimirDesayunos = () => {
+    const user = Utils.validateUser();
+    if (!user) return;
+    Utils.printSection('print-date-desayuno', 'print-repc-nombre-desayuno', user);
+};

@@ -61,7 +61,7 @@ export class BaseService {
      * @returns {Promise<boolean>} - Resuelve a `true` una vez inicializado.
      */
     async init() {
-        if (this._initialized) return true;
+        if (this._initialized) return this.getAll();
 
         // Cargar desde LocalStorage (Caché Rápida)
         // LocalStorage.get ya devuelve el objeto/array parseado, no el string.
@@ -76,7 +76,7 @@ export class BaseService {
         this.syncWithServer();
 
         this._initialized = true;
-        return true;
+        return this.getAll();
     }
 
     /**
@@ -136,18 +136,7 @@ export class BaseService {
     async update(id, data, idField = 'id') {
         const all = await this.init();
         if (!Array.isArray(all)) return this.save(data);
-        if (Array.isArray(this.defaultValue) && !Array.isArray(data)) {
-            // Prevent replacing the entire array database with a single object (legacy/bug fix)
-             console.warn(`[BaseService] Intento de sobrescribir Array DB '${this.endpoint}' con Objeto. Redirigiendo a Add/Merge.`);
-             const index = all.findIndex(x => x[idField] == data[idField] || x[idField] == id);
-             if (index !== -1) {
-                 const newAll = [...all];
-                 newAll[index] = { ...newAll[index], ...data };
-                 return this.save(newAll);
-             } else {
-                 return this.add(data);
-             }
-        }
+
 
         const index = all.findIndex(x => x[idField] == id);
         if (index === -1) return this.add(data);
@@ -171,9 +160,12 @@ export class BaseService {
      * OPERACIONES POR CLAVE (Para Diccionarios/Objetos)
      */
 
-    getByKey(key) {
+    getByKey(key, idField = 'id') {
         const all = this.getAll();
-        return (all && typeof all === 'object' && !Array.isArray(all)) ? all[key] : null;
+        if (Array.isArray(all)) {
+            return all.find(x => x[idField] == key);
+        }
+        return (all && typeof all === 'object') ? all[key] : null;
     }
 
     /**
@@ -221,6 +213,14 @@ export class BaseService {
         if (!APP_CONFIG.SYSTEM.USE_SYNC_SERVER) return;
         try {
             const { syncManager } = await import('../core/SyncManager.js');
+            
+            // CRITICO: No descargar si tenemos cambios locales pendientes de subir
+            // para evitar sobrescribir con datos antiguos del servidor (Race Condition)
+            if (syncManager.hasPending(this.endpoint)) {
+                // console.debug(`[BaseService] Saltando pull para '${this.endpoint}' (Cambios pendientes)`);
+                return;
+            }
+
             const remoteData = await syncManager.pull(this.endpoint);
             
             if (remoteData) {

@@ -231,11 +231,16 @@ export const Ui = {
                 const key = el.name || el.id;
                 if (!key) return;
                 if (el.type === 'checkbox') {
-                    if (!rawData[key]) rawData[key] = [];
-                    if (el.checked) {
-                        const val = el.value === 'on' ? true : el.value;
-                        if (Array.isArray(rawData[key])) rawData[key].push(val);
-                        else rawData[key] = val;
+                    const val = el.value === 'on' ? true : el.value;
+                    // Si el elemento tiene un name/id que sugiere que es un switch (single)
+                    // lo tratamos como booleano puro.
+                    const isSwitch = form.querySelectorAll(`input[type="checkbox"][name="${key}"], input[type="checkbox"][id="${key}"]`).length === 1;
+
+                    if (isSwitch) {
+                        rawData[key] = el.checked;
+                    } else {
+                        if (!rawData[key]) rawData[key] = [];
+                        if (el.checked) rawData[key].push(val);
                     }
                 } else if (el.type === 'radio') {
                     if (el.checked) rawData[key] = el.value;
@@ -268,7 +273,7 @@ export const Ui = {
             const finalId = idValue || Date.now();
             // Usamos serviceIdField si existe, sino idField (comportamiento legacy), sino 'id' (default BaseService)
             const targetKeyField = serviceIdField || idField;
-            service.setByKey(finalId, finalData, targetKeyField);
+            await service.setByKey(finalId, finalData, targetKeyField);
 
             // 6. Feedback
             Ui.showToast("Registro guardado correctamente.", "success");

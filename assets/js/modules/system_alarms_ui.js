@@ -40,6 +40,8 @@ export function inicializarSystemAlarmsUI() {
             } else {
                 alarmData.dias = 'todos'; // Legacy compatibility
             }
+            alarmData.autor = rawData.autor || 'Sistema';
+            console.log("[UI] Mapped Alarm Data:", alarmData);
             return alarmData;
         },
         onSuccess: () => {
@@ -74,6 +76,14 @@ export function inicializarSystemAlarmsUI() {
     window.deleteSystemAlarm = deleteSystemAlarm;
     window.toggleActiveSystemAlarm = toggleActiveSystemAlarm;
     window.resetFormSystemAlarm = resetForm;
+
+    // 4. AUTO-REFRESH (Service Synced)
+    window.addEventListener('service-synced', (e) => {
+        if (e.detail && e.detail.endpoint === 'riu_system_alarms') {
+            console.log("[UI] Alarms synced from background. Refreshing list...");
+            renderAlarmsList();
+        }
+    });
 }
 
 /**
@@ -115,7 +125,12 @@ function renderAlarmsList() {
     const tbody = document.getElementById('tableSystemAlarmsBody');
     if (!tbody) return;
 
-    const alarms = systemAlarmsService.getAlarms().sort((a, b) => a.hora.localeCompare(b.hora));
+    const alarms = systemAlarmsService.getAlarms().sort((a, b) => {
+        const hA = a.hora || '00:00';
+        const hB = b.hora || '00:00';
+        return hA.localeCompare(hB);
+    });
+    console.log(`[UI] Rendering ${alarms.length} alarms:`, alarms);
     tbody.innerHTML = '';
 
     if (alarms.length === 0) {
@@ -202,16 +217,16 @@ function editSystemAlarm(id) {
 }
 
 function deleteSystemAlarm(id) {
-    Ui.showConfirm("¿Borrar esta alarma del sistema?").then(confirmed => {
+    Ui.showConfirm("¿Borrar esta alarma del sistema?").then(async confirmed => {
         if (confirmed) {
-            systemAlarmsService.deleteAlarm(id);
+            await systemAlarmsService.deleteAlarm(id);
             renderAlarmsList();
         }
     });
 }
 
-function toggleActiveSystemAlarm(id) {
-    systemAlarmsService.toggleActive(id);
+async function toggleActiveSystemAlarm(id) {
+    await systemAlarmsService.toggleActive(id);
     renderAlarmsList();
 }
 

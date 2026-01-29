@@ -1,1 +1,13 @@
-{}
+{
+  "012": {
+    "status": "DISPONIBLE",
+    "comments": "",
+    "extras": {
+      "sofa": false,
+      "sofaCama": false,
+      "cheslong": false,
+      "ruidosa": false,
+      "tranquila": false
+    }
+  }
+}

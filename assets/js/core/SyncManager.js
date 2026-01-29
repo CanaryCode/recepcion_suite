@@ -23,6 +23,13 @@ class SyncManager {
     }
 
     /**
+     * ¿Tiene cambios pendientes de subir?
+     */
+    hasPending(key) {
+        return this.queue.some(item => item.key === key);
+    }
+
+    /**
      * ENVIAR CAMBIOS
      * @param {string} key - El nombre del archivo (ej: 'agenda_contactos')
      * @param {any} data - Los datos completos que queremos guardar

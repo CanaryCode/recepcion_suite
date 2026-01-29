@@ -210,77 +210,18 @@ function renderPrecios(filtro = "") {
 }
 
 // ==========================================
-// 4. LÓGICA DE ICONOS
+// 4. LÓGICA DE ICONOS (Migrada a IconSelector.js)
 // ==========================================
 
 export function abrirSelectorIconos(inputId = null, productId = null) {
-    targetInputId = inputId ? { type: 'input', id: inputId } : { type: 'product', id: productId };
-
-    const modalEl = document.getElementById('modalIconos');
-    if (modalEl) {
-        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-        modal.show();
-
-        // Cargar emojis si está vacío (lazy load)
-        const grid = document.getElementById('emoji-grid');
-        if (grid && grid.innerHTML.trim() === '') {
-            cargarEmojis(grid);
-        }
-    }
-}
-
-function cargarEmojis(grid) {
-    const categorias = {
-        "Bebidas": ['🍷', '🍺', '🍻', '🥂', '🥃', '🍸', '🍹', '🍾', '🥤', '🧃', '🧉', '🥛', '☕', '🍵', '🍶'],
-        "Comida": ['🥩', '🍗', '🍔', '🍕', '🥪', '🌭', '🌮', '🌯', '🥙', '🥗', '🥘', '🥫', '🍝', '🍜', '🍲', '🍛', '🍣', '🍱', '🥟', '🍤', '🍙', '🍚', '🍘', '🍥', '🍟', '🥖', '🥐', '🍞', '🥯', '🥨', '🥞', '🧇', '🧀', '🍖', '🥓'],
-        "Postres": ['🍦', '🍧', '🍨', '🍩', '🍪', '🎂', '🍰', '🧁', '🥧', '🍫', '🍬', '🍭', '🍮', '🍯'],
-        "Frutas": ['🍎', '🍐', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓', '🍈', '🍒', '🍑', '🥭', '🍍', '🥥', '🥝', '🍅', '🥑', '🍆', '🥒', '🥦', '🥬', '🌶️', '🌽', '🥕', '🥔', '🍠', '🥜'],
-        "Objetos": ['📦', '🎁', '🎈', '🧸', '🖼️', '🧵', '🧶', '👕', '👖', '🧣', '🧤', '🧥', '🧦', '👗', '👘', '🩱', '🩲', '🩳', '👙', '👚', '👛', '👜', '👝', '🎒', '👞', '👟', '🥾', '🥿', '👠', '👡', '🩰', '👢', '👑', '👒', '🎩', '🎓', '🧢', '⛑️', '💄', '💍', '💎'],
-        "Aseo": ['🧼', '🧴', '🧻', '🪥', '🧽', '🪣', '🧹', '🧺', '🪒', '🚿', '🛁', '🛀'],
-        "Varios": ['🔑', '🗝️', '🛎️', '🛌', '🛋️', '🪑', '🚽', '🚰', '💡', '🔦', '🔋', '🔌', '💻', '🖥️', '🖨️', '🖱️', '📷', '📸', '📹', '📼', '💿', '📀', '💾', '📞', '☎️', '📟', '📠', '📺', '📻', '🎙️', '🎚️', '🎛️', '⏰', '🕰️', '⏳', '⌛', '📡', '🔋', '🔌', '💡', '🔦', '🕯️', '🪔', '🧯', '🛢️', '💸', '💵', '💴', '💶', '💷', '💰', '💳', '💎', '⚖️', '🧰', '🔧', '🔨', '⚒️', '🛠️', '⛏️', '🪓', '⚙️', '🧱', '⛓️', '🧲', '🔫', '💣', '🧨', '🪓', '🔪', '🗡️', '⚔️', '🛡️', '🚬', '⚰️', '⚱️', '🏺', '🔮', '📿', '🧿', '💈', '⚗️', '🔭', '🔬', '🕳️', '💊', '💉', '🩸', '🩹', '🩺', '🌡️', '🧬', '🦠', '🧫', '🧪']
-    };
-
-    let html = '';
-    for (const [cat, iconos] of Object.entries(categorias)) {
-        html += `<div class="w-100 small fw-bold text-muted mt-2 mb-1 border-bottom">${cat}</div>`;
-        html += iconos.map(e => `<button class="btn btn-light fs-4 p-1 m-1 border" onclick="seleccionarIcono('${e}')" data-bs-toggle="tooltip" data-bs-title="${e}">${e}</button>`).join('');
-    }
-    grid.innerHTML = html;
-}
-
-export function seleccionarIcono(valor) {
-    if (targetInputId) {
-        if (targetInputId.type === 'input') {
-            const input = document.getElementById(targetInputId.id);
-            if (input) input.value = valor;
-        } else if (targetInputId.type === 'product') {
-            guardarPrecio(targetInputId.id, 'icono', valor);
+    if (productId) {
+        IconSelector.open(null, (value) => {
+            guardarPrecio(productId, 'icono', value);
             renderPrecios();
-        }
+        });
+    } else {
+        IconSelector.open(inputId);
     }
-
-    const modalEl = document.getElementById('modalIconos');
-    const modal = bootstrap.Modal.getInstance(modalEl);
-    if (modal) modal.hide();
-}
-
-export function procesarImagenSubida(input) {
-    if (input.files && input.files[0]) {
-        const file = input.files[0];
-        if (file.size > 2 * 1024 * 1024) {
-            alert("La imagen es demasiado grande. Por favor, usa una imagen menor de 2MB.");
-            return;
-        }
-        const reader = new FileReader();
-        reader.onload = function (e) {
-            seleccionarIcono(e.target.result);
-        };
-        reader.readAsDataURL(file);
-    }
-}
-
-export function filtrarEmojis(texto) {
-    // Implementación futura de filtrado
 }
 
 // ==========================================
@@ -302,6 +243,5 @@ window.toggleFavoritoPrecio = toggleFavoritoPrecio;
 window.guardarPrecio = guardarPrecio;
 window.imprimirPrecios = imprimirPrecios;
 window.abrirSelectorIconos = abrirSelectorIconos;
-window.seleccionarIcono = seleccionarIcono;
-window.procesarImagenSubida = procesarImagenSubida;
-window.filtrarEmojis = filtrarEmojis;
+window.seleccionarIcono = (v) => IconSelector.select(v); 
+window.procesarImagenSubida = (i) => IconSelector.handleFileUpload(i);

@@ -111,11 +111,12 @@
                     </div>
                     <div class="col-md-2">
                         <label class="form-label small fw-bold">Icono</label>
-                        <div class="input-group input-group-sm">
-                            <input type="text" id="newLauncherIcon" class="form-control" placeholder="Ej: box-arrow-up-right">
-                            <button class="btn btn-outline-secondary" type="button" onclick="MediaPicker.pickIcon('newLauncherIcon')">
-                                <i class="bi bi-search"></i>
+                        <div class="input-group input-group-sm shadow-sm border rounded overflow-hidden">
+                            <button class="btn btn-light bg-white border-0 px-2" type="button" onclick="IconSelector.open('newLauncherIcon')" style="min-width: 45px;">
+                                <span id="preview-newLauncherIcon"><i class="bi bi-palette text-primary"></i></span>
                             </button>
+                            <input type="hidden" id="newLauncherIcon" value="">
+                            <input type="text" id="newLauncherIcon_display" class="form-control border-0 bg-transparent" placeholder="Icono..." readonly onclick="IconSelector.open('newLauncherIcon')" style="cursor: pointer;">
                         </div>
                     </div>
                     <div class="col-md-2">
@@ -218,10 +219,13 @@
                     <div class="col-md-4">
                         <label class="form-label small fw-bold">Tipos (Suites, Doble...)</label>
                         <div id="list-filtros-tipos" class="d-flex flex-wrap gap-1 mb-2"></div>
-                        <div class="input-group input-group-sm">
-                            <input type="text" id="newFiltroTipoEmoji" class="form-control" style="max-width: 50px;" placeholder="🔹">
-                            <input type="text" id="newFiltroTipo" class="form-control" placeholder="Nombre...">
-                            <button class="btn btn-outline-secondary" type="button" onclick="addFilter('TIPOS')"><i class="bi bi-plus"></i></button>
+                        <div class="input-group input-group-sm shadow-sm border rounded overflow-hidden">
+                            <button class="btn btn-light border-0 px-3 bg-white" type="button" onclick="IconSelector.open('newFiltroTipoEmoji')" title="Elegir Icono" style="min-width: 60px;">
+                                <span id="preview-newFiltroTipoEmoji"><i class="bi bi-palette text-primary fs-5"></i></span>
+                                <input type="hidden" id="newFiltroTipoEmoji" value="">
+                            </button>
+                            <input type="text" id="newFiltroTipo" class="form-control border-0 py-2 fw-bold" placeholder="Nombre...">
+                            <button class="btn btn-primary px-3" type="button" onclick="addFilter('TIPOS')"><i class="bi bi-plus-lg"></i></button>
                         </div>
                     </div>
                     
@@ -229,10 +233,13 @@
                     <div class="col-md-4">
                         <label class="form-label small fw-bold">Vistas (Mar, Calle...)</label>
                         <div id="list-filtros-vistas" class="d-flex flex-wrap gap-1 mb-2"></div>
-                        <div class="input-group input-group-sm">
-                            <input type="text" id="newFiltroVistaEmoji" class="form-control" style="max-width: 50px;" placeholder="👁️">
-                            <input type="text" id="newFiltroVista" class="form-control" placeholder="Nombre...">
-                            <button class="btn btn-outline-secondary" type="button" onclick="addFilter('VISTAS')"><i class="bi bi-plus"></i></button>
+                        <div class="input-group input-group-sm shadow-sm border rounded overflow-hidden">
+                            <button class="btn btn-light border-0 px-3 bg-white" type="button" onclick="IconSelector.open('newFiltroVistaEmoji')" title="Elegir Icono" style="min-width: 60px;">
+                                <span id="preview-newFiltroVistaEmoji"><i class="bi bi-palette text-primary fs-5"></i></span>
+                                <input type="hidden" id="newFiltroVistaEmoji" value="">
+                            </button>
+                            <input type="text" id="newFiltroVista" class="form-control border-0 py-2 fw-bold" placeholder="Nombre...">
+                            <button class="btn btn-primary px-3" type="button" onclick="addFilter('VISTAS')"><i class="bi bi-plus-lg"></i></button>
                         </div>
                     </div>
 
@@ -240,10 +247,13 @@
                     <div class="col-md-4">
                         <label class="form-label small fw-bold">Características (Jacuzzi...)</label>
                         <div id="list-filtros-carac" class="d-flex flex-wrap gap-1 mb-2"></div>
-                        <div class="input-group input-group-sm">
-                            <input type="text" id="newFiltroCaracEmoji" class="form-control" style="max-width: 50px;" placeholder="✨">
-                            <input type="text" id="newFiltroCarac" class="form-control" placeholder="Nombre...">
-                            <button class="btn btn-outline-secondary" type="button" onclick="addFilter('CARACTERISTICAS')"><i class="bi bi-plus"></i></button>
+                        <div class="input-group input-group-sm shadow-sm border rounded overflow-hidden">
+                            <button class="btn btn-light border-0 px-3 bg-white" type="button" onclick="IconSelector.open('newFiltroCaracEmoji')" title="Elegir Icono" style="min-width: 60px;">
+                                <span id="preview-newFiltroCaracEmoji"><i class="bi bi-palette text-primary fs-5"></i></span>
+                                <input type="hidden" id="newFiltroCaracEmoji" value="">
+                            </button>
+                            <input type="text" id="newFiltroCarac" class="form-control border-0 py-2 fw-bold" placeholder="Nombre...">
+                            <button class="btn btn-primary px-3" type="button" onclick="addFilter('CARACTERISTICAS')"><i class="bi bi-plus-lg"></i></button>
                         </div>
                     </div>
                 </div>
@@ -253,5 +263,3 @@
         
     </form>
 </div>
-
-<!-- MODAL FILE BROWSER REMOVED (Replaced by MediaPicker.js) -->

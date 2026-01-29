@@ -22,6 +22,7 @@ import { inicializarSystemAlarms } from './modules/alarms.js';
 import { inicializarSystemAlarmsUI } from './modules/system_alarms_ui.js';
 import { inicializarRack } from './modules/rack.js';
 import { inicializarConfiguracion } from './modules/configuracion.js';
+import { IconSelector } from './core/IconSelector.js';
 
 // --- SISTEMAS CORE (NÚCLEO) ---
 import { APP_CONFIG, Config } from './core/Config.js'; // Cargador de configuración
@@ -223,12 +224,17 @@ window.openLaunchPad = () => {
         container.innerHTML = '<div class="col-12 text-center text-muted">No hay aplicaciones configuradas.</div>';
     } else {
         apps.forEach(app => {
+            const isImage = app.icon && (app.icon.startsWith('data:') || app.icon.includes('.') || app.icon.includes('/'));
+            const iconHtml = isImage 
+                ? `<img src="${app.icon}" style="width: 70px; height: 70px; object-fit: cover; border-radius: 12px;" class="mb-2 shadow-sm">`
+                : `<div class="mb-2 text-primary text-center"><i class="bi bi-${app.icon || 'app'} fs-1"></i></div>`;
+
             container.innerHTML += `
             <div class="col-6 col-md-4 col-lg-3">
                 <div class="card h-100 border-0 shadow-sm hover-scale text-center p-3" 
                      style="cursor:pointer;" onclick="window.launchExternalApp('${app.path.replace(/\\/g, '\\\\')}')">
-                    <div class="mb-2 text-primary"><i class="bi bi-${app.icon || 'app'} fs-1"></i></div>
-                    <div class="fw-bold text-dark small text-truncate">${app.label}</div>
+                    <div class="d-flex justify-content-center">${iconHtml}</div>
+                    <div class="fw-bold text-dark small text-truncate mt-1">${app.label}</div>
                 </div>
             </div>
             `;

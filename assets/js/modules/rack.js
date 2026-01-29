@@ -1,5 +1,6 @@
 import { rackService } from '../services/RackService.js';
 import { APP_CONFIG } from '../core/Config.js';
+import { Ui } from '../core/Ui.js';
 
 /**
  * MÓDULO DE RACK INTERACTIVO (rack.js)
@@ -69,6 +70,17 @@ export async function inicializarRack() {
     // CONFIRMATION FOR EXTRAS CHANGES
     const extrasIds = ['check-sofa', 'check-sofaCama', 'check-cheslong', 'check-ruidosa', 'check-tranquila'];
     document.body.addEventListener('click', async (e) => {
+        // 1. Check for Room Card Click (Delegation for Rack)
+        const roomCard = e.target.closest('.room-card');
+        if (roomCard) {
+            const roomNum = roomCard.getAttribute('data-room-num');
+            if (roomNum) {
+                openRoomDetails(roomNum);
+                return;
+            }
+        }
+
+        // 2. Extras Checkboxes
         if (e.target && extrasIds.includes(e.target.id)) {
             // Check if fields are actually enabled (fieldset logic)
             const fieldset = document.getElementById('room-details-fieldset');

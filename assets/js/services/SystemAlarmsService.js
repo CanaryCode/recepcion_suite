@@ -26,13 +26,16 @@ class SystemAlarmsService extends BaseService {
         if (data && !Array.isArray(data)) {
             console.warn("[SystemAlarms] Data corruption detected (Object instead of Array). Resetting database.");
             this.clear(); // Wipes LocalStorage and Cache
-            await this.initializeDefaults();
-            return this.getAll();
+            return this.initializeDefaults();
         }
 
-        if (!data || data.length === 0) {
-            await this.initializeDefaults();
+        // Only initialize defaults if the key doesn't exist at all (null)
+        // This allows the user to have an empty list of alarms.
+        const rawLocal = localStorage.getItem(this.endpoint);
+        if (rawLocal === null && (!data || data.length === 0)) {
+            return this.initializeDefaults();
         }
+        
         return data;
     }
 

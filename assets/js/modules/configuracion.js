@@ -2,6 +2,7 @@ import { APP_CONFIG } from '../core/Config.js';
 import { Utils } from '../core/Utils.js';
 import { Ui } from '../core/Ui.js';
 
+import { IconSelector } from '../core/IconSelector.js';
 import { MediaPicker } from '../core/MediaPicker.js';
 import { Api } from '../core/Api.js';
 import { configService } from '../services/ConfigService.js';
@@ -85,11 +86,17 @@ export const Configurator = {
     },
 
     renderAppLaunchers() {
-        Ui.renderTable('list-app-launchers', tempConfig.SYSTEM.LAUNCHERS, (l, index) => `
+        Ui.renderTable('list-app-launchers', tempConfig.SYSTEM.LAUNCHERS, (l, index) => {
+            const isImage = l.icon && (l.icon.startsWith('data:') || l.icon.includes('.') || l.icon.includes('/'));
+            const iconHtml = isImage 
+                ? `<img src="${l.icon}" style="width: 48px; height: 48px; object-fit: cover; border-radius: 12px;" class="me-3 shadow-sm">`
+                : `<i class="bi bi-${l.icon || 'box-arrow-up-right'}" style="font-size: 2.2rem; color: #444;" class="me-3"></i>`;
+
+            return `
             <div class="col-md-6 mb-2">
                 <div class="border rounded p-2 d-flex align-items-center justify-content-between bg-white shadow-sm">
                     <div class="d-flex align-items-center text-truncate">
-                        <i class="bi bi-${l.icon || 'box-arrow-up-right'} fs-4 me-2 text-primary"></i>
+                        ${iconHtml}
                         <div class="text-truncate">
                             <div class="fw-bold small text-truncate">${l.label}</div>
                             <div class="text-muted text-truncate" style="font-size: 0.6rem;">${l.path}</div>
@@ -98,8 +105,8 @@ export const Configurator = {
                     <button type="button" class="btn btn-sm btn-outline-danger border-0" 
                         onclick="Configurator.removeAppLauncher(${index})"><i class="bi bi-trash"></i></button>
                 </div>
-            </div>
-        `);
+            </div>`;
+        });
     },
 
     renderRangos() {
@@ -132,9 +139,16 @@ export const Configurator = {
         Ui.renderTable(containerId, list, (item) => {
             const label = item.label || item;
             const icon = item.icon || '';
+            const isImage = icon && (icon.startsWith('data:') || icon.includes('.') || icon.includes('/'));
+            const iconHtml = isImage 
+                ? `<img src="${icon}" style="width: 32px; height: 32px; object-fit: cover; border-radius: 8px;" class="me-2 shadow-sm">`
+                : (icon.length < 5 
+                    ? `<span class="me-2" style="font-size: 2.22rem; vertical-align: middle;">${icon}</span>`
+                    : `<i class="bi bi-${icon} me-2" style="font-size: 2rem; color: #333; vertical-align: middle;"></i>`);
+
             return `
-            <div class="badge bg-white text-secondary border d-flex align-items-center fw-normal shadow-sm">
-                <span class="me-1 fs-6">${icon}</span>
+            <div class="badge bg-white text-secondary border d-flex align-items-center fw-normal shadow-sm p-1 ps-2 pe-2">
+                ${iconHtml}
                 <span class="me-2 text-truncate" style="max-width: 120px;">${label}</span>
                 <button type="button" class="btn-close" style="width: 0.4em; height: 0.4em;" 
                     onclick="Configurator.removeFilter('${type}', '${label}')"></button>

@@ -407,3 +407,41 @@ Si aparece la pantalla negra de "Conexión Perdida":
 
 - **Causa**: El servidor Node.js se detuvo (timeout de 24h o suspensión del PC).
 - **Solución**: Ejecutar nuevamente el acceso directo del escritorio y pulsar "Reconectar" en el navegador.
+
+---
+
+## 12. Mejoras de Arquitectura (v3) - Estandarización y Desacoplamiento
+
+Se han introducido nuevos componentes en el Core (`assets/js/core/`) para mejorar la escalabilidad y limpieza del código en futuras iteraciones.
+
+### 12.1. EventBus (Sistema Pub/Sub)
+
+**Objetivo**: Desacoplar completamente los módulos. Que un módulo (ej: `SystemAlarms`) pueda notificar al sistema (ej: Navbar) sin importar el archivo JS del otro y sin conocer su existencia.
+
+- **Archivo**: `assets/js/core/EventBus.js`
+- **Uso Recomendado**:
+  - **Emitir**: `EventBus.emit(CONSTANTS.EVENTS.DATA_UPDATED, { module: 'agenda', data: ... })`
+  - **Escuchar**: `EventBus.on(CONSTANTS.EVENTS.DATA_UPDATED, (payload) => { ... })`
+
+### 12.2. Constants (Diccionario Global)
+
+**Objetivo**: Centralizar las cadenas de texto repetitivas ("Magic Strings") para evitar errores de tipeo y facilitar refactorizaciones masivas.
+
+- **Archivo**: `assets/js/core/Constants.js`
+- **Contenido**:
+  - `ALARM_TYPES` (weekly, daily...)
+  - `MODULES` (agenda, caja...)
+  - `EVENTS` (app:init, data:updated...)
+- **Regla**: Importar y usar estas constantes en lugar de escribir string literales en la lógica condicional.
+
+### 12.3. Tipado Semántico (JSDoc)
+
+Aunque no usamos TypeScript, es altamente recomendable documentar los métodos de los `Services` y `Core` usando JSDoc para obtener autocompletado y verificación de tipos básica en VS Code.
+
+```javascript
+/**
+ * @param {string} id
+ * @param {object} data
+ * @returns {Promise<boolean>}
+ */
+```

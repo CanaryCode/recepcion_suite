@@ -24,6 +24,7 @@ class AyudaService extends BaseService {
      */
     async init() {
         await this.syncWithServer();
+        return this.getAll();
     }
 
     /**
@@ -63,7 +64,7 @@ class AyudaService extends BaseService {
     saveGuia(turno, listaPasos) {
         const allData = this.getAll() || { mañana: [], tarde: [], noche: [] };
         allData[turno] = listaPasos;
-        this.saveAll(allData);
+        this.save(allData);
     }
 }
 

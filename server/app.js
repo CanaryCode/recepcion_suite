@@ -30,8 +30,16 @@ app.get('/api/health', (req, res) => {
     });
 });
 
+console.log('[Server] Mounting Storage Routes...');
 app.use('/api/storage', storageRoutes);
-app.use('/api/system', systemRoutes);
+console.log('[Server] Mounting System Routes...');
+try {
+    app.use('/api/system', systemRoutes);
+    console.log('[Server] SUCCESS: System Routes mounted at /api/system');
+} catch (e) {
+    console.error('[Server] CRITICAL FAIL: Could not mount System Routes:', e);
+}
+console.log('[Server] Mounting Heartbeat Routes...');
 app.use('/api/heartbeat', heartbeatRoutes);
 
 // --- STATIC FILES ---

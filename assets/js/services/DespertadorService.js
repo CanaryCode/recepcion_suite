@@ -12,8 +12,8 @@ class DespertadorService extends BaseService {
         // Esquema para validación de llamadas de despertador
         this.schema = {
             habitacion: 'any', // Puede ser string o number
-            hora: 'string',
-            comentarios: 'string'
+            hora: 'string'
+            // comentarios: opcional
         };
     }
 

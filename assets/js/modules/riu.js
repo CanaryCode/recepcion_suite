@@ -21,7 +21,7 @@ let riuChartInstance = null;
 // ==========================================
 
 export async function inicializarRiu() {
-    await riuService.init();
+    riuService.init(); // Non-blocking init
 
     // 1. CONFIGURAR VISTAS (Conmutador)
     Ui.setupViewToggle({
@@ -35,20 +35,32 @@ export async function inicializarRiu() {
     Ui.handleFormSubmission({
         formId: 'formCliente',
         service: riuService,
-        idField: 'hab_id_hidden', // Usamos un campo oculto o normal para el ID
+        idField: 'riu_id_hidden', // This defaults to finding the hidden input
+        serviceIdField: 'id',     // The Service stores key as 'id'
         mapData: (rawData) => {
-            const habInput = rawData.habitacion.trim().padStart(3, '0');
+            console.log("[Riu] MapData raw input:", rawData); // DEBUG: Identificar campos capturados
+            const habInput = rawData.habitacion ? rawData.habitacion.trim().padStart(3, '0') : '000';
             const nHab = parseInt(habInput);
 
+            // Validar si el usuario se equivocó de campo (Nombre tiene números, Habitación vacía)
+            if (nHab === 0 && /^\d+$/.test(rawData.nombre.trim())) {
+                 Ui.showToast(`Parece que escribiste el número (${rawData.nombre}) en el campo NOMBRE. Por favor, ponlo en el campo HABITACIÓN.`, 'warning', 6000);
+                 return null;
+            }
+
             // Validar existencia de la habitación
-            const existe = APP_CONFIG.HOTEL.STATS_CONFIG.RANGOS.some(r => nHab >= r.min && nHab <= r.max);
+            const existe = APP_CONFIG?.HOTEL?.STATS_CONFIG?.RANGOS?.some(r => nHab >= r.min && nHab <= r.max);
             if (!existe) {
-                Ui.showToast(`Error: La habitación ${habInput} no existe.`, 'danger');
+                if (nHab === 0) {
+                     Ui.showToast(`El campo HABITACIÓN es obligatorio.`, 'danger');
+                } else {
+                      Ui.showToast(`Error: La habitación ${habInput} no existe en el hotel.`, 'danger');
+                }
                 return null;
             }
 
-            // Validar duplicados (solo si es nuevo o cambia habitación)
-            const isEdit = !!rawData.hab_id_hidden;
+            // Validar duplicados (solo si es nuevo - idField vacio)
+            const isEdit = !!rawData.riu_id_hidden;
             if (!isEdit) {
                 const duplicada = riuService.getClientes().some(c => c.habitacion === habInput);
                 if (duplicada) {
@@ -58,10 +70,10 @@ export async function inicializarRiu() {
             }
 
             return {
-                id: isEdit ? parseInt(rawData.hab_id_hidden) : Date.now(),
+                id: isEdit ? parseInt(rawData.riu_id_hidden) : Date.now(),
                 nombre: rawData.nombre.trim(),
                 habitacion: habInput,
-                tipo_tarjeta: rawData.tipo_tarjeta,
+                tipo_tarjeta: rawData.tipo_tarjeta, // Using name='tipo_tarjeta'
                 fecha_entrada: rawData.fecha_entrada,
                 fecha_salida: rawData.fecha_salida,
                 comentarios: rawData.comentarios.trim()
@@ -70,7 +82,7 @@ export async function inicializarRiu() {
         onSuccess: () => {
             const btn = document.getElementById('btnSubmitRiu');
             if (btn) btn.innerHTML = '<i class="bi bi-person-check-fill me-2"></i>Registrar Cliente';
-            document.getElementById('hab_id_hidden').value = '';
+            document.getElementById('riu_id_hidden').value = '';
             establecerFechasPorDefecto();
             mostrarClientes();
             Ui.showToast("Cliente RIU registrado.");
@@ -184,11 +196,12 @@ async function renderVistaRackRiu() {
             box.title = tooltip;
             box.innerHTML = content;
 
-            // Permitir hacer click para editar directamente desde el rack
-            if (cliente) {
-                box.style.cursor = 'pointer';
-                box.onclick = () => prepararEdicionCliente(cliente.id);
-            }
+            // MODAL UNIVERSAL
+            box.style.cursor = 'pointer';
+            box.onclick = () => {
+                if (window.RoomDetailModal) RoomDetailModal.open(num);
+                else console.error("RoomDetailModal unavailable");
+            };
 
             rackCont.appendChild(box);
         }
@@ -270,7 +283,7 @@ export async function prepararEdicionCliente(id) {
     const c = riuService.getByKey(id);
     if (c) {
         cambiarVistaRiu('trabajo');
-        Utils.setVal('hab_id_hidden', c.id);
+        Utils.setVal('riu_id_hidden', c.id);
         Utils.setVal('nombre', c.nombre);
         Utils.setVal('habitacion', c.habitacion);
         Utils.setVal('tipo_tarjeta', c.tipo_tarjeta);

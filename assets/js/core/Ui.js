@@ -230,6 +230,7 @@ export const Ui = {
             form.querySelectorAll('input, select, textarea').forEach(el => {
                 const key = el.name || el.id;
                 if (!key) return;
+
                 if (el.type === 'checkbox') {
                     const val = el.value === 'on' ? true : el.value;
                     // Si el elemento tiene un name/id que sugiere que es un switch (single)
@@ -249,10 +250,19 @@ export const Ui = {
                 }
             });
 
-            let idValue = rawData[idField];
+            console.log(`[Ui] Form '${formId}' raw data extraction:`, rawData); // DEBUG: Validar captura de inputs
 
-            // 3. Validar Habitación si aplica
-            if (idField && idField.includes('hab')) {
+            let idValue = idField ? rawData[idField] : null;
+
+            // FIX: Prevent crash if idValue is undefined/null
+            if (idValue === undefined || idValue === null) {
+                idValue = ''; 
+            }
+
+
+            // 3. Validar Habitación si aplica (Solo si el ID de campo es exactamente 'habitacion' o termina en '_hab')
+            const isHabField = idField && (idField === 'habitacion' || idField === 'hab' || idField.endsWith('_hab'));
+            if (isHabField) {
                 idValue = idValue.toString().padStart(3, '0');
                 const validHabs = Utils.getHabitaciones().map(h => h.num);
                 if (!validHabs.includes(idValue)) {
@@ -265,26 +275,37 @@ export const Ui = {
             let finalData = mapData ? mapData(rawData) : rawData;
             if (!finalData) return; // Validación interna fallida
             
+            // FIX: Ensure pax is a number if present
+            if ('pax' in finalData) { 
+                finalData.pax = parseInt(finalData.pax) || 0; 
+                if (finalData.pax < 0) finalData.pax = 0;
+            }
+
             finalData.autor = autor;
             finalData.actualizadoEn = new Date().toISOString();
 
-            // 5. Guardar en el Servicio
-            // Si no hay idValue (ej: nueva novedad), se usa Date.now()
-            const finalId = idValue || Date.now();
-            // Usamos serviceIdField si existe, sino idField (comportamiento legacy), sino 'id' (default BaseService)
-            const targetKeyField = serviceIdField || idField;
-            await service.setByKey(finalId, finalData, targetKeyField);
+            try {
+                // 5. Guardar en el Servicio
+                // Si no hay idValue (ej: nueva novedad), se usa Date.now()
+                const finalId = idValue || Date.now();
+                // Usamos serviceIdField si existe, sino idField (comportamiento legacy), sino 'id' (default BaseService)
+                const targetKeyField = serviceIdField || idField;
+                await service.setByKey(finalId, finalData, targetKeyField);
 
-            // 6. Feedback
-            Ui.showToast("Registro guardado correctamente.", "success");
-            form.reset();
-            
-            // Limpiar campos ocultos o visuales especiales
-            const hiddenId = form.querySelector(`input[type="hidden"]#${idField}`);
-            if (hiddenId) hiddenId.value = '';
-            
-            // 7. Success logic (ej: mostrarLista)
-            if (onSuccess) onSuccess(finalId, finalData);
+                // 6. Feedback
+                Ui.showToast("Registro guardado correctamente.", "success");
+                form.reset();
+                
+                // Limpiar campos ocultos o visuales especiales
+                const hiddenId = form.querySelector(`input[type="hidden"]#${idField}`);
+                if (hiddenId) hiddenId.value = '';
+                
+                // 7. Success logic (ej: mostrarLista)
+                if (onSuccess) onSuccess(finalId, finalData);
+            } catch (err) {
+                console.error('[Ui] Form Submission Error:', err);
+                Ui.showToast(`Error al guardar: ${err.message}`, "danger");
+            }
         });
     },
 

@@ -29,7 +29,7 @@ export async function inicializarDesayuno() {
         service: desayunoService,
         idField: 'desayuno_hab',
         mapData: (data) => ({
-            pax: data.desayuno_pax,
+            pax: parseInt(data.desayuno_pax),
             hora: data.desayuno_hora,
             obs: data.desayuno_obs
         }),
@@ -54,7 +54,7 @@ function mostrarDesayunos() {
 
     // A. Dashboard (API Ui)
     Ui.updateDashboardWidget('desayunos', listaDesayunos, (item) => `
-        <tr onclick="irADesayuno('${item.hab}')" style="cursor: pointer;">
+        <tr onclick="setTimeout(() => irADesayuno('${item.hab}'), 10)" style="cursor: pointer;">
             <td class="fw-bold">${item.hab}</td>
             <td class="text-end"><span class="badge bg-danger">${item.hora || '--:--'}</span></td>
         </tr>`);
@@ -106,7 +106,8 @@ function renderVistaRackDesayuno() {
         if (hasData) totalPax += parseInt(data.pax);
 
         html += `
-            <div class="d-flex align-items-center justify-content-center rounded rack-box ${colorClass}" 
+            <div class="d-flex align-items-center justify-content-center rounded rack-box room-card ${colorClass}" 
+                 data-room-num="${h.num}"
                  data-bs-toggle="tooltip" data-bs-title="${hasData ? 'Pax: ' + data.pax + ' | Hora: ' + data.hora + (data.obs ? ' | Obs: ' + data.obs : '') : 'Sin pedido'}">
                 ${h.num}
             </div>`;

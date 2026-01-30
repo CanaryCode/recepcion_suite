@@ -1,4 +1,7 @@
-// --- IMPORTACIÓN DE MÓDULOS OPERATIVOS ---
+// --- STARTUP ---
+console.log("Recepcion Suite V2 - Starting...");
+
+// --- IMPORTACI\u00D3N DE M\u00D3DULOS OPERATIVOS ---
 // Cada módulo gestiona una funcionalidad específica (Agenda, Caja, etc.)
 import { inicializarAgenda } from './modules/agenda.js';
 import { inicializarCaja } from './modules/caja.js';
@@ -7,31 +10,33 @@ import { Ui } from './core/Ui.js'; // Import Ui FIRST
 
 import { clock } from './modules/clock.js';
 import { inicializarAtenciones } from './modules/atenciones.js';
-import { inicializarSafe } from './modules/safe.js';
+import { inicializarSafe } from './modules/safe.js?v=V6_STABLE'; // Force Reload
 import { inicializarDespertadores } from './modules/despertadores.js';
 import { inicializarDesayuno } from './modules/desayuno.js';
 import { inicializarEstancia } from './modules/estancia.js';
 import { inicializarNovedades } from './modules/novedades.js';
 import { inicializarCenaFria } from './modules/cena_fria.js';
-import { inicializarRiu } from './modules/riu.js';
+import { inicializarRiu } from './modules/riu.js?v=V6_STABLE'; // Force Reload
 import { inicializarAyuda } from './modules/ayuda.js';
-import { inicializarTransfers } from './modules/transfers.js';
+import { inicializarTransfers } from './modules/transfers.js?v=V6_STABLE'; // Force Reload
 import { inicializarNotasPermanentes } from './modules/notas_permanentes.js';
 import { inicializarPrecios } from './modules/precios.js';
 import { inicializarSystemAlarms } from './modules/alarms.js';
 import { inicializarSystemAlarmsUI } from './modules/system_alarms_ui.js';
-import { inicializarRack } from './modules/rack.js';
+import { inicializarRack } from './modules/rack.js?v=V6_STABLE';
 import { inicializarConfiguracion } from './modules/configuracion.js';
+import { Gallery } from './modules/gallery.js';
 import { IconSelector } from './core/IconSelector.js';
 
-// --- SISTEMAS CORE (NÚCLEO) ---
-import { APP_CONFIG, Config } from './core/Config.js'; // Cargador de configuración
+// --- SISTEMAS CORE (N\u00DACKLEO) ---
+import { APP_CONFIG, Config } from './core/Config.js'; // Cargador de configuraci\u00F3n
 import { Modal } from './core/Modal.js';              // Gestor de ventanas modales
-import { Router } from './core/Router.js';            // Gestor de navegación entre pestañas
-import { CompLoader } from './core/CompLoader.js';    // Cargador dinámico de plantillas HTML
-import { Search } from './core/Search.js';            // Buscador global de módulos
+import { Router } from './core/Router.js';            // Gestor de navegaci\u00F3n entre pesta\u00F1as
+import { CompLoader } from './core/CompLoader.js';    // Cargador din\u00E1mico de plantillas HTML
+import { Search } from './core/Search.js';            // Buscador global de m\u00F3dulos
 import { sessionService } from './services/SessionService.js'; // Gestor de usuario logueado
-import { Utils } from './core/Utils.js';              // Utilidades generales (formateo, etc.)
+import { Utils } from './core/Utils.js?v=V6_STABLE';              // Utilidades generales (formateo, etc.)
+import { RoomDetailModal } from './core/RoomDetailModal.js?v=V6_STABLE'; // Modal Global de Habitaci\u00F3n
 
 // Expose Utils globally for inline HTML events (like togglePassword)
 window.Utils = Utils;
@@ -132,7 +137,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         { nombre: 'Notas Permanentes', init: inicializarNotasPermanentes },
         { nombre: 'Precios', init: inicializarPrecios },
         { nombre: 'Rack', init: inicializarRack },
-        { nombre: 'Configuración', init: inicializarConfiguracion }
+        { nombre: 'Configuración', init: inicializarConfiguracion },
+        { nombre: 'Galería', init: () => Gallery.inicializar() }
     ];
 
     // Cargar prioritarios inmediatamente
@@ -147,8 +153,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         
         inicializarSesionGlobal(); // Inicia el selector de usuario (Recepción)
-        initGlobalTooltips();      // Activa las ayudas flotantes (Tooltips)
         
+        // --- 6. Tooltips (After everything is rendered) ---
+        initGlobalTooltips();
+        
+        // --- REACTIVIDAD AUTOMÁTICA ---
+        // Si los datos llegan del servidor después de pintar la pantalla, repintamos.
+        window.addEventListener('service-synced', (e) => {
+            // console.log("Datos actualizados: ", e.detail.endpoint);
+            const currentHash = window.location.hash;
+            
+            // Refrescar módulo activo según endpoint
+            if (e.detail.endpoint === 'riu_transfers' && (!currentHash || currentHash === '#transfers-content')) {
+                import('./modules/transfers.js').then(m => m.mostrarTransfers && m.mostrarTransfers());
+            }
+            if (e.detail.endpoint === 'riu_class_db' && currentHash === '#riu-content') {
+                import('./modules/riu.js').then(m => m.mostrarClientes && m.mostrarClientes());
+            }
+            if (e.detail.endpoint === 'riu_safe_rentals' && currentHash === '#safe-content') {
+                import('./modules/safe.js').then(m => m.mostrarSafeRentals && m.mostrarSafeRentals());
+            }
+        });
+
         console.log("Sistema completamente inicializado.");
 
         // --- HEARTBEAT PARA AUTO-CIERRE ROBUSTO ---
@@ -204,14 +230,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     } catch (criticalError) {
         console.error("CRITICAL BOOT ERROR:", criticalError);
+        const errorBox = document.getElementById('global-error-box');
+        if (errorBox) {
+            errorBox.classList.remove('d-none');
+            const content = document.getElementById('error-list-content');
+            if (content) content.innerHTML += `<div><strong>BOOT ERROR:</strong> ${criticalError.message}</div>`;
+        }
         alert(`FALLO ARRANQUE: ${criticalError.message}\nVer consola para más detalles.`);
     }
 });
 
-// MODAL LAUNCHER FUNCTION
+// --- HELPER FUNCTIONS & GLOBAL EXPOSURE ---
+
 /**
  * LANZADOR DE APLICACIONES (LaunchPad)
- * Genera dinámicamente el modal con los iconos de las herramientas externas (Word, Excel, etc.)
  */
 window.openLaunchPad = () => {
     const container = document.getElementById('launchPadGrid');
@@ -245,10 +277,8 @@ window.openLaunchPad = () => {
     modal.show();
 };
 
-// Global Launcher Function
 /**
  * EJECUTAR APP EXTERNA
- * Se comunica con el servidor local para pedirle que abra un programa en Windows.
  */
 window.launchExternalApp = async (command) => {
     try {
@@ -257,13 +287,10 @@ window.launchExternalApp = async (command) => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ command })
         });
-        
         if (!response.ok) throw new Error('Server error');
-        console.log("Programa iniciado:", command);
-        
     } catch (e) {
         console.error("Fallo al lanzar:", e);
-        alert("Error al lanzar aplicación. El servidor Node.js no responde.");
+        alert("Error al lanzar aplicación.");
     }
 };
 
@@ -276,7 +303,6 @@ function inicializarSesionGlobal() {
 
     // 1. Cargar usuarios del config
     const users = APP_CONFIG.HOTEL.RECEPCIONISTAS;
-    // Insertar antes del divisor
     const divider = userList.querySelector('hr.dropdown-divider').parentElement;
 
     users.forEach(u => {
@@ -285,7 +311,7 @@ function inicializarSesionGlobal() {
         userList.insertBefore(li, divider);
     });
 
-    // Añadir opción "Otro"
+    // Añadir "Otro..."
     const liOtro = document.createElement('li');
     liOtro.innerHTML = `<button class="dropdown-item" onclick="window.promptGlobalUser()">Otro...</button>`;
     userList.insertBefore(liOtro, divider);
@@ -295,12 +321,10 @@ function inicializarSesionGlobal() {
     if (currentUser) {
         updateUserUI(currentUser);
     } else {
-        // Si no hay usuario, forzar selección o mostrar alerta visual
-        userBtn.classList.remove('btn-outline-secondary');
         userBtn.classList.add('btn-outline-danger', 'animation-pulse');
     }
 
-    // 3. Exponer funciones globales
+    // 3. Exponer funciones
     window.setGlobalUser = (name) => {
         sessionService.setUser(name);
         updateUserUI(name);
@@ -308,7 +332,7 @@ function inicializarSesionGlobal() {
         userBtn.classList.add('btn-outline-secondary');
     };
 
-    // Injectar Modal de Usuario 'Otro'
+    // Modal para 'Otro'
     if (!document.getElementById('modalGlobalUser')) {
         const modalDiv = document.createElement('div');
         modalDiv.innerHTML = `
@@ -320,165 +344,87 @@ function inicializarSesionGlobal() {
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
-                            <label class="form-label small fw-bold text-muted">Escribe tu nombre</label>
-                            <input type="text" id="inputGlobalUser" class="form-control form-control-lg fw-bold text-center" placeholder="Ej: Jesús, Ana...">
+                            <input type="text" id="inputGlobalUser" class="form-control form-control-lg text-center" placeholder="Nombre...">
                         </div>
                         <div class="modal-footer border-0 pt-0">
-                            <button type="button" class="btn btn-primary w-100 fw-bold" onclick="window.confirmGlobalUser()">Guardar</button>
+                            <button type="button" class="btn btn-primary w-100" onclick="window.confirmGlobalUser()">Guardar</button>
                         </div>
                     </div>
                 </div>
             </div>`;
         document.body.appendChild(modalDiv);
-
-        // Enter key support
-        document.getElementById('inputGlobalUser').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') window.confirmGlobalUser();
-        });
+        document.getElementById('inputGlobalUser').addEventListener('keypress', (e) => { if (e.key === 'Enter') window.confirmGlobalUser(); });
     }
 
     window.promptGlobalUser = () => {
-        const input = document.getElementById('inputGlobalUser');
-        if (input) input.value = '';
         const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalGlobalUser'));
         modal.show();
-        setTimeout(() => input?.focus(), 500);
     };
 
     window.confirmGlobalUser = () => {
         const name = document.getElementById('inputGlobalUser').value;
-        if (name && name.trim()) {
+        if (name?.trim()) {
             window.setGlobalUser(name.trim());
-            const modalEl = document.getElementById('modalGlobalUser');
-            const modal = bootstrap.Modal.getInstance(modalEl);
-            modal.hide();
+            bootstrap.Modal.getInstance(document.getElementById('modalGlobalUser')).hide();
         }
     };
 
-    window.logoutGlobal = () => {
-        sessionService.logout();
-        userBtnName.innerText = "Seleccionar Usuario";
-        userBtn.classList.remove('btn-outline-primary', 'btn-success');
-        userBtn.classList.add('btn-outline-danger');
-        location.reload(); // Recargar para limpiar estados de módulos si es necesario
+    window.logoutGlobal = () => { sessionService.logout(); location.reload(); };
+
+    window.cleanupUI = () => {
+        document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+        document.querySelectorAll('.modal.show').forEach(m => m.classList.remove('show'));
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = '';
+        alert("UI Limpia");
     };
-    // 5. Exponer Restauración de Agenda
-    // 5. Exponer Utilidad de Respaldo Forzoso
+
+    // Utilidades de Respaldo y Agenda
     window.ejecutarRespaldoManual = async () => {
-        const confirmed = await Modal.showConfirm("¿Quieres forzar el envío de TODOS los datos al servidor de respaldo?<br><br><small class='text-muted'>Esto actualizará la copia de seguridad con lo que tienes en pantalla ahora mismo.</small>");
-        if (!confirmed) return;
-        
-        // Visual feedback
-        const userBtn = document.getElementById('globalUserBtn');
-        const userNameSpan = document.getElementById('globalUserName');
-        const originalText = userNameSpan.innerHTML;
-        const originalIcon = userBtn.querySelector('i').className;
-        
-        // Change Icon to Spinner
-        userBtn.querySelector('i').className = "spinner-border spinner-border-sm me-1";
-        userNameSpan.innerText = "Respaldando...";
-        userBtn.classList.add('disabled');
-
+        if(!(await Modal.showConfirm("¿Forzar respaldo?"))) return;
         try {
-            // Dynamic import
             const { backupService } = await import('./services/BackupService.js');
-            const result = await backupService.performFullBackup();
-            
-            let msg = `✅ <strong>Respaldo Completado</strong><br><br>Se han procesado ${result.success.length} módulos correctamente.`;
-            let type = 'success';
-            
-            if (result.error.length > 0) {
-                msg += `<br><br>⚠️ <strong>Atención:</strong> ${result.error.length} módulos fallaron (Mira la consola).`;
-                type = 'warning';
-            }
-            
-            await Modal.showAlert(msg, type);
-            
-        } catch (e) {
-            console.error("Backup error:", e);
-            await Modal.showAlert(`❌ <strong>Error Crítico</strong><br>${e.message}`, 'error');
-        } finally {
-            // Restore UI
-            userBtn.querySelector('i').className = originalIcon;
-            userNameSpan.innerHTML = originalText;
-            userBtn.classList.remove('disabled');
-        }
+            await backupService.performFullBackup();
+            await Modal.showAlert("Respaldo completado", "success");
+        } catch (e) { console.error(e); }
     };
 
-    // 6. Exponer Restauración de Agenda (Corrección)
     window.ejecutarRestauracionAgenda = async () => {
-        const confirmed = await Modal.showConfirm("¿Quieres buscar y recuperar contactos originales perdidos?<br><br>🛡️ <strong>Modo Seguro:</strong> Esto NO borrará los contactos que tú hayas añadido. Solo rellenará los huecos si falta alguno de la lista original.");
-        if (!confirmed) return;
-
-        const userBtn = document.getElementById('globalUserBtn');
-        // Simple spinner feedback (reuse logic if possible, simplified here)
-        userBtn.querySelector('i').className = "spinner-border spinner-border-sm me-1";
-        
+        if(!(await Modal.showConfirm("¿Restaurar contactos?"))) return;
         try {
             const { agendaService } = await import('./services/AgendaService.js');
-            const { RAW_AGENDA_DATA } = await import('./data/AgendaData.js'); 
-            
-            // Llamamos al método de recuperación inteligente
             await agendaService.restaurarAgendaForzada();
-            // El propio servicio importador maneja el reload si hay exito, 
-            // pero si no hace reload (ej: lista vacia), necesitamos quitar el spinner
-            
-        } catch (e) {
-            console.error(e);
-            await Modal.showAlert(`❌ Error al recuperar: ${e.message}`, "error");
-            // location.reload(); // Quitamos reload forzoso en error para ver el mensaje
-        } finally {
-             // Restore UI (Important if no reload happens)
-             userBtn.querySelector('i').className = "bi bi-person-circle me-1";
-        }
+        } catch (e) { console.error(e); }
     };
+}
 
-    // 6. Configuración Centralizada de Tooltips
-    window.initTooltips = (container = document.body) => {
-        const selector = '[data-bs-toggle="tooltip"], .custom-tooltip, [data-tooltip="true"]';
-        // Handle trigger itself
-        if (container.matches && container.matches(selector)) {
-             initSingleTooltip(container);
-        }
-        // Handle children
-        if (container.querySelectorAll) {
-            container.querySelectorAll(selector).forEach(el => initSingleTooltip(el));
-        }
-    };
+// --- TOOLTIP HELPERS ---
 
-    function initSingleTooltip(el) {
-        const desiredDelay = { show: 700, hide: 100 };
-        
-        // Use getOrCreateInstance to prevent "instance already exists" errors
+window.initTooltips = (container = document.body) => {
+    const selector = '[data-bs-toggle="tooltip"], .custom-tooltip, [data-tooltip="true"]';
+    if (container.matches && container.matches(selector)) initSingleTooltip(container);
+    if (container.querySelectorAll) container.querySelectorAll(selector).forEach(el => initSingleTooltip(el));
+};
+
+function initSingleTooltip(el) {
+    try {
         bootstrap.Tooltip.getOrCreateInstance(el, {
             trigger: 'hover',
             container: 'body', 
-            delay: desiredDelay,
+            delay: { show: 700, hide: 100 },
             html: true,
             placement: el.dataset.bsPlacement || 'top'
         });
-    }
+    } catch(e) { console.warn("Tooltip error:", e); }
 }
 
-// Inicializar Tooltips Globalmente (Observer para contenido dinámico)
 function initGlobalTooltips() {
-    // Initial load
     window.initTooltips(document.body);
-
-    // Observer
-    const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-            if (mutation.type === 'childList') {
-                mutation.addedNodes.forEach(node => {
-                    if (node.nodeType === 1) {
-                         window.initTooltips(node);
-                    }
-                });
-            }
+    new MutationObserver((mutations) => {
+        mutations.forEach((m) => {
+            if (m.type === 'childList') m.addedNodes.forEach(node => { if (node.nodeType === 1) window.initTooltips(node); });
         });
-    });
-
-    observer.observe(document.body, { childList: true, subtree: true });
+    }).observe(document.body, { childList: true, subtree: true });
 }
 
 function updateUserUI(name) {
@@ -491,31 +437,9 @@ function updateUserUI(name) {
     }
 }
 
-
-
-/**
- * CONTROL DE VISIBILIDAD DEL DASHBOARD
- * Verifica si alguno de los módulos del "Resumen del Día" tiene registros activos.
- * Si todos están vacíos (u ocultos), esconde la sección completa para limpiar la UI.
- */
 window.checkDailySummaryVisibility = () => {
     const section = document.getElementById('dashboard-resumen-seccion');
     if (!section) return;
-
-    // Buscamos todas las columnas de resumen (dash-col-*)
-    const modules = section.querySelectorAll('[id^="dash-col-"]');
-    let hasVisibleData = false;
-
-    modules.forEach(mod => {
-        if (!mod.classList.contains('d-none')) {
-            hasVisibleData = true;
-        }
-    });
-
-    // Mostramos u ocultamos la sección principal
-    if (hasVisibleData) {
-        section.classList.remove('d-none');
-    } else {
-        section.classList.add('d-none');
-    }
+    const hasVisible = Array.from(section.querySelectorAll('[id^="dash-col-"]')).some(mod => !mod.classList.contains('d-none'));
+    section.classList.toggle('d-none', !hasVisible);
 };

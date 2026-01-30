@@ -70,6 +70,7 @@ class RackService extends BaseService {
      */
     async init() {
         await this.syncWithServer();
+        return this.getAll();
     }
 
     /**
@@ -87,6 +88,17 @@ class RackService extends BaseService {
         
         // Limpiamos la caché de detalles calculados
         this.cacheDetails = null;
+    }
+
+    /**
+     * OBTENER DETALLES DE UNA HABITACIÓN
+     */
+    getRoomDetails(num) {
+        const savedData = this.getAll() || {};
+        return {
+            num,
+            ...this._getRoomDetails(num, savedData)
+        };
     }
 
     /**

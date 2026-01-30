@@ -12,8 +12,7 @@ class SafeService extends BaseService {
         // Esquema para validación de alquileres de cajas fuertes
         this.schema = {
             habitacion: 'any',
-            dias: 'number',
-            valor: 'number'
+            fechaInicio: 'string'
         };
     }
 

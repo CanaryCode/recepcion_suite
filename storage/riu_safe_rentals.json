@@ -1,1 +1,18 @@
-[]
+[
+  {
+    "habitacion": "011",
+    "nombre": "11",
+    "fechaInicio": "2026-01-29",
+    "comentario": "",
+    "autor": "Javi",
+    "actualizadoEn": "2026-01-29T20:34:23.708Z"
+  },
+  {
+    "habitacion": "012",
+    "nombre": "er",
+    "fechaInicio": "2026-01-30",
+    "comentario": "",
+    "autor": "Javi",
+    "actualizadoEn": "2026-01-30T04:55:26.863Z"
+  }
+]

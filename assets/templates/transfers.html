@@ -9,10 +9,12 @@
     </div>
 </div>
 
-<!-- Encabezado del Módulo -->
-<h4 class="module-title-discrete animate-fade-in">
-  <i class="bi bi-taxi-front-fill me-2 text-warning"></i>Transfers & Taxis
-</h4>
+<!-- Encabezado del Módulo (Oculto al imprimir tickets) -->
+<div id="transfers-general-header" class="d-print-block">
+  <h4 class="module-title-discrete animate-fade-in no-print">
+    <i class="bi bi-taxi-front-fill me-2 text-warning"></i>Transfers & Taxis
+  </h4>
+</div>
 
 <div
   class="module-toolbar d-flex justify-content-between align-items-center p-2 mb-3 no-print"
@@ -75,6 +77,7 @@
                 class="form-control"
                 id="transfer_fecha"
                 required
+                onfocus="this.min = new Date().toISOString().split('T')[0]"
               />
             </div>
             <div class="col-md-3 col-lg-2">
@@ -88,9 +91,7 @@
             </div>
 
             <div class="col-md-3 col-lg-2">
-              <label class="form-label small fw-bold text-muted"
-                >Habitación</label
-              >
+              <label class="form-label small fw-bold text-muted">Habitación</label>
               <input
                 type="text"
                 class="form-control fw-bold"
@@ -99,6 +100,23 @@
                 required
                 placeholder="Ej: 101"
               />
+            </div>
+
+            <div class="col-md-3 col-lg-2 d-flex align-items-end pb-2">
+              <div class="form-check form-switch custom-switch mb-0">
+                <input class="form-check-input" type="checkbox" id="transfer_externo" onchange="toggleTransferExterno(this.checked)">
+                <label class="form-check-label small fw-bold text-muted" for="transfer_externo">Cliente Externo</label>
+              </div>
+            </div>
+
+            <div class="col-md-6 col-lg-3 d-none animate-fade-in" id="wrap_transfer_nombre_externo">
+                <label class="form-label small fw-bold text-muted">Nombre del Cliente</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="transfer_nombre_cliente"
+                  placeholder="Nombre y Apellidos..."
+                />
             </div>
 
             <div class="col-md-6 col-lg-3">
@@ -187,53 +205,55 @@
 
   <!-- VISTA 2: LISTADO (AGENDA) - OCULTO POR DEFECTO -->
   <div id="transfers-lista-view" class="d-none">
-    <div class="card shadow-sm border-0">
-      <div
-        class="card-header bg-white py-3 d-flex justify-content-between align-items-center"
-      >
-        <h6 class="mb-0 fw-bold text-muted">
-          <i class="bi bi-calendar-event me-2"></i>Próximas Salidas
-        </h6>
-        <div class="input-group input-group-sm w-auto">
-          <span class="input-group-text bg-light border-end-0"
-            ><i class="bi bi-search"></i
-          ></span>
-          <input
-            type="text"
-            class="form-control border-start-0"
-            id="transfersSearch"
-            placeholder="Buscar habitación..."
-            onkeyup="filtrarTransfers()"
-          />
+    <div id="transfers-printable-list">
+        <div class="card shadow-sm border-0">
+          <div
+            class="card-header bg-white py-3 d-flex justify-content-between align-items-center no-print"
+          >
+            <h6 class="mb-0 fw-bold text-muted">
+              <i class="bi bi-calendar-event me-2"></i>Próximas Salidas
+            </h6>
+            <div class="input-group input-group-sm w-auto">
+              <span class="input-group-text bg-light border-end-0"
+                ><i class="bi bi-search"></i
+              ></span>
+              <input
+                type="text"
+                class="form-control border-start-0"
+                id="transfersSearch"
+                placeholder="Buscar habitación..."
+                onkeyup="filtrarTransfers()"
+              />
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th scope="col" class="ps-4">Fecha / Hora</th>
+                  <th scope="col">Hab. / Cliente</th>
+                  <th scope="col">Tipo</th>
+                  <th scope="col">Pax</th>
+                  <th scope="col">Destino / Notas</th>
+                  <th scope="col">Creado por</th>
+                  <th scope="col" class="text-end pe-4 no-print">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="tablaTransfersCuerpo">
+                <!-- JS Rendering -->
+              </tbody>
+            </table>
+          </div>
+          <div id="transfers-empty-state" class="text-center py-5 d-none no-print">
+            <div class="mb-3">
+              <i class="bi bi-car-front display-4 text-muted opacity-25"></i>
+            </div>
+            <h6 class="text-muted fw-bold">No hay traslados programados</h6>
+            <p class="small text-muted mb-0">
+              Utiliza el botón "Nueva Reserva" para añadir uno.
+            </p>
+          </div>
         </div>
-      </div>
-      <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-          <thead class="table-light">
-            <tr>
-              <th scope="col" class="ps-4">Fecha / Hora</th>
-              <th scope="col">Hab.</th>
-              <th scope="col">Tipo</th>
-              <th scope="col">Pax</th>
-              <th scope="col">Destino / Notas</th>
-              <th scope="col">Creado por</th>
-              <th scope="col" class="text-end pe-4">Acciones</th>
-            </tr>
-          </thead>
-          <tbody id="tablaTransfersCuerpo">
-            <!-- JS Rendering -->
-          </tbody>
-        </table>
-      </div>
-      <div id="transfers-empty-state" class="text-center py-5 d-none">
-        <div class="mb-3">
-          <i class="bi bi-car-front display-4 text-muted opacity-25"></i>
-        </div>
-        <h6 class="text-muted fw-bold">No hay traslados programados</h6>
-        <p class="small text-muted mb-0">
-          Utiliza el botón "Nueva Reserva" para añadir uno.
-        </p>
-      </div>
     </div>
   </div>
 </div>
@@ -259,7 +279,7 @@
 
     <div class="alert alert-light border mb-4">
       <div class="d-flex justify-content-between mb-2">
-        <span>Habitación / Room:</span>
+        <span id="label_print_hab">Habitación / Room:</span>
         <strong id="print_transfer_hab">---</strong>
       </div>
       <div class="d-flex justify-content-between mb-2">

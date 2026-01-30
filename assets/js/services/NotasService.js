@@ -20,6 +20,7 @@ class NotasService extends BaseService {
 
     async init() {
         await this.syncWithServer();
+        return this.getAll();
     }
 
     /**

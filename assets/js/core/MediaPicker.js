@@ -43,6 +43,9 @@ export const MediaPicker = {
         } else if (fileType === 'image') {
             titleEl.innerHTML = '<i class="bi bi-image me-2"></i>Seleccionar Imagen';
             helpEl.textContent = 'Selecciona una imagen (jpg, png, webp).';
+        } else if (fileType === 'folder') {
+            titleEl.innerHTML = '<i class="bi bi-folder-check me-2"></i>Seleccionar Carpeta';
+            helpEl.textContent = 'Navega y pulsa "Seleccionar esta carpeta".';
         } else {
             titleEl.innerHTML = '<i class="bi bi-folder2-open me-2"></i>Explorador de Archivos';
             helpEl.textContent = 'Navega por el servidor local.';
@@ -52,6 +55,20 @@ export const MediaPicker = {
         this._currentSelectCallback = onSelect;
         this._currentFileType = fileType;
         
+        // Show/Hide "Select Folder" button
+        const selectFolderBtn = modalEl.querySelector('#btn-mp-select-folder');
+        if (selectFolderBtn) {
+            selectFolderBtn.classList.toggle('d-none', fileType !== 'folder');
+            // Remove old listeners to avoid duplicates
+            const newBtn = selectFolderBtn.cloneNode(true);
+            selectFolderBtn.parentNode.replaceChild(newBtn, selectFolderBtn);
+            
+            newBtn.onclick = () => {
+                const currentPath = document.getElementById('mp-current-path').value;
+                this._confirmSelection(currentPath);
+            };
+        }
+
         await this._loadPath(startPath);
         modal.show();
     },
@@ -89,10 +106,10 @@ export const MediaPicker = {
             const sorted = data.items.sort((a,b) => (a.isDirectory === b.isDirectory) ? 0 : a.isDirectory ? -1 : 1);
 
             sorted.forEach(item => {
-                // Filtrado visual simple (opcional) - Mostramos todo pero destacamos según tipo
+                // Filtrado visual simple
                 let icon = item.isDirectory ? 'folder-fill text-warning' : 'file-earmark text-secondary';
-                let valid = true; // Si es seleccionable
-
+                
+                // Si es modo 'folder', solo las carpetas son relevantes visualmente, pero se listan archivos para contexto
                 if (!item.isDirectory) {
                     const ext = item.name.split('.').pop().toLowerCase();
                     if (this._currentFileType === 'executable') {
@@ -110,20 +127,24 @@ export const MediaPicker = {
                 div.className = "list-group-item list-group-item-action d-flex align-items-center pointer border-0 border-bottom py-2";
                 if (item.isDirectory) div.style.backgroundColor = 'rgba(0,0,0,0.01)';
                 
+                // Mute files in folder mode
+                if (this._currentFileType === 'folder' && !item.isDirectory) {
+                    div.style.opacity = '0.5';
+                }
+
                 div.innerHTML = `
                     <div class="me-3 fs-4"><i class="bi bi-${icon}"></i></div>
                     <div class="text-truncate flex-grow-1">
                         <div class="fw-medium text-dark">${item.name}</div>
                         ${!item.isDirectory ? `<small class="text-muted" style="font-size:0.75rem">${this._formatSize(item.size)}</small>` : ''}
                     </div>
-                    ${!item.isDirectory ? '<i class="bi bi-chevron-right text-muted opacity-25"></i>' : ''}
                 `;
 
                 div.onclick = () => {
                     if (item.isDirectory) {
                         this._loadPath(item.path);
-                    } else {
-                        // Selección final
+                    } else if (this._currentFileType !== 'folder') {
+                        // Selección de archivo
                          this._confirmSelection(item.path);
                     }
                 };
@@ -185,6 +206,7 @@ export const MediaPicker = {
 
                     <div class="modal-footer py-2 bg-light border-top">
                         <small id="mp-help-text" class="text-muted me-auto small fw-bold">Selecciona un archivo</small>
+                        <button type="button" class="btn btn-primary btn-sm px-3 rounded-pill d-none" id="btn-mp-select-folder"><i class="bi bi-check-lg me-1"></i>Seleccionar esta carpeta</button>
                         <button type="button" class="btn btn-outline-secondary btn-sm px-3 rounded-pill" data-bs-dismiss="modal">Cancelar</button>
                     </div>
                 </div>

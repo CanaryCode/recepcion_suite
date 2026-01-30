@@ -47,44 +47,58 @@ export const Router = {
      * 3. Se active el nuevo panel visualmente.
      */
     navegarA: (targetId) => {
-        // Normalizar entrada: Asegurar que el ID empieza por '#'
         const selector = targetId.startsWith('#') ? targetId : '#' + targetId;
+        const targetPane = document.querySelector(selector);
         
-        // 1. Ocultar todos los paneles (tab-pane) activos
-        // 1. Ocultar todos los paneles (tab-pane) activos
-        document.querySelectorAll('.tab-pane').forEach(pane => {
-            pane.classList.remove('show', 'active');
-            // Force reset style in case of inline styles or stuck states
-            pane.style.display = ''; 
-        });
+        if (!targetPane) {
+            console.error(`Router: Panel no encontrado ${selector}`);
+            return;
+        }
 
-        // 2. Quitar el color azul (active) de los botones del menú superior
+        // 1. CLEANUP UI (Dropdowns, Tooltips, Backdrops)
+        document.querySelectorAll('.dropdown-menu.show').forEach(el => {
+            el.classList.remove('show');
+            const toggle = el.parentElement.querySelector('.dropdown-toggle');
+            if (toggle) {
+                toggle.classList.remove('show');
+                toggle.setAttribute('aria-expanded', 'false');
+            }
+        });
+        document.querySelectorAll('.tooltip').forEach(el => el.remove());
+
+        // 2. DEACTIVATE EVERYTHING
+        // Remove active state from all nav-links and dropdown-items
         document.querySelectorAll('#mainTabs .nav-link, #mainTabs .dropdown-item').forEach(btn => {
             btn.classList.remove('active');
         });
 
-        // 3. Buscar el disparador legítimo (el botón del menú principal)
-        // Preferimos el botón que ya existe en el DOM (en el dropdown) en lugar de uno oculto.
-        const triggerEl = document.querySelector(`button[data-bs-target="${selector}"]`);
+        // Hide all tab-panes
+        document.querySelectorAll('.tab-pane').forEach(pane => {
+            pane.classList.remove('show', 'active');
+            pane.style.display = ''; 
+        });
 
+        // 3. ACTIVATE TARGET CONTENT
+        targetPane.classList.add('show', 'active');
+
+        // 4. HIGHLIGHT NAVBAR BUTTON (SILENTLY)
+        const triggerEl = document.querySelector(`button[data-bs-target="${selector}"]`);
         if (triggerEl) {
-            try {
-                // Intentar usar Bootstrap API
-                const tab = bootstrap.Tab.getOrCreateInstance(triggerEl);
-                tab.show();
-            } catch (e) {
-                console.warn("Bootstrap Tab error:", e);
-                // Fallback manual si Bootstrap falla (Illegal Invocation, etc.)
-                triggerEl.classList.add('active');
+            triggerEl.classList.add('active');
+            
+            // If the button is inside a dropdown, highlight the parent dropdown-toggle too
+            const parentDropdown = triggerEl.closest('.dropdown');
+            if (parentDropdown) {
+                const toggle = parentDropdown.querySelector('.dropdown-toggle');
+                if (toggle) toggle.classList.add('active');
             }
-        } 
-        
-        // 4. Refuerzo manual: Asegurar que el panel se ve
-        const targetPane = document.querySelector(selector);
-        if (targetPane) {
-            targetPane.classList.add('show', 'active');
+        }
+
+        // 5. UPDATE URL (Optional, but good for back button)
+        if (history.pushState) {
+            history.pushState(null, null, selector);
         } else {
-            console.error(`Router: Panel no encontrado ${selector}`);
+            location.hash = selector;
         }
     }
 };

@@ -36,18 +36,43 @@ export class BaseService {
     validate(data) {
         if (!this.schema) return true;
 
-        const items = Array.isArray(data) ? data : [data];
+        let items = [];
+        if (Array.isArray(this.defaultValue)) {
+            // Si es un array, validamos cada elemento
+            items = Array.isArray(data) ? data : [data];
+        } else {
+            // Check if Singleton (all schema keys present in default value)
+            // e.g. CajaService has defaults for all schema keys.
+            // Map services (Desayuno) usually have empty default {}.
+            const isSingleton = this.schema && Object.keys(this.schema).every(k => k in this.defaultValue);
+
+            if (isSingleton) {
+                items = [data];
+            } else {
+                // Si es un objeto (Map), validamos los valores
+                // (Asumimos que data es el contenedor completo { key: item })
+                items = data ? Object.values(data) : [];
+            }
+        }
 
         for (const item of items) {
             for (const [key, type] of Object.entries(this.schema)) {
                 if (!(key in item)) {
+                    // Si el campo es opcional en la práctica pero el esquema lo exige,
+                    // aquí es donde fallaba.
+                    // Permitimos undefined si el tipo es 'any' o si decidimos relajarlo.
+                    // Pero la regla de negocio dice "Obligatorio".
                     throw new Error(`Campo requerido faltante: ${key}`);
                 }
                 const actualType = typeof item[key];
-                if (type === 'number' && isNaN(item[key])) {
-                     throw new Error(`El campo '${key}' debe ser un número válido.`);
-                }
-                if (actualType !== type && type !== 'any') {
+                if (type === 'number') {
+                    // Validación numérica estricta para strings numéricos
+                    if (typeof item[key] === 'string' && item[key].trim() !== '' && !isNaN(Number(item[key]))) {
+                        // Es un número válido en string
+                    } else if (typeof item[key] !== 'number' || isNaN(item[key])) {
+                         throw new Error(`El campo '${key}' debe ser un número válido.`);
+                    }
+                } else if (actualType !== type && type !== 'any') {
                     throw new Error(`Tipo de dato inválido para '${key}': esperado ${type}, recibido ${actualType}`);
                 }
             }
@@ -72,8 +97,14 @@ export class BaseService {
             this.cache = this.defaultValue;
         }
 
-        // Intentar sincronizar con el servidor en segundo plano
-        this.syncWithServer();
+        // Intentar sincronizar con el servidor (CON TIMEOUT DE SEGURIDAD 2s)
+        // Si el servidor tarda más de 2s, seguimos con lo que hay en caché para no congelar la UI.
+        try {
+            const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("Sync Timeout")), 2000));
+            await Promise.race([this.syncWithServer(), timeout]);
+        } catch (e) {
+            console.warn(`[BaseService] ${this.endpoint} inició con datos locales (Sync: ${e.message})`);
+        }
 
         this._initialized = true;
         return this.getAll();
@@ -97,6 +128,11 @@ export class BaseService {
      * GUARDAR LISTA COMPLETA
      */
     save(data) {
+        // ENFORCE ARRAY: Si el servicio es de tipo lista, forzamos que sea un array plano
+        if (Array.isArray(this.defaultValue)) {
+            data = this._ensureArray(data);
+        }
+
         // Validar antes de guardar
         try {
             this.validate(data);
@@ -118,6 +154,26 @@ export class BaseService {
     }
 
     /**
+     * AYUDANTE DE RESILIENCIA: Asegura que los datos sean un array de objetos plano.
+     * @private
+     */
+    _ensureArray(data) {
+        if (Array.isArray(data)) return data;
+        
+        if (data && typeof data === 'object') {
+            // Si el objeto tiene campos que parecen de esquema (ej: habitacion, texto...), es un solo item.
+            const isSingleItem = this.schema && Object.keys(this.schema).some(k => k in data);
+            if (isSingleItem) {
+                return [data];
+            }
+            // Si no, asumimos que es un diccionario { id: item } y extraemos los valores
+            return Object.values(data);
+        }
+        
+        return [];
+    }
+
+    /**
      * OPERACIONES CRUD SEMÁNTICAS (Para Arrays)
      */
 
@@ -126,8 +182,8 @@ export class BaseService {
      */
     async add(item) {
         const all = await this.init();
-        if (!Array.isArray(all)) return this.save([item]);
-        return this.save([...all, item]);
+        const array = this._ensureArray(all);
+        return this.save([...array, item]);
     }
 
     /**
@@ -135,13 +191,12 @@ export class BaseService {
      */
     async update(id, data, idField = 'id') {
         const all = await this.init();
-        if (!Array.isArray(all)) return this.save(data);
+        const array = this._ensureArray(all);
 
-
-        const index = all.findIndex(x => x[idField] == id);
+        const index = array.findIndex(x => x[idField] == id);
         if (index === -1) return this.add(data);
         
-        const newAll = [...all];
+        const newAll = [...array];
         newAll[index] = { ...newAll[index], ...data };
         return this.save(newAll);
     }
@@ -151,8 +206,9 @@ export class BaseService {
      */
     async delete(id, idField = 'id') {
         const all = await this.init();
-        if (!Array.isArray(all)) return this.save(this.defaultValue);
-        const newAll = all.filter(x => x[idField] != id);
+        const array = this._ensureArray(all);
+        
+        const newAll = array.filter(x => x[idField] != id);
         return this.save(newAll);
     }
 
@@ -166,6 +222,13 @@ export class BaseService {
             return all.find(x => x[idField] == key);
         }
         return (all && typeof all === 'object') ? all[key] : null;
+    }
+
+    /**
+     * ALIAS PARA getByKey
+     */
+    getById(id, idField = 'id') {
+        return this.getByKey(id, idField);
     }
 
     /**

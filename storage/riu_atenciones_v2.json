@@ -1,1 +1,12 @@
-{}
+{
+  "102": {
+    "hab": "102",
+    "tipos": [
+      "Fruta"
+    ],
+    "comentario": "",
+    "autor": "Javi",
+    "timestamp": 1769723007274,
+    "actualizadoEn": "2026-01-29T21:43:27.274Z"
+  }
+}

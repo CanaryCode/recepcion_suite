@@ -8,6 +8,7 @@
         margin-left: auto !important;
         padding-left: 0.75rem !important;
         padding-right: 0.75rem !important;
+        overflow: visible !important; /* VITAL for Dropdowns */
     }
 
     /* Force Bootstrap container max-widths */
@@ -59,4 +60,28 @@
         width: auto !important;
     }
 
+    /* ==========================================================================
+       FIX UNIVERSAL MODAL RACK
+       Asegura que el modal de habitación siempre esté visible y por encima de todo
+       ========================================================================== */
+    .modal-backdrop {
+        z-index: 10500 !important;
+    }
+
+    .modal {
+        z-index: 10600 !important;
+    }
+
+    .modal.show {
+        display: block !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
+
+    /* SEGURIDAD: Ocultar navbar cuando hay un modal abierto para evitar solapamientos */
+    body.modal-open #navbar-container {
+        opacity: 0 !important;
+        pointer-events: none !important;
+        transition: opacity 0.2s ease;
+    }
 }

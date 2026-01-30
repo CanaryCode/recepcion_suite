@@ -12,7 +12,8 @@ export const Api = {
      * Obtiene la dirección del servidor (ej: http://localhost:3000/api) de la configuración global.
      */
     get baseUrl() {
-        return APP_CONFIG.SYSTEM.API_URL || '/api';
+        const url = APP_CONFIG.SYSTEM.API_URL || '/api';
+        return url.endsWith('/') ? url.slice(0, -1) : url;
     },
 
     /**
@@ -23,7 +24,8 @@ export const Api = {
         try {
             // FIX: Añadimos timestamp para evitar caché del navegador
             const separator = endpoint.includes('?') ? '&' : '?';
-            const url = `${this.baseUrl}/${endpoint}${separator}_t=${Date.now()}`;
+            const cleanEndpoint = endpoint.startsWith('/') ? endpoint.substring(1) : endpoint;
+            const url = `${this.baseUrl}/${cleanEndpoint}${separator}_t=${Date.now()}`;
             
             const response = await fetch(url, {
                 headers: {
@@ -47,7 +49,8 @@ export const Api = {
      */
     async post(endpoint, data) {
         try {
-            const url = `${this.baseUrl}/${endpoint}`;
+            const cleanEndpoint = endpoint.startsWith('/') ? endpoint.substring(1) : endpoint;
+            const url = `${this.baseUrl}/${cleanEndpoint}`;
             const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -67,7 +70,8 @@ export const Api = {
      */
     async put(endpoint, data) {
         try {
-            const url = `${this.baseUrl}/${endpoint}`;
+            const cleanEndpoint = endpoint.startsWith('/') ? endpoint.substring(1) : endpoint;
+            const url = `${this.baseUrl}/${cleanEndpoint}`;
             const response = await fetch(url, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
@@ -87,7 +91,8 @@ export const Api = {
      */
     async delete(endpoint) {
         try {
-            const url = `${this.baseUrl}/${endpoint}`;
+            const cleanEndpoint = endpoint.startsWith('/') ? endpoint.substring(1) : endpoint;
+            const url = `${this.baseUrl}/${cleanEndpoint}`;
             const response = await fetch(url, {
                 method: 'DELETE'
             });

@@ -217,23 +217,41 @@ function showAlarmModal(alarm) {
  * POSPONER ALARMA
  * Crea una alarma temporal de un solo uso programada para dentro de 10 minutos.
  */
-function snoozeAlarm(originalAlarm) {
-    // Calcular nueva hora (+10 min)
+async function snoozeAlarm(originalAlarm) {
+    // 1. Limpiar alarmas pospuestas anteriores relacionadas con esta alarma
+    const allAlarms = await systemAlarmsService.getAll();
+    const previousSnoozes = allAlarms.filter(a => 
+        a.id && a.id.toString().startsWith('snooze_') && 
+        a.mensaje && a.mensaje.includes(originalAlarm.mensaje)
+    );
+    
+    for (const oldSnooze of previousSnoozes) {
+        await systemAlarmsService.delete(oldSnooze.id);
+    }
+    
+    // 2. Calcular nueva hora (+10 min)
     const now = new Date();
     now.setMinutes(now.getMinutes() + 10);
     const newHora = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
     
-    // Crear alarma temporal
+    // 3. Crear nueva alarma temporal
     const snoozeAlarm = {
         id: `snooze_${Date.now()}`,
         hora: newHora,
+        titulo: `(REP) ${originalAlarm.titulo || 'Alarma'}`,
         mensaje: `(Pospuesto) ${originalAlarm.mensaje}`,
         type: 'date',
         date: now.toISOString().split('T')[0],
         active: true
     };
     
-    systemAlarmsService.saveAlarm(snoozeAlarm);
+    await systemAlarmsService.add(snoozeAlarm); 
+    
+    // 4. Refresh UI
+    if (typeof window.renderSystemAlarms === 'function') {
+        window.renderSystemAlarms();
+    }
+    
     alert(`Alarma pospuesta para las ${newHora}`);
 }
 

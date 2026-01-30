@@ -11,24 +11,26 @@ class TransfersService extends BaseService {
         
         // Esquema para validación de servicios de traslados (taxis/bus)
         this.schema = {
-            id: 'number',
             habitacion: 'any',
             pax: 'number',
             fecha: 'string',
             hora: 'string',
-            tipo: 'string'
+            destino: 'string'
         };
     }
 
     async init() {
         await this.syncWithServer();
+        return this.getAll();
     }
 
     /**
      * OBTENER TODOS LOS TRASLADOS
      */
     getTransfers() {
-        const items = this.getAll() || [];
+        const data = this.getAll();
+        const items = data ? (Array.isArray(data) ? data : Object.values(data)) : [];
+
         return items.sort((a, b) => {
             const dateA = new Date(`${a.fecha}T${a.hora}`);
             const dateB = new Date(`${b.fecha}T${b.hora}`);
@@ -40,15 +42,15 @@ class TransfersService extends BaseService {
      * GUARDAR O ACTUALIZAR TRASLADO
      */
     async saveTransfer(item) {
-        if (!item.id) item.id = Date.now();
-        return this.update(item.id, item);
+        if (!item.transfer_id) item.transfer_id = Date.now();
+        return this.update(item.transfer_id, item, 'transfer_id');
     }
 
     /**
      * ELIMINAR TRASLADO
      */
     async deleteTransfer(id) {
-        return this.delete(id);
+        return this.delete(id, 'transfer_id');
     }
     
     /**

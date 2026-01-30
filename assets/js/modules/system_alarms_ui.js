@@ -76,6 +76,7 @@ export function inicializarSystemAlarmsUI() {
     window.deleteSystemAlarm = deleteSystemAlarm;
     window.toggleActiveSystemAlarm = toggleActiveSystemAlarm;
     window.resetFormSystemAlarm = resetForm;
+    window.renderSystemAlarms = renderAlarmsList; // EXPOSED FOR SNOOZE UPDATES
 
     // 4. AUTO-REFRESH (Service Synced)
     window.addEventListener('service-synced', (e) => {

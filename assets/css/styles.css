@@ -40,7 +40,12 @@
 @media (min-width: 1200px) { #app-layout { max-width: 1140px !important; } }
 @media (min-width: 1400px) { #app-layout { max-width: 1320px !important; } }
 
-/* FIX: Navbar Layout */
+/* FIX: Navbar Layout with Stacking Context */
+#navbar-container {
+    position: relative;
+    z-index: 1000 !important; /* Stand behind modales (10500+) */
+}
+
 .nav-search-wrapper {
     width: 250px;
     transition: width 0.3s ease;
@@ -56,13 +61,20 @@
 
 /* Clases generadas por Bootstrap */
 .tooltip {
-    z-index: 100000 !important; /* General Boost */
+    z-index: 100000 !important; /* Ultimate priority */
 }
 
-/* Clase especifica inyectada vía JS */
+/* FIX: Ensure Dropdowns are ALWAYS on top */
+.dropdown-menu {
+    z-index: 99999 !important; 
+    position: absolute !important; /* Force standard positioning */
+    /* Ensure it's not clipped */
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+}
+
 .custom-nav-tooltip {
-    z-index: 999999 !important;
-    pointer-events: none; /* Asegurar que no bloquea clicks */
+    z-index: 100000 !important;
+    pointer-events: none; 
 }
 /* Asegurar que el inner también hereda o respeta */
 .custom-nav-tooltip .tooltip-inner {

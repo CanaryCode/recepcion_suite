@@ -5,7 +5,8 @@
     "API_URL": "/api",
     "SYNC_INTERVAL": 10000,
     "LAUNCHERS": [],
-    "ADMIN_PASSWORD": "1234"
+    "ADMIN_PASSWORD": "1234",
+    "GALLERY_PATH": "resources/información/"
   },
   "HOTEL": {
     "NOMBRE": "Hotel Garoé",

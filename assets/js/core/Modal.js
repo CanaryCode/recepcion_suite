@@ -19,7 +19,7 @@ let systemModalInstance = null; // Instancia única del modal en el sistema
 
 // HTML base que se inyectará en la página al arrancar
 const modalHTML = `
-<div class="modal fade" id="globalSystemModal" tabindex="-1" style="z-index: 10060;" data-bs-backdrop="static" data-bs-keyboard="false" aria-labelledby="globalModalTitle" aria-hidden="true">
+<div class="modal fade" id="globalSystemModal" tabindex="-1" style="z-index: 10060;" data-bs-backdrop="static" data-bs-keyboard="false" aria-labelledby="globalModalTitle">
     <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content shadow-lg border-0 overflow-hidden" id="globalModalContent">
             <div class="modal-header text-white border-0 py-2" id="globalModalHeader">
@@ -103,6 +103,11 @@ export const Modal = {
                 resolve();
             };
             el.addEventListener('hidden.bs.modal', onHide);
+
+            // FIX: Limpiar atributos de accesibilidad antes de mostrar para evitar bloqueos de foco
+            el.removeAttribute('aria-hidden');
+            el.removeAttribute('aria-modal');
+            
             systemModalInstance.show();
         });
     },
@@ -134,6 +139,11 @@ export const Modal = {
                 resolve(result);
             };
             el.addEventListener('hidden.bs.modal', onHide);
+
+            // FIX
+            el.removeAttribute('aria-hidden');
+            el.removeAttribute('aria-modal');
+
             systemModalInstance.show();
         });
     },
@@ -180,6 +190,11 @@ export const Modal = {
 
             // Poner el foco en el campo de texto automáticamente al abrir
             el.addEventListener('shown.bs.modal', () => input.focus(), { once: true });
+
+            // FIX
+            el.removeAttribute('aria-hidden');
+            el.removeAttribute('aria-modal');
+
             systemModalInstance.show();
         });
     }

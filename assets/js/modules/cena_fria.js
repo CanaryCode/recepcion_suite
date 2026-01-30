@@ -29,7 +29,7 @@ export async function inicializarCenaFria() {
         service: cenaFriaService,
         idField: 'cena_hab',
         mapData: (data) => ({
-            pax: data.cena_pax,
+            pax: parseInt(data.cena_pax),
             obs: data.cena_obs
         }),
         onSuccess: () => {
@@ -58,7 +58,7 @@ function mostrarCenasFrias() {
 
     // A. Actualizar Dashboard (API Ui)
     Ui.updateDashboardWidget('cenas', listaCenas, (item) => `
-        <tr onclick="irACenaFria('${item.hab}')" style="cursor: pointer;">
+        <tr onclick="setTimeout(() => irACenaFria('${item.hab}'), 10)" style="cursor: pointer;">
             <td class="fw-bold">${item.hab}</td>
             <td class="text-end"><span class="badge bg-light text-dark border">${item.pax} pax</span></td>
         </tr>`);
@@ -111,8 +111,9 @@ function renderVistaRackCenaFria() {
         if (hasData) totalPax += parseInt(data.pax);
 
         html += `
-            <div class="d-flex align-items-center justify-content-center rounded rack-box ${colorClass}" 
+            <div class="d-flex align-items-center justify-content-center rounded rack-box room-card ${colorClass}" 
                  style="${style}" 
+                 data-room-num="${h.num}"
                  data-bs-toggle="tooltip" data-bs-title="${hasData ? 'Pax: ' + data.pax + (data.obs ? ' | Obs: ' + data.obs : '') : 'Sin pedido'}">
                 ${h.num}
             </div>`;

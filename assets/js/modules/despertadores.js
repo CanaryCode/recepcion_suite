@@ -180,6 +180,8 @@ function renderVistaRackDespertadores() {
 
         return `
         <div class="d-flex align-items-center justify-content-center rounded rack-box ${colorClass}" 
+             style="cursor: pointer;"
+             onclick="window.RoomDetailModal ? window.RoomDetailModal.open('${num}') : console.error('No Modal')"
              data-bs-toggle="tooltip" data-bs-title="${data ? 'Despertador: ' + data.hora + (data.comentario ? ' - ' + data.comentario : '') : 'Sin programar'}">
             ${num}
         </div>`;
@@ -360,16 +362,19 @@ function imprimirDespertadores() {
 }
 
 window.irADespertador = (hab) => {
-    navegarA('#despertadores-content');
-    cambiarVistaDespertadores('trabajo');
+    // Defer navigation to allow bubbling to close dropdowns
     setTimeout(() => {
-        const row = document.getElementById(`desp-row-${hab}`);
-        if (row) {
-            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            row.classList.add('table-warning');
-            setTimeout(() => row.classList.remove('table-warning'), 2000);
-        }
-    }, 100);
+        navegarA('#despertadores-content');
+        cambiarVistaDespertadores('trabajo');
+        setTimeout(() => {
+            const row = document.getElementById(`desp-row-${hab}`);
+            if (row) {
+                row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                row.classList.add('table-warning');
+                setTimeout(() => row.classList.remove('table-warning'), 2000);
+            }
+        }, 100);
+    }, 10);
 };
 
 window.prepararEdicionDespertador = (hab) => {

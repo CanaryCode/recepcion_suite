@@ -42,7 +42,10 @@ export const Utils = {
      * Devuelve la fecha actual como "YYYY-MM-DD", ideal para campos de tipo date.
      */
     getTodayISO: () => {
-        return new Date().toISOString().split('T')[0];
+        // Fix: Use local date instead of UTC
+        const local = new Date();
+        local.setMinutes(local.getMinutes() - local.getTimezoneOffset());
+        return local.toISOString().split('T')[0];
     },
 
     /**

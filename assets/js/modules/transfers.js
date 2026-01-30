@@ -45,11 +45,24 @@ export async function inicializarTransfers() {
         buttons: [
             { id: 'btnVistaListaTransfers', viewId: 'transfers-lista-view', onShow: mostrarTransfers },
             { id: 'btnVistaFormTransfers', viewId: 'transfers-form-view', onShow: () => {
-                // Reset form if new
-                if (!document.getElementById('transfer_id').value) {
-                    const form = document.getElementById('formTransfer');
-                    form?.reset();
-                    document.getElementById('transfer_destino_custom').classList.add('d-none');
+                // Determine if it's a new transfer or editing
+                const isNew = !document.getElementById('transfer_id').value;
+                
+                if (isNew) {
+                    document.getElementById('formTransfer')?.reset();
+                    document.getElementById('transfer_id').value = '';
+                    document.getElementById('transfer_destino_custom')?.classList.add('d-none');
+                    document.getElementById('wrap_transfer_nombre_externo')?.classList.add('d-none');
+                    document.getElementById('transfer_hab').required = true;
+                    document.getElementById('btnSubmitTransfer').innerHTML = '<i class="bi bi-save-fill me-2"></i>Guardar Reserva';
+                }
+
+                // ALWAYS Reapply Date Rules (As requested: "always today" and "no past dates")
+                const dateInput = document.getElementById('transfer_fecha');
+                if (dateInput) {
+                    const today = Utils.getTodayISO();
+                    dateInput.value = today;
+                    dateInput.min = today;
                 }
             }}
         ]
@@ -59,7 +72,7 @@ export async function inicializarTransfers() {
     Ui.handleFormSubmission({
         formId: 'formTransfer',
         service: transfersService,
-        idField: 'id',
+        idField: 'transfer_id', // Changed from 'id' to match HTML ID
         mapData: (rawData) => {
             const autor = Utils.validateUser();
             if (!autor) return null;
@@ -73,18 +86,32 @@ export async function inicializarTransfers() {
                 destino = inputDestino.value.trim();
             }
 
-            if (!rawData.transfer_hab || !destino || !rawData.transfer_hora) {
-                Ui.showToast("Rellene Habitación, Hora y Destino.", "warning");
+            const esExterno = document.getElementById('transfer_externo').checked;
+            const habitacionValida = esExterno ? !!rawData.transfer_nombre_cliente : !!rawData.transfer_hab;
+
+            if (!habitacionValida || !destino || !rawData.transfer_hora) {
+                const msg = esExterno ? "Rellene Nombre, Hora y Destino." : "Rellene Habitación, Hora y Destino.";
+                Ui.showToast(msg, "warning");
                 return null;
             }
 
+            const today = Utils.getTodayISO();
+            const fechaInput = rawData.transfer_fecha;
+
+            if (fechaInput < today) {
+                Ui.showToast("No se permiten reservas en fechas pasadas.", "warning");
+                return null;
+            }
+            
             return {
-                id: id ? parseInt(id) : Date.now(),
-                fecha: rawData.transfer_fecha,
+                transfer_id: id ? parseInt(id) : Date.now(),
+                fecha: fechaInput,
                 hora: rawData.transfer_hora,
-                hab: rawData.transfer_hab.trim(),
+                habitacion: esExterno ? 'EXTERNO' : (rawData.transfer_hab || '000'),
+                nombre_cliente: esExterno ? rawData.transfer_nombre_cliente : '',
+                externo: esExterno,
                 tipo: rawData.transfer_tipo,
-                pax: rawData.transfer_pax,
+                pax: parseInt(rawData.transfer_pax) || 1,
                 destino: destino,
                 notas: rawData.transfer_notas.trim(),
                 autor: autor,
@@ -113,12 +140,12 @@ export async function inicializarTransfers() {
         });
     }
 
-    // Default Date (Tomorrow)
+    // Initial Date setup
     const dateInput = document.getElementById('transfer_fecha');
-    if (dateInput && !dateInput.value) {
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        dateInput.value = tomorrow.toISOString().split('T')[0];
+    if (dateInput) {
+        const today = Utils.getTodayISO();
+        dateInput.value = today;
+        dateInput.min = today;
     }
     
     mostrarTransfers();
@@ -180,7 +207,7 @@ function mostrarTransfers() {
 
     // Filter
     if (busqueda) {
-        items = items.filter(t => t.hab.toLowerCase().includes(busqueda) || t.destino.toLowerCase().includes(busqueda));
+        items = items.filter(t => t.habitacion.toLowerCase().includes(busqueda) || t.destino.toLowerCase().includes(busqueda));
     }
     
     currentFilteredTransfers = [...items];
@@ -221,13 +248,17 @@ function renderFilaTransfer(t) {
     const isToday = t.fecha === todayStr;
     const rowClass = isToday ? 'table-info bg-opacity-10' : '';
     
+    const displayHab = t.externo 
+        ? `<div class="fw-bold text-danger"><i class="bi bi-person-walking me-1"></i>${t.nombre_cliente || 'EXTERNO'}</div>`
+        : `<span class="badge bg-secondary fs-6">${t.habitacion}</span>`;
+
     return `
-        <tr class="${rowClass}">
+        <tr class="${rowClass}" id="transfer-row-${t.transfer_id}">
             <td class="ps-4">
                 <div class="fw-bold text-dark">${Utils.formatDate(t.fecha)}</div>
                 <div class="fs-5 text-primary fw-bold font-monospace">${t.hora}</div>
             </td>
-            <td><span class="badge bg-secondary fs-6">${t.hab}</span></td>
+            <td>${displayHab}</td>
             <td>
                 ${getIconoTipo(t.tipo)} <span class="small fw-bold">${t.tipo}</span>
             </td>
@@ -237,14 +268,14 @@ function renderFilaTransfer(t) {
                 ${t.notas ? `<div class="small text-muted fst-italic"><i class="bi bi-info-circle me-1"></i>${t.notas}</div>` : ''}
             </td>
             <td><small class="text-muted">${t.autor}</small></td>
-            <td class="text-end pe-4">
-                <button class="btn btn-sm btn-outline-dark me-1" onclick="imprimirTransferTicket(${t.id})" data-bs-toggle="tooltip" title="Imprimir Ticket">
+            <td class="text-end pe-4 no-print">
+                <button class="btn btn-sm btn-outline-dark me-1" onclick="imprimirTransferTicket(${t.transfer_id})" data-bs-toggle="tooltip" title="Imprimir Ticket">
                     <i class="bi bi-printer-fill"></i>
                 </button>
-                <button class="btn btn-sm btn-outline-primary me-1" onclick="editarTransfer(${t.id})" data-bs-toggle="tooltip" title="Editar">
+                <button class="btn btn-sm btn-outline-primary me-1" onclick="editarTransfer(${t.transfer_id})" data-bs-toggle="tooltip" title="Editar">
                     <i class="bi bi-pencil-fill"></i>
                 </button>
-                <button class="btn btn-sm btn-outline-danger" onclick="eliminarTransfer(${t.id})" data-bs-toggle="tooltip" title="Eliminar">
+                <button class="btn btn-sm btn-outline-danger" onclick="eliminarTransfer(${t.transfer_id})" data-bs-toggle="tooltip" title="Eliminar">
                     <i class="bi bi-trash-fill"></i>
                 </button>
             </td>
@@ -261,21 +292,31 @@ window.cargarMasTransfers = function() {
  * Actualiza el widget de Transfers en el Dashboard principal ("Resumen del Día")
  */
 function actualizarDashboardTransfers() {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = Utils.getTodayISO();
     const all = transfersService.getTransfers();
-    const todayTransfers = all.filter(t => t.fecha === todayStr)
-        .sort((a, b) => a.hora.localeCompare(b.hora));
+    // SHOW TODAY + FUTURE (Next 48h or all upcoming)
+    const todayTransfers = all.filter(t => t.fecha >= todayStr)
+        .sort((a, b) => {
+            if (a.fecha !== b.fecha) return a.fecha.localeCompare(b.fecha);
+            return a.hora.localeCompare(b.hora);
+        });
 
-    Ui.updateDashboardWidget('transfers', todayTransfers, (t) => `
-        <tr style="cursor: pointer;" onclick="navegarA('#transfers-content'); cambiarVistaTransfers('lista')">
+    Ui.updateDashboardWidget('transfers', todayTransfers, (t) => {
+        const displayHab = t.externo ? (t.nombre_cliente || 'EXTERNO') : t.habitacion;
+        const iconColor = t.fecha === todayStr ? 'text-primary' : 'text-secondary';
+        
+        return `
+        <tr style="cursor: pointer;" onclick="irATransfer(${t.transfer_id})">
             <td>
-                <div class="fw-bold text-dark" style="font-size: 0.75rem;">${t.hora} <span class="badge bg-light text-dark border ms-1">${t.hab}</span></div>
-                <div class="small text-muted text-truncate" style="max-width: 120px;">${getIconoTipo(t.tipo)} ${t.destino}</div>
+                <i class="bi bi-circle-fill ${iconColor} me-2" style="font-size: 0.5rem;"></i>
+                <span class="fw-bold">${displayHab}</span>
+                <span class="small text-muted ms-1">- ${t.destino}</span>
             </td>
-            <td class="text-end align-middle">
-                <span class="badge bg-primary rounded-pill">${t.pax}</span>
+            <td class="text-end">
+                <span class="badge bg-light text-dark border small">${t.hora}</span>
             </td>
-        </tr>`);
+        </tr>`;
+    });
 
     if (window.checkDailySummaryVisibility) window.checkDailySummaryVisibility();
 }
@@ -293,12 +334,18 @@ function getIconoTipo(tipo) {
 // ============================================================================
 
 window.editarTransfer = (id) => {
-    const item = transfersService.getByKey(id);
+    const item = transfersService.getByKey(id, 'transfer_id');
     if (item) {
-        document.getElementById('transfer_id').value = item.id;
+        document.getElementById('transfer_id').value = item.transfer_id;
         document.getElementById('transfer_fecha').value = item.fecha;
         document.getElementById('transfer_hora').value = item.hora;
-        document.getElementById('transfer_hab').value = item.hab;
+        document.getElementById('transfer_hab').value = item.externo ? '' : item.habitacion;
+        document.getElementById('transfer_externo').checked = !!item.externo;
+        document.getElementById('transfer_nombre_cliente').value = item.nombre_cliente || '';
+        
+        // Actualizar UI del formulario según si es externo
+        toggleTransferExterno(!!item.externo);
+
         document.getElementById('transfer_tipo').value = item.tipo;
         document.getElementById('transfer_pax').value = item.pax;
         
@@ -330,7 +377,7 @@ window.editarTransfer = (id) => {
 
 window.eliminarTransfer = async (id) => {
     if (await Ui.showConfirm("¿Eliminar esta reserva?")) {
-        transfersService.deleteTransfer(id);
+        await transfersService.delete(id, 'transfer_id');
         mostrarTransfers();
     }
 };
@@ -340,27 +387,46 @@ window.eliminarTransfer = async (id) => {
  * Genera el documento que se entrega al huésped con los detalles de su reserva.
  */
 window.imprimirTransferTicket = (id) => {
-    const item = transfersService.getById(id);
+    const item = transfersService.getById(id, 'transfer_id');
     if (!item) return;
 
     // Fill print section
     document.getElementById('print_transfer_fecha').textContent = Utils.formatDate(item.fecha);
     document.getElementById('print_transfer_hora').textContent = item.hora;
-    document.getElementById('print_transfer_hab').textContent = item.hab;
+    
+    const labelHab = document.getElementById('label_print_hab');
+    if (item.externo) {
+        labelHab.textContent = 'Cliente / Client:';
+        document.getElementById('print_transfer_hab').textContent = item.nombre_cliente || 'EXTERNO';
+    } else {
+        labelHab.textContent = 'Habitación / Room:';
+        document.getElementById('print_transfer_hab').textContent = item.habitacion;
+    }
+
     document.getElementById('print_transfer_tipo').textContent = item.tipo;
     document.getElementById('print_transfer_destino').textContent = item.destino;
     document.getElementById('print_transfer_pax').textContent = item.pax;
     document.getElementById('print_transfer_notas').textContent = item.notas || 'Sin observaciones';
 
-    // Print
-    const user = Utils.validateUser(); // Just to check auth, nickname not used on ticket for guest
-    if (user) {
-        window.print();
-    }
+    // Print Logic: Ocultar todo menos el ticket
+    const mainWrap = document.getElementById('transfers-container');
+    const headerWrap = document.getElementById('transfers-general-header');
+    const listHeaderWrap = document.querySelector('.report-header-print');
+    
+    // Añadimos clases temporales para ocultar el resto durante la impresión de un solo ticket
+    if (mainWrap) mainWrap.classList.add('d-print-none');
+    if (headerWrap) headerWrap.classList.add('d-print-none');
+    if (listHeaderWrap) listHeaderWrap.classList.add('d-print-none');
+
+    window.print();
+
+    // Restauramos visibilidad después de imprimir
+    if (mainWrap) mainWrap.classList.remove('d-print-none');
+    if (headerWrap) headerWrap.classList.remove('d-print-none');
+    if (listHeaderWrap) listHeaderWrap.classList.remove('d-print-none');
 };
 
 window.filtrarTransfers = mostrarTransfers;
-window.cambiarVistaTransfers = cambiarVistaTransfers;
 
 /**
  * IMPRIMIR LISTADO DE TRANSFERS (PdfService)
@@ -370,37 +436,57 @@ async function imprimirTransfers() {
     const user = Utils.validateUser();
     if (!user) return;
     
-    // Preparar el reporte de impresión (Metadatos)
+    // Preparar metadatos de cabecera
     Ui.preparePrintReport({
         dateId: 'print-date-transfers',
         memberId: 'print-repc-nombre-transfers',
         memberName: user
     });
 
-    const sourceView = document.getElementById('transfers-lista-view'); // O el contenedor de impresión específico
-    if (!sourceView) {
-        Ui.showToast("No se encontró la vista para imprimir.", "danger");
-        return;
-    }
+    // Aseguramos que el ticket esté oculto al imprimir la lista
+    const ticketPrint = document.getElementById('print-transfer-ticket');
+    if (ticketPrint) ticketPrint.classList.add('d-print-none');
 
-    // Notificar al usuario
-    Ui.showToast("Generando listado de transfers en PDF...", "info");
+    window.print();
 
-    const exito = await PdfService.generateReport({
-        title: "LISTADO OPERATIVO DE TRANSFERS",
-        author: user,
-        htmlContent: sourceView.innerHTML,
-        filename: `TRANSFERS_${Utils.getTodayISO()}.pdf`,
-        metadata: {
-            "Total Registros": currentFilteredTransfers.length
-        }
-    });
-
-    if (exito) {
-        Ui.showToast("Reporte de transfers generado.", "success");
-    } else {
-        // Fallback a impresión nativa si falla el servicio
-        window.print();
-    }
+    if (ticketPrint) ticketPrint.classList.remove('d-print-none');
 }
 window.imprimirTransfers = imprimirTransfers;
+
+/**
+ * TOGGLE UI CLIENTE EXTERNO
+ */
+window.toggleTransferExterno = (isExterno) => {
+    const wrapNombre = document.getElementById('wrap_transfer_nombre_externo');
+    const inputHab = document.getElementById('transfer_hab');
+    const inputNombre = document.getElementById('transfer_nombre_cliente');
+
+    if (isExterno) {
+        wrapNombre?.classList.remove('d-none');
+        inputHab.required = false;
+        inputHab.disabled = true;
+        inputHab.value = '';
+        inputNombre.required = true;
+    } else {
+        wrapNombre?.classList.add('d-none');
+        inputHab.required = true;
+        inputHab.disabled = false;
+        inputNombre.required = false;
+        inputNombre.value = '';
+    }
+};
+
+window.irATransfer = (id) => {
+    if (window.navegarA) navegarA('#transfers-content');
+    if (window.cambiarVistaTransfers) cambiarVistaTransfers('lista');
+
+    setTimeout(() => {
+        const row = document.getElementById(`transfer-row-${id}`);
+        if (row) {
+            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            row.classList.remove('highlight-row');
+            void row.offsetWidth; 
+            row.classList.add('highlight-row');
+        }
+    }, 150);
+};

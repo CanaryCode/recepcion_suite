@@ -83,12 +83,8 @@ async function mostrarAtenciones() {
         };
     });
 
-    // Dashboard
-    Ui.updateDashboardWidget('atenciones', listaDatos, (item) => `
-        <tr onclick="navegarA('#atenciones-content')" style="cursor: pointer;">
-            <td class="fw-bold text-primary">${item.hab}</td>
-            <td class="text-end small">${item.tipos.length} ítems</td>
-        </tr>`);
+    // Dashboard Widget Removed by User Request
+    // Ui.updateDashboardWidget('atenciones', listaDatos, ...);
 
     if (window.checkDailySummaryVisibility) window.checkDailySummaryVisibility();
 
@@ -126,7 +122,7 @@ async function renderVistaRack() {
             if (data && data.comentario) tooltip += ` (${data.comentario})`;
         }
 
-        return `<div class="d-flex align-items-center justify-content-center rounded rack-box ${colorClass}" data-bs-toggle="tooltip" data-bs-title="${tooltip}">${numHab}</div>`;
+        return `<div class="d-flex align-items-center justify-content-center rounded rack-box room-card ${colorClass}" data-room-num="${numHab}" data-bs-toggle="tooltip" data-bs-title="${tooltip}">${numHab}</div>`;
     });
 
     if (statsCont) {

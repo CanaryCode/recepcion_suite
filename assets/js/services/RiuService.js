@@ -23,7 +23,15 @@ class RiuService extends BaseService {
      * OBTENER CLIENTES
      */
     getClientes() {
-        return this.getAll();
+        return this.getAll() || [];
+    }
+
+    /**
+     * OBTENER HUÉSPED POR HABITACIÓN
+     */
+    getHab(num) {
+        const clientes = this.getClientes();
+        return clientes.find(c => c.habitacion === num) || null;
     }
 
     /**

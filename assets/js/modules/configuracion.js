@@ -42,6 +42,7 @@ export const Configurator = {
         Utils.setVal('conf_admin_pass', tempConfig.SYSTEM?.ADMIN_PASSWORD || '');
         Utils.setVal('conf_safe_precio', tempConfig.SAFE?.PRECIO_DIARIO || 2.00);
         Utils.setVal('conf_caja_fondo', tempConfig.CAJA?.FONDO !== undefined ? tempConfig.CAJA.FONDO : -2000.00);
+        Utils.setVal('conf_gallery_path', tempConfig.SYSTEM?.GALLERY_PATH || 'resources/informacion');
 
         // Listas dinámicas
         this.renderRecepcionistas();
@@ -300,6 +301,7 @@ export const Configurator = {
             tempConfig.SYSTEM.ADMIN_PASSWORD = document.getElementById('conf_admin_pass').value;
             tempConfig.SAFE.PRECIO_DIARIO = parseFloat(document.getElementById('conf_safe_precio').value) || 2.0;
             tempConfig.CAJA.FONDO = parseFloat(document.getElementById('conf_caja_fondo').value) || -2000.0;
+            tempConfig.SYSTEM.GALLERY_PATH = document.getElementById('conf_gallery_path').value || 'resources/informacion';
 
             await configService.saveConfig(tempConfig);
             Ui.showToast("Configuración guardada correctamente.", "success");
@@ -332,3 +334,17 @@ export const Configurator = {
 export function inicializarConfiguracion() {
     Configurator.inicializar();
 }
+
+
+/* EXPORTED GLOBAL */
+window.pickGalleryFolder = () => {
+    const current = document.getElementById('conf_gallery_path').value;
+    MediaPicker.pickFile({
+        startPath: current && current.includes(':') ? current : 'C:\\',
+        fileType: 'folder',
+        onSelect: (path) => {
+            document.getElementById('conf_gallery_path').value = path;
+        }
+    });
+};
+

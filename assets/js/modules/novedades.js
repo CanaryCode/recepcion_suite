@@ -361,16 +361,19 @@ window.cambiarVistaNovedades = cambiarVistaNovedades;
 window.imprimirNovedades = imprimirNovedades;
 
 window.irANovedad = (id) => {
-    navegarA('#novedades-content');
-    cambiarVistaNovedades('solo');
+    // Defer
     setTimeout(() => {
-        const row = document.getElementById(`nov-row-${id}`);
-        if (row) {
-            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            row.classList.add('table-warning');
-            setTimeout(() => row.classList.remove('table-warning'), 2000);
-        }
-    }, 100);
+        navegarA('#novedades-content');
+        cambiarVistaNovedades('solo');
+        setTimeout(() => {
+            const row = document.getElementById(`nov-row-${id}`);
+            if (row) {
+                row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                row.classList.add('table-warning');
+                setTimeout(() => row.classList.remove('table-warning'), 2000);
+            }
+        }, 100);
+    }, 10);
 };
 
 window.limpiarNovedadesTerminadas = async () => {

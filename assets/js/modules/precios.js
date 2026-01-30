@@ -1,6 +1,7 @@
 import { preciosService } from '../services/PreciosService.js';
 import { sessionService } from '../services/SessionService.js';
 import { Utils } from '../core/Utils.js';
+import { Ui } from '../core/Ui.js';
 
 /**
  * MÓDULO DE LISTA DE PRECIOS (precios.js)

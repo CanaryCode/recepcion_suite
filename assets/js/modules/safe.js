@@ -37,6 +37,7 @@ export async function inicializarSafe() {
         formId: 'formNuevoSafe',
         service: safeService,
         idField: 'safe_hab',
+        serviceIdField: 'habitacion', // Added serviceIdField mapping
         mapData: (rawData) => ({
             habitacion: rawData.safe_hab.toString().padStart(3, '0'),
             nombre: rawData.safe_nombre.trim(),
@@ -85,7 +86,7 @@ function mostrarSafeRentals() {
     const rentals = safeService.getRentals();
     
     // 1. Mostrar en Tabla (Lista)
-    Ui.renderTable('safe-tbody', rentals, renderFilaSafe, 'No hay alquileres registrados.');
+    Ui.renderTable('tablaSafeActivos', rentals, renderFilaSafe, 'No hay alquileres registrados.');
     
     // 2. Renderizar Rack
     renderSafeRack();
@@ -93,6 +94,13 @@ function mostrarSafeRentals() {
     // 3. Totales
     actualizarTotalesSafe(rentals);
 }
+
+window.finalizarAlquiler = async (hab) => {
+    if (await Ui.showConfirm(`¿Finalizar alquiler para la habitación ${hab}?`)) {
+        await safeService.removeByKey(hab, 'habitacion');
+        mostrarSafeRentals();
+    }
+};
 
 /**
  * RENDERIZAR FILA SAFE (Helper para renderTable)
@@ -145,7 +153,8 @@ function renderSafeRack() {
             const colorClass = data ? 'bg-info text-white' : 'bg-white text-muted border';
 
             html += `
-                <div class="d-flex align-items-center justify-content-center rounded rack-box ${colorClass}" 
+                <div class="d-flex align-items-center justify-content-center rounded rack-box room-card ${colorClass}" 
+                     data-room-num="${num}"
                      data-bs-toggle="tooltip" data-bs-title="${data ? data.nombre + ' (Desde: ' + Utils.formatDate(data.fechaInicio) + ')' + (data.comentario ? ' | Obs: ' + data.comentario : '') : 'Libre'}">
                     ${num}
                 </div>`;

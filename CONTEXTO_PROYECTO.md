@@ -286,12 +286,12 @@ La aplicación utiliza un sistema de persistencia **JSON-agnóstico**. El backen
 
 Desde la **Iteración 5**, el servidor utiliza **Express.js** con rutas modulares para mayor escalabilidad y limpieza.
 
-| Área         | Prefijo API         | Descripción                                                           |
-| :----------- | :------------------ | :-------------------------------------------------------------------- |
-| **STORAGE**  | `/api/storage/:key` | CRUD de archivos JSON en `storage/`. Source of Truth.                 |
-| **SYSTEM**   | `/api/system/`      | Comandos de SO: `launch` (ejecutar apps) y `list-files` (explorador). |
-| **HEARTBIT** | `/api/heartbeat/`   | Mantiene el servidor activo (timeout de 24h para cierre automático).  |
-| **HEALTH**   | `/api/health/`      | Estado del servidor y versión.                                        |
+| Área         | Prefijo API         | Descripción                                                                                    |
+| :----------- | :------------------ | :--------------------------------------------------------------------------------------------- |
+| **STORAGE**  | `/api/storage/:key` | CRUD de archivos JSON en `storage/`. Source of Truth.                                          |
+| **SYSTEM**   | `/api/system/`      | Comandos de SO: `launch` (ejecutar apps), `list-files` (explorador) y `list-images` (galería). |
+| **HEARTBIT** | `/api/heartbeat/`   | Mantiene el servidor activo (timeout de 24h para cierre automático).                           |
+| **HEALTH**   | `/api/health/`      | Estado del servidor y versión.                                                                 |
 
 ### 8.2. BaseService (Capa de Servicio Evolucionada)
 
@@ -445,3 +445,37 @@ Aunque no usamos TypeScript, es altamente recomendable documentar los métodos d
  * @returns {Promise<boolean>}
  */
 ```
+
+## 13. Reglas de Validación de Negocio (OBLIGATORIO)
+
+La aplicación aplica las siguientes reglas estrictas de validación de datos:
+
+- **Despertadores**: Obligatorio `habitacion` y `hora`. `comentarios` es opcional.
+- **Cenas Frías**: Obligatorio `habitacion`, `hora` y `pax`.
+- **Desayunos**: Obligatorio `habitacion`, `hora` y `pax`.
+- **Atenciones**: Obligatorio `habitacion` y `tipo` (atención/motivo).
+- **Transfers**: Obligatorio `fecha_recogida`, `destino`, `hora`, `habitacion` y `pax`.
+- **Safe**: Obligatorio `habitacion` y `fecha_inicio`.
+- **RIU Class**: Obligatorio `habitacion`, `nombre`, `tipo_tarjeta`, `fecha_entrada` y `fecha_salida`.
+- **Guía Operativa**: Sin campos obligatorios restrictivos.
+- **Lista de Precios**: Sin campos obligatorios restrictivos.
+
+## 14. Reglas de Interacción y Navegación (Iteración 6+)
+
+### 14.1. Navegación Silenciosa (Router)
+
+- **Problema**: El uso de `bootstrap.Tab.show()` despliega automáticamente los menús dropdown padres, lo cual es molesto al usar accesos directos del Dashboard.
+- **Solución**: Se utiliza **Navegación Silenciosa**. El `Router.js` gestiona manualmente las clases `.show` y `.active` de los paneles y botones.
+- **Regla**: Nunca usar métodos de Bootstrap que disparen eventos visuales no deseados en la barra de navegación principal.
+
+### 14.2 Aislamiento de Componentes Bootstrap
+
+Bootstrap 5 prohíbe tener más de un tipo de instancia (ej: Tooltip y Dropdown) en el mismo elemento DOM.
+
+- **Regla:** NUNCA pongas `data-tooltip="true"` o `data-bs-toggle="tooltip"` en un botón que ya tenga `data-bs-toggle="dropdown"` o `data-bs-toggle="tab"`.
+- **Solución:** Envuelve el contenido del botón en un `<span data-tooltip="true" ...>` para que el tooltip se inicialice en el span y el dropdown en el botón.
+
+### 14.3. Conflictos de ID en Modales (RoomDetailModal)
+
+- **ID de Habitaciones:** Las IDs de los elementos dinámicos dentro del Modal de Detalle deben llevar el prefijo `v8-` (ej: `v8-check-sofa`) para evitar colisiones con elementos duplicados en el DOM principal.
+- **Limpieza**: Evitar dejar contenedores de modales ocultos en el `index.html` si el modal se genera y destruye vía JS (Inyección en el Overlay).

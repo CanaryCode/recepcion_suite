@@ -10,10 +10,9 @@ class EstanciaService extends BaseService {
         super('riu_estancia_diaria');
         
         // Esquema para validación de registros de estancia (ocupación)
+        // Esquema para validación de registros de estancia (ocupación)
         this.schema = {
-            fecha: 'string',
-            ocupadas: 'number',
-            libres: 'number'
+            fecha: 'string'
         };
     }
 

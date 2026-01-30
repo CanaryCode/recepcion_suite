@@ -22,6 +22,7 @@ class PreciosService extends BaseService {
     async init() {
         await this.syncWithServer();
         this.checkAndSeedDefaults();
+        return this.getAll();
     }
 
     /**

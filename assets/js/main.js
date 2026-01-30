@@ -492,6 +492,11 @@ function updateUserUI(name) {
 window.checkDailySummaryVisibility = () => {
     const section = document.getElementById('dashboard-resumen-seccion');
     if (!section) return;
-    const hasVisible = Array.from(section.querySelectorAll('[id^="dash-col-"]')).some(mod => !mod.classList.contains('d-none'));
-    section.classList.toggle('d-none', !hasVisible);
+    
+    // FIX: El usuario quiere que el título "Resumen del Día" esté SIEMPRE visible.
+    // Eliminamos la lógica que oculta la sección completa si no hay items.
+    section.classList.remove('d-none');
+    
+    // Opcional: Podríamos mostrar un mensaje de "Todo al día" aquí si quisiéramos,
+    // pero por ahora solo aseguramos que la sección y su título permanezcan visibles.
 };

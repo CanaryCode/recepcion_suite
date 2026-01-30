@@ -64,6 +64,12 @@
     <!-- UI STRUCTURE -->
     <div id="app-layout" class="container py-4">
 
+        <!-- App Header Panel -->
+        <div class="app-header-panel text-center">
+            <h1 class="display-5 fw-bold mb-2">Recepción Suite</h1>
+            <p class="mb-0">by A. Jesús</p>
+        </div>
+
         <!-- Cabecera Flexible: Navegación + Herramientas [CENTRADO] -->
         <div id="navbar-container" class="mb-3 border-bottom pb-1">
             <!-- Navegación por Pestañas -->
@@ -275,7 +281,8 @@
                 </div>
 
                 <!-- Sección de Resumen del Día Centrada -->
-                <div class="row g-3 justify-content-center mt-2 d-none" id="dashboard-resumen-seccion">
+                <!-- Sección de Resumen del Día Centrada -->
+                <div class="row g-3 justify-content-center mt-2" id="dashboard-resumen-seccion">
                     <div class="col-md-12">
                         <h4 class="fw-bold text-secondary mb-2">Resumen del Día</h4>
                     </div>
@@ -353,7 +360,7 @@
                         </div>
                     </div>
 
-                    <div class="col-md-6 col-xl-3" id="dash-col-transfers">
+                    <div class="col-md-6 col-xl-3 d-none" id="dash-col-transfers">
                         <div class="card border-0 shadow-sm h-100" style="cursor: pointer;"
                             onclick="if(!event.target.closest('tr')) navegarA('#transfers-content')"
                             data-bs-toggle="tooltip" data-bs-title="Ver Transfers y Taxis">

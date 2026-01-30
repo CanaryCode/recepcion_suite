@@ -4,7 +4,26 @@
     "USE_SYNC_SERVER": true,
     "API_URL": "/api",
     "SYNC_INTERVAL": 10000,
-    "LAUNCHERS": [],
+    "LAUNCHERS": [
+      {
+        "label": "musica",
+        "path": "C:\\Users\\Public\\Music",
+        "icon": "music-note",
+        "type": "folder"
+      },
+      {
+        "label": "deemix",
+        "path": "C:\\Users\\jesus\\Downloads\\deemixfix.exe",
+        "icon": "bell",
+        "type": "app"
+      },
+      {
+        "label": "word",
+        "path": "C:\\Users\\jesus\\Documents\\27-01-2026-TARDE.pdf",
+        "icon": "gear",
+        "type": "app"
+      }
+    ],
     "ADMIN_PASSWORD": "1234",
     "GALLERY_PATH": "resources/información/"
   },

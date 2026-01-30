@@ -245,36 +245,88 @@ document.addEventListener('DOMContentLoaded', async () => {
 /**
  * LANZADOR DE APLICACIONES (LaunchPad)
  */
+window._currentLaunchPadFilter = 'all';
+
 window.openLaunchPad = () => {
+    const searchInput = document.getElementById('launchPadSearch');
+    if (searchInput) searchInput.value = '';
+    window._currentLaunchPadFilter = 'all';
+    
+    // Update filter buttons UI
+    document.querySelectorAll('[id^="btnFilterLaunch"]').forEach(btn => btn.classList.remove('active', 'btn-primary'));
+    document.getElementById('btnFilterLaunchAll')?.classList.add('active', 'btn-primary');
+
+    window.renderLaunchPad('', 'all');
+
+    const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('launchPadModal'));
+    modal.show();
+};
+
+window.filterLaunchPad = (filter) => {
+    window._currentLaunchPadFilter = filter;
+    
+    // UI Update
+    const btnMap = { 'all': 'btnFilterLaunchAll', 'app': 'btnFilterLaunchApps', 'folder': 'btnFilterLaunchFolders' };
+    Object.values(btnMap).forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) {
+            btn.classList.remove('active', 'btn-primary');
+            if (id === btnMap[filter]) btn.classList.add('active', 'btn-primary');
+        }
+    });
+
+    const query = document.getElementById('launchPadSearch')?.value || '';
+    window.renderLaunchPad(query, filter);
+};
+
+window.renderLaunchPad = (query = '', filter = 'all') => {
     const container = document.getElementById('launchPadGrid');
     if (!container) return;
     
     container.innerHTML = '';
-    const apps = APP_CONFIG.SYSTEM?.LAUNCHERS || [];
+    let apps = APP_CONFIG.SYSTEM?.LAUNCHERS || [];
     
+    // 1. Filtrar por texto
+    if (query) {
+        const q = query.toLowerCase().trim();
+        apps = apps.filter(a => a.label.toLowerCase().includes(q) || a.path.toLowerCase().includes(q));
+    }
+
+    // 2. Filtrar por tipo
+    if (filter !== 'all') {
+        apps = apps.filter(a => (a.type || 'app') === filter);
+    }
+
     if (apps.length === 0) {
-        container.innerHTML = '<div class="col-12 text-center text-muted">No hay aplicaciones configuradas.</div>';
+        container.innerHTML = `
+            <div class="col-12 text-center py-5">
+                <i class="bi bi-search fs-1 text-muted mb-2 d-block"></i>
+                <div class="text-muted">No se encontraron resultados para "${query || 'esta categoría'}".</div>
+            </div>`;
     } else {
         apps.forEach(app => {
             const isImage = app.icon && (app.icon.startsWith('data:') || app.icon.includes('.') || app.icon.includes('/'));
+            const isFolder = app.type === 'folder';
+            const iconColor = isFolder ? 'text-warning' : 'text-primary';
             const iconHtml = isImage 
                 ? `<img src="${app.icon}" style="width: 70px; height: 70px; object-fit: cover; border-radius: 12px;" class="mb-2 shadow-sm">`
-                : `<div class="mb-2 text-primary text-center"><i class="bi bi-${app.icon || 'app'} fs-1"></i></div>`;
+                : `<div class="mb-2 ${iconColor} text-center"><i class="bi bi-${app.icon || (isFolder ? 'folder-fill' : 'app')} fs-1"></i></div>`;
 
             container.innerHTML += `
             <div class="col-6 col-md-4 col-lg-3">
                 <div class="card h-100 border-0 shadow-sm hover-scale text-center p-3" 
                      style="cursor:pointer;" onclick="window.launchExternalApp('${app.path.replace(/\\/g, '\\\\')}')">
+                    <div class="position-absolute top-0 end-0 p-2 opacity-50">
+                        <i class="bi bi-${isFolder ? 'folder-symlink' : 'cpu-fill'} small"></i>
+                    </div>
                     <div class="d-flex justify-content-center">${iconHtml}</div>
                     <div class="fw-bold text-dark small text-truncate mt-1">${app.label}</div>
+                    <div class="text-muted" style="font-size: 0.6rem;">${isFolder ? 'Carpeta' : 'App / Archivo'}</div>
                 </div>
             </div>
             `;
         });
     }
-
-    const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('launchPadModal'));
-    modal.show();
 };
 
 /**
@@ -282,7 +334,7 @@ window.openLaunchPad = () => {
  */
 window.launchExternalApp = async (command) => {
     try {
-        const response = await fetch('/api/launch', {
+        const response = await fetch('/api/system/launch', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ command })

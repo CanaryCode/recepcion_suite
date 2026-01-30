@@ -96,15 +96,22 @@
                 <div id="list-app-launchers" class="row g-2 mb-3"></div>
                 
                 <div class="row g-2 align-items-end p-3 bg-light rounded border">
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <label class="form-label small fw-bold">Nombre Botón</label>
                         <input type="text" id="newLauncherLabel" class="form-control form-control-sm" placeholder="Ej: Word">
                     </div>
-                    <div class="col-md-5">
-                        <label class="form-label small fw-bold">Ruta Ejecutable (.exe)</label>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-bold">Tipo</label>
+                        <select id="newLauncherType" class="form-select form-select-sm" onchange="Configurator.onLauncherTypeChange(this.value)">
+                            <option value="app" selected>🚀 App o Archivo</option>
+                            <option value="folder">📂 Carpeta</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold" id="labelLauncherPath">Ruta de App o Archivo</label>
                         <div class="input-group input-group-sm">
-                            <input type="text" id="newLauncherPath" class="form-control" placeholder="Ej: C:\Windows\System32\notepad.exe">
-                            <button class="btn btn-outline-secondary" type="button" onclick="pickLauncherFile()">
+                            <input type="text" id="newLauncherPath" class="form-control" placeholder="Ej: C:\Docs\Plan.docx">
+                            <button class="btn btn-outline-secondary" type="button" id="btnPickLauncherPath" onclick="pickLauncherFile()">
                                 <i class="bi bi-folder2-open"></i>
                             </button>
                         </div>

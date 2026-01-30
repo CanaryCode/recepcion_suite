@@ -37,9 +37,9 @@ export const MediaPicker = {
         const titleEl = modalEl.querySelector('.modal-title');
         const helpEl = modalEl.querySelector('#mp-help-text');
         
-        if (fileType === 'executable') {
-            titleEl.innerHTML = '<i class="bi bi-box-seam me-2"></i>Seleccionar Ejecutable';
-            helpEl.textContent = 'Busca el archivo .exe de la aplicación.';
+        if (fileType === 'executable' || fileType === 'any') {
+            titleEl.innerHTML = '<i class="bi bi-file-earmark-code me-2"></i>Seleccionar App o Archivo';
+            helpEl.textContent = 'Busca la aplicación (.exe) o el documento que quieras abrir.';
         } else if (fileType === 'image') {
             titleEl.innerHTML = '<i class="bi bi-image me-2"></i>Seleccionar Imagen';
             helpEl.textContent = 'Selecciona una imagen (jpg, png, webp).';

@@ -125,8 +125,9 @@ function renderFilaSafe(data) {
                 </div>
             </td>
             <td class="text-end">
-                <button onclick="prepararEdicionSafe('${h}')" class="btn btn-sm btn-outline-primary border-0 me-1"><i class="bi bi-pencil"></i></button>
-                <button onclick="finalizarAlquiler('${h}')" class="btn btn-sm btn-outline-danger border-0"><i class="bi bi-trash"></i></button>
+                <button onclick="imprimirSafeTicket('${h}')" class="btn btn-sm btn-outline-dark border-0 me-1" data-bs-toggle="tooltip" title="Imprimir Ticket"><i class="bi bi-printer-fill"></i></button>
+                <button onclick="prepararEdicionSafe('${h}')" class="btn btn-sm btn-outline-primary border-0 me-1" data-bs-toggle="tooltip" title="Editar"><i class="bi bi-pencil"></i></button>
+                <button onclick="finalizarAlquiler('${h}')" class="btn btn-sm btn-outline-danger border-0" data-bs-toggle="tooltip" title="Eliminar"><i class="bi bi-trash"></i></button>
             </td>
         </tr>`;
 }
@@ -262,6 +263,35 @@ window.finalizarAlquiler = async (hab) => {
         Ui.showToast("Alquiler finalizado.");
         mostrarSafeRentals();
     }
+};
+
+window.imprimirSafeTicket = (hab) => {
+    const data = safeService.getByHab(hab);
+    if (!data) return;
+
+    // Poblar campos del ticket
+    document.getElementById('print_safe_hab').textContent = data.habitacion;
+    document.getElementById('print_safe_fecha_inicio').textContent = Utils.formatDate(data.fechaInicio);
+    document.getElementById('print_safe_nombre').textContent = data.nombre;
+
+    // Lógica de impresión: Ocultar el resto del módulo
+    const workView = document.getElementById('safe-trabajo');
+    const rackView = document.getElementById('safe-rack');
+    const listHeader = document.querySelector('.report-header-print');
+    const listPrintSection = document.getElementById('print-safe-ticket');
+
+    if (workView) workView.classList.add('d-print-none');
+    if (rackView) rackView.classList.add('d-print-none');
+    if (listHeader) listHeader.classList.add('d-print-none');
+    if (listPrintSection) listPrintSection.classList.remove('d-print-none');
+
+    window.print();
+
+    // Restaurar
+    if (workView) workView.classList.remove('d-print-none');
+    if (rackView) rackView.classList.remove('d-print-none');
+    if (listHeader) listHeader.classList.remove('d-print-none');
+    if (listPrintSection) listPrintSection.classList.add('d-print-none');
 };
 
 window.imprimirSafe = imprimirSafe;

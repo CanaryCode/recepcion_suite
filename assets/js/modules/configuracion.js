@@ -99,7 +99,12 @@ export const Configurator = {
                     <div class="d-flex align-items-center text-truncate">
                         ${iconHtml}
                         <div class="text-truncate">
-                            <div class="fw-bold small text-truncate">${l.label}</div>
+                            <div class="fw-bold small text-truncate">
+                                ${l.type === 'folder' 
+                                    ? '<span class="badge bg-warning-subtle text-warning border-warning border-opacity-25 me-1" style="font-size: 0.5rem;">CARPETA</span>' 
+                                    : '<span class="badge bg-info-subtle text-info border-info border-opacity-25 me-1" style="font-size: 0.5rem;">APP / ARCHIVO</span>'}
+                                ${l.label}
+                            </div>
                             <div class="text-muted text-truncate" style="font-size: 0.6rem;">${l.path}</div>
                         </div>
                     </div>
@@ -214,22 +219,38 @@ export const Configurator = {
         const labelFn = document.getElementById('newLauncherLabel');
         const pathFn = document.getElementById('newLauncherPath');
         const iconFn = document.getElementById('newLauncherIcon');
+        const typeFn = document.getElementById('newLauncherType');
         
         const label = labelFn.value.trim();
         const path = pathFn.value.trim();
-        const icon = iconFn.value.trim() || 'box-arrow-up-right';
+        const type = typeFn ? typeFn.value : 'app';
+        const icon = iconFn.value.trim() || (type === 'folder' ? 'folder2-open' : 'box-arrow-up-right');
 
         if (!label || !path) {
             if (!silent) Ui.showToast("Nombre y Ruta son obligatorios.", "warning");
             return;
         }
         
-        tempConfig.SYSTEM.LAUNCHERS.push({ label, path, icon });
+        tempConfig.SYSTEM.LAUNCHERS.push({ label, path, icon, type });
         this.renderAppLaunchers();
         
         labelFn.value = '';
         pathFn.value = '';
         iconFn.value = '';
+        if (typeFn) typeFn.value = 'app';
+        this.onLauncherTypeChange('app');
+    },
+
+    onLauncherTypeChange(type) {
+        const label = document.getElementById('labelLauncherPath');
+        const pathInput = document.getElementById('newLauncherPath');
+        if (type === 'folder') {
+            if (label) label.textContent = 'Ruta de Carpeta';
+            if (pathInput) pathInput.placeholder = 'Ej: C:\\Mis Documentos';
+        } else {
+            if (label) label.textContent = 'Ruta de App o Archivo';
+            if (pathInput) pathInput.placeholder = 'Ej: C:\\Docs\\Informe.docx o .exe';
+        }
     },
 
     async removeAppLauncher(index) {
@@ -240,8 +261,9 @@ export const Configurator = {
     },
 
     async pickLauncherFile() {
+        const type = document.getElementById('newLauncherType')?.value || 'app';
         MediaPicker.pickFile({
-            fileType: 'executable',
+            fileType: type === 'folder' ? 'folder' : 'executable',
             startPath: 'C:\\',
             onSelect: (path) => {
                 document.getElementById('newLauncherPath').value = path;

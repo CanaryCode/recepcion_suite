@@ -95,6 +95,48 @@
     </div>
 </div>
 
+<!-- Área de Impresión Oculta (Ticket de Alquiler) -->
+<div id="print-safe-ticket" class="d-none d-print-block">
+  <div class="safe-ticket-print-container p-4 border rounded" style="max-width: 500px; margin: 0 auto; border: 2px solid #333 !important;">
+    <div class="text-center mb-4 border-bottom border-dark pb-3">
+      <h2 class="fw-bold mb-0">ALQUILER CAJA FUERTE</h2>
+      <small class="text-uppercase text-muted">Safe Deposit Box Rental</small>
+    </div>
+
+    <div class="row mb-4">
+      <div class="col-6">
+        <small class="text-muted d-block text-uppercase">Habitación / Room</small>
+        <strong class="fs-2 text-primary" id="print_safe_hab">---</strong>
+      </div>
+      <div class="col-6 text-end">
+        <small class="text-muted d-block text-uppercase">Fecha Inicio / Start Date</small>
+        <strong class="fs-4" id="print_safe_fecha_inicio">--/--/----</strong>
+      </div>
+    </div>
+
+    <div class="alert alert-light border border-dark mb-4">
+      <div class="mb-2">
+        <span class="text-muted small">Titular / Guest:</span><br>
+        <strong id="print_safe_nombre" class="fs-5">---</strong>
+      </div>
+      <div class="mt-3 pt-2 border-top">
+        <span class="text-muted small">Condiciones / Policy:</span>
+        <ul class="ps-3 mb-0" style="font-size: 0.75rem;">
+            <li>Coste diario según tarifa vigente.</li>
+            <li>No olvide dejar la puerta abierta al finalizar.</li>
+            <li>Please keep the door open on departure.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="text-center small text-muted mt-5 pt-4 border-top border-dark">
+      <p class="fw-bold mb-1">Hotel Garoé - Recepción</p>
+      <p class="mb-0">Gracias por su confianza.</p>
+      <p>Thank you for your trust.</p>
+    </div>
+  </div>
+</div>
+
 <!-- VISTA DE RACK -->
 <div id="safe-rack" class="d-none">
     <div class="card shadow-sm border-0 mb-4">

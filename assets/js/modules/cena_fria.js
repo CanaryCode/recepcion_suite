@@ -183,14 +183,62 @@ window.imprimirCenasFrias = () => {
     const user = Utils.validateUser();
     if (!user) return;
 
-    Ui.preparePrintReport({
-        dateId: 'print-date-cena',
-        memberId: 'print-repc-nombre-cena',
-        memberName: user,
-        extraMappings: {
-            'print-repc-nombre-cena-firma': user
-        }
-    });
+    // Lógica de Impresión Atómica - ESTABILIZACIÓN NUCLEAR V2
+    const appLayout = document.getElementById('app-layout');
+    const navbar = document.getElementById('navbar-container');
+    const reportHeader = document.querySelector('.report-header-print');
+    const workView = document.getElementById('cena-fria-trabajo');
+    const rackView = document.getElementById('cena-fria-rack');
+    const signatureArea = document.querySelector('.d-print-block.mt-5');
+    
+    // 1. Ocultar el layout principal y preparar cabecera
+    if (appLayout) appLayout.classList.add('d-none', 'd-print-none');
+    if (navbar) navbar.classList.add('d-none', 'd-print-none');
+    
+    const now = new Date();
+    const dateStr = now.toLocaleDateString() + ' ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    
+    const pDate = document.getElementById('print-date-cena');
+    const pName = document.getElementById('print-repc-nombre-cena');
+    const pNameFirma = document.getElementById('print-repc-nombre-cena-firma');
+    
+    if (pDate) pDate.textContent = dateStr;
+    if (pName) pName.textContent = user;
+    if (pNameFirma) pNameFirma.textContent = user;
+
+    // 2. Forzar que el reporte sea lo ÚNICO en la página
+    if (reportHeader) {
+        reportHeader.classList.remove('d-none');
+        reportHeader.classList.add('d-print-block');
+    }
+    
+    if (signatureArea) {
+        signatureArea.classList.remove('d-none');
+        signatureArea.classList.add('d-print-block');
+    }
+    
+    // Forzar visibilidad de la tabla
+    if (workView) workView.classList.remove('d-none');
+    if (rackView) rackView.classList.add('d-none', 'd-print-none');
 
     window.print();
+
+    // Restaurar para visualización en pantalla
+    if (appLayout) appLayout.classList.remove('d-none', 'd-print-none');
+    if (navbar) navbar.classList.remove('d-none', 'd-print-none');
+    if (reportHeader) {
+        reportHeader.classList.add('d-none');
+        reportHeader.classList.remove('d-print-block');
+    }
+    if (signatureArea) {
+        signatureArea.classList.add('d-none');
+        signatureArea.classList.remove('d-print-block');
+    }
+    
+    // Restaurar vista previa
+    const isRackActive = document.getElementById('btnVistaRackCena')?.classList.contains('active');
+    if (isRackActive) {
+        if (workView) workView.classList.add('d-none');
+        if (rackView) rackView.classList.remove('d-none');
+    }
 };

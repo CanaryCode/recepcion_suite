@@ -582,3 +582,39 @@ window.actualizarBandera = actualizarBandera;
 
 
 window.toggleTelExt = toggleTelExt;
+
+window.imprimirAgenda = function() {
+    const user = Utils.validateUser();
+    if (!user) return;
+
+    // Lógica de Impresión Atómica - ESTABILIZACIÓN NUCLEAR V2
+    const appLayout = document.getElementById('app-layout');
+    const navbar = document.getElementById('navbar-container');
+    const reportHeader = document.querySelector('.report-header-print');
+    
+    // 1. Ocultar el layout principal y preparar cabecera
+    if (appLayout) appLayout.classList.add('d-none', 'd-print-none');
+    if (navbar) navbar.classList.add('d-none', 'd-print-none');
+    
+    const now = new Date();
+    const dateStr = now.toLocaleDateString() + ' ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    
+    const pDate = document.getElementById('print-date-agenda');
+    if (pDate) pDate.textContent = dateStr;
+
+    // 2. Forzar que el reporte sea lo ÚNICO en la página
+    if (reportHeader) {
+        reportHeader.classList.remove('d-none');
+        reportHeader.classList.add('d-print-block');
+    }
+
+    window.print();
+
+    // Restaurar para visualización en pantalla
+    if (appLayout) appLayout.classList.remove('d-none', 'd-print-none');
+    if (navbar) navbar.classList.remove('d-none', 'd-print-none');
+    if (reportHeader) {
+        reportHeader.classList.add('d-none');
+        reportHeader.classList.remove('d-print-block');
+    }
+};

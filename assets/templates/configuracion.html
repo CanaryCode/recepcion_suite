@@ -40,7 +40,7 @@
 </div>
 
 <!-- Contenedor Principal -->
-<div id="configuracion-content-wrapper" class="content-panel animate-fade-in">
+<div id="configuracion-content-wrapper" class="animate-fade-in">
     <form id="formConfig" onsubmit="event.preventDefault(); saveConfigLocal();">
         
         <!-- 1. Recepcionistas -->
@@ -85,50 +85,110 @@
 
         <!-- 1.2 Ejecutables / Apps Externas -->
         <div class="card mb-4 shadow-sm border-0">
-            <div class="card-header py-3 bg-white">
+            <!-- ... (contenido anterior de apps) ... -->
+        </div>
+
+        <!-- 1.25 Catálogo de Excursiones & Tickets -->
+        <div class="card mb-4 shadow-sm border-0">
+            <div class="card-header py-3 bg-white d-flex justify-content-between align-items-center">
                 <h6 class="mb-0 fw-bold text-primary">
-                    <i class="bi bi-app-indicator me-2"></i>Accesos Rápidos (Apps)
+                    <i class="bi bi-ticket-perforated-fill me-2"></i>Catálogo de Excursiones & Tickets
                 </h6>
             </div>
             <div class="card-body">
-                <p class="small text-muted mb-3">Botones para lanzar aplicaciones externas desde el dashboard. (Requiere servidor Node.js local).</p>
+                <p class="small text-muted mb-3">Define los productos disponibles, sus operadores y precios base.</p>
                 
-                <div id="list-app-launchers" class="row g-2 mb-3"></div>
-                
+                <div class="table-responsive border rounded mb-3">
+                    <table class="table table-sm table-hover align-middle mb-0">
+                        <thead class="table-light small">
+                            <tr>
+                                <th>Nombre del Producto</th>
+                                <th>Operador</th>
+                                <th class="text-center">Adulto</th>
+                                <th class="text-center">Niño</th>
+                                <th class="text-center">Tipo</th>
+                                <th class="text-end"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="config-excursiones-list"></tbody>
+                    </table>
+                </div>
+
                 <div class="row g-2 align-items-end p-3 bg-light rounded border">
-                    <div class="col-md-2">
-                        <label class="form-label small fw-bold">Nombre Botón</label>
-                        <input type="text" id="newLauncherLabel" class="form-control form-control-sm" placeholder="Ej: Word">
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold">Nombre</label>
+                        <input type="text" id="newExc_nombre" class="form-control form-control-sm" placeholder="Ej: Loro Parque">
                     </div>
                     <div class="col-md-2">
-                        <label class="form-label small fw-bold">Tipo</label>
-                        <select id="newLauncherType" class="form-select form-select-sm" onchange="Configurator.onLauncherTypeChange(this.value)">
-                            <option value="app" selected>🚀 App o Archivo</option>
-                            <option value="folder">📂 Carpeta</option>
+                        <label class="form-label small fw-bold">Operador</label>
+                        <input type="text" id="newExc_operador" class="form-control form-control-sm" placeholder="Ej: Atlan-T">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-bold">€ Adulto</label>
+                        <input type="number" step="0.01" id="newExc_pAdulto" class="form-control form-control-sm text-center">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-bold">€ Niño</label>
+                        <input type="number" step="0.01" id="newExc_pNiño" class="form-control form-control-sm text-center">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-bold">€ Grupo</label>
+                        <input type="number" step="0.01" id="newExc_pGrupo" class="form-control form-control-sm text-center">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-bold">Categoría</label>
+                        <select id="newExc_esTicket" class="form-select form-select-sm">
+                            <option value="false">🏞️ Excursión</option>
+                            <option value="true">🎟️ Ticket/Entrada</option>
                         </select>
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label small fw-bold" id="labelLauncherPath">Ruta de App o Archivo</label>
-                        <div class="input-group input-group-sm">
-                            <input type="text" id="newLauncherPath" class="form-control" placeholder="Ej: C:\Docs\Plan.docx">
-                            <button class="btn btn-outline-secondary" type="button" id="btnPickLauncherPath" onclick="pickLauncherFile()">
-                                <i class="bi bi-folder2-open"></i>
-                            </button>
-                        </div>
+                    <div class="col-md-1">
+                        <button class="btn btn-primary btn-sm w-100 fw-bold" type="button" onclick="Configurator.addExcursionAlCatalogo()">
+                            <i class="bi bi-plus-lg"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- 1.28 Instalaciones del Hotel -->
+        <div class="card mb-4 shadow-sm border-0">
+            <div class="card-header py-3 bg-white d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold text-primary">
+                    <i class="bi bi-geo-fill me-2"></i>Instalaciones del Hotel
+                </h6>
+            </div>
+            <div class="card-body">
+                <p class="small text-muted mb-3">Gestiona las partes del hotel que se pueden reservar (Canchas de tenis, Gimnasio, etc.) con sus horarios.</p>
+                
+                <div id="config-instalaciones-list" class="d-flex flex-wrap gap-2 mb-3"></div>
+
+                <div class="row g-2 align-items-end p-3 bg-light rounded border">
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold">Nombre</label>
+                        <input type="text" id="newInst_nombre" class="form-control form-control-sm" placeholder="Ej: Cancha de Tennis">
                     </div>
                     <div class="col-md-2">
+                        <label class="form-label small fw-bold">Apertura</label>
+                        <input type="time" id="newInst_apertura" class="form-control form-control-sm" value="08:00">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-bold">Cierre</label>
+                        <input type="time" id="newInst_cierre" class="form-control form-control-sm" value="21:00">
+                    </div>
+                    <div class="col-md-3">
                         <label class="form-label small fw-bold">Icono</label>
-                        <div class="input-group input-group-sm shadow-sm border rounded overflow-hidden">
-                            <button class="btn btn-light bg-white border-0 px-2" type="button" onclick="IconSelector.open('newLauncherIcon')" style="min-width: 45px;">
-                                <span id="preview-newLauncherIcon"><i class="bi bi-palette text-primary"></i></span>
+                        <div class="input-group input-group-sm">
+                            <button class="btn btn-outline-secondary" type="button" onclick="IconSelector.open('newInst_icono')" title="Elegir Icono">
+                                <i class="bi bi-palette"></i>
                             </button>
-                            <input type="hidden" id="newLauncherIcon" value="">
-                            <input type="text" id="newLauncherIcon_display" class="form-control border-0 bg-transparent" placeholder="Icono..." readonly onclick="IconSelector.open('newLauncherIcon')" style="cursor: pointer;">
+                            <input type="text" id="newInst_icono" class="form-control" placeholder="bi-activity">
                         </div>
                     </div>
                     <div class="col-md-2">
-                        <button class="btn btn-primary btn-sm w-100 fw-bold" type="button" onclick="addAppLauncher()">
-                            <i class="bi bi-plus-lg"></i> Añadir
+                        <button class="btn btn-primary btn-sm w-100 fw-bold" type="button" onclick="Configurator.addInstalacion()">
+                            <i class="bi bi-plus-lg me-1"></i>Añadir
                         </button>
                     </div>
                 </div>

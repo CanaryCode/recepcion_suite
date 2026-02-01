@@ -274,24 +274,46 @@ window.imprimirSafeTicket = (hab) => {
     document.getElementById('print_safe_fecha_inicio').textContent = Utils.formatDate(data.fechaInicio);
     document.getElementById('print_safe_nombre').textContent = data.nombre;
 
-    // Lógica de impresión: Ocultar el resto del módulo
-    const workView = document.getElementById('safe-trabajo');
-    const rackView = document.getElementById('safe-rack');
+    // Lógica de Impresión Atómica - ESTABILIZACIÓN NUCLEAR V2
+    const appLayout = document.getElementById('app-layout');
+    const navbar = document.getElementById('navbar-container');
+    const ticketPrint = document.getElementById('print-safe-ticket');
     const listHeader = document.querySelector('.report-header-print');
-    const listPrintSection = document.getElementById('print-safe-ticket');
-
-    if (workView) workView.classList.add('d-print-none');
-    if (rackView) rackView.classList.add('d-print-none');
-    if (listHeader) listHeader.classList.add('d-print-none');
-    if (listPrintSection) listPrintSection.classList.remove('d-print-none');
+    
+    // 1. Ocultar el layout principal y cabecera de reporte
+    if (appLayout) appLayout.classList.add('d-none', 'd-print-none');
+    if (navbar) navbar.classList.add('d-none', 'd-print-none');
+    if (listHeader) listHeader.classList.add('d-none', 'd-print-none');
+    
+    // 2. Forzar que el ticket sea lo ÚNICO en la página
+    if (ticketPrint) {
+        ticketPrint.classList.remove('d-none');
+        ticketPrint.classList.add('d-print-block');
+        ticketPrint.style.setProperty('display', 'block', 'important');
+        ticketPrint.style.setProperty('visibility', 'visible', 'important');
+        ticketPrint.style.setProperty('position', 'absolute', 'important');
+        ticketPrint.style.setProperty('top', '0', 'important');
+        ticketPrint.style.setProperty('left', '0', 'important');
+        ticketPrint.style.setProperty('width', '100%', 'important');
+    }
 
     window.print();
 
-    // Restaurar
-    if (workView) workView.classList.remove('d-print-none');
-    if (rackView) rackView.classList.remove('d-print-none');
-    if (listHeader) listHeader.classList.remove('d-print-none');
-    if (listPrintSection) listPrintSection.classList.add('d-print-none');
+    // Restaurar para visualización en pantalla
+    if (appLayout) appLayout.classList.remove('d-none', 'd-print-none');
+    if (navbar) navbar.classList.remove('d-none', 'd-print-none');
+    if (listHeader) listHeader.classList.remove('d-none', 'd-print-none');
+    
+    if (ticketPrint) {
+        ticketPrint.classList.add('d-none');
+        ticketPrint.classList.remove('d-print-block');
+        ticketPrint.style.display = '';
+        ticketPrint.style.visibility = '';
+        ticketPrint.style.position = '';
+        ticketPrint.style.top = '';
+        ticketPrint.style.left = '';
+        ticketPrint.style.width = '';
+    }
 };
 
 window.imprimirSafe = imprimirSafe;

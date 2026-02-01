@@ -9,7 +9,7 @@ const resetShutdownTimer = () => {
     
     // Configurar nuevo timer de 24 HORAS (Persistencia total durante el turno)
     shutdownTimer = setTimeout(() => {
-        console.log('No heartbeat received for 24 hours. Shutting down...');
+        console.log('[Heartbeat] No heartbeat received for 24 hours. Shutting down...');
         process.exit(0);
     }, 86400000); 
 };
@@ -19,15 +19,17 @@ const resetShutdownTimer = () => {
  * Resets the 24h idle shutdown timer.
  */
 router.get('/', (req, res) => {
+    console.log('[Heartbeat] <<< Ping received');
     resetShutdownTimer();
     res.send('OK');
 });
 
-// Initial startup timeout (60s until first client connects)
-// This mirrors the behavior of the original native server
+// Initial startup timeout (10 min until first client connects)
+// Increased from 60s to avoid accidental closures during development/cache issues
+console.log('[Heartbeat] Initial startup timer started: 10 minutes.');
 shutdownTimer = setTimeout(() => {
-    console.log('Initial startup timeout. No client connected within 60s. Shutting down...');
+    console.log('[Heartbeat] CRITICAL: Initial startup timeout. No client connected within 10 minutes. Shutting down...');
     process.exit(0);
-}, 60000);
+}, 600000); // 10 minutes
 
 module.exports = router;

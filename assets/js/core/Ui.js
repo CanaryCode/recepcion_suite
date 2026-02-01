@@ -192,28 +192,45 @@ export const Ui = {
     },
 
     /**
-     * ASISTENTE DE ENVÍO DE FORMULARIOS OPERATIVOS
-     * Estandariza el proceso de: Validar -> Extraer -> Guardar -> Feedback.
+     * EXTRAER DATOS DE UN FORMULARIO
+     * Devuelve un objeto con los valores de todos los inputs, selects y textareas.
      * 
-     * @param {Object} config
-     * @param {string} config.formId - ID del formulario
-     * @param {Object} config.service - El servicio que tiene el método .setByKey()
-     * @param {string} config.idField - ID del campo que actúa como clave única (ej: 'hab')
-     * @param {Function} config.onSuccess - Callback tras guardar con éxito
-     * @param {Function} [config.mapData] - (Opcional) Transforma los campos del form en un objeto
+     * @param {HTMLElement|string} formEl - Elemento form o su ID
+     * @returns {Object}
      */
+    getFormData: (formEl) => {
+        const form = typeof formEl === 'string' ? document.getElementById(formEl) : formEl;
+        if (!form) return {};
+
+        console.log(`[Ui] Extracting data from form: ${form.id || 'unknown'}`);
+        const data = {};
+        form.querySelectorAll('input, select, textarea').forEach(el => {
+            const key = el.name || el.id;
+            if (!key) return;
+
+            if (el.type === 'checkbox') {
+                const val = el.value === 'on' ? true : el.value;
+                const isSwitch = form.querySelectorAll(`input[type="checkbox"][name="${key}"], input[type="checkbox"][id="${key}"]`).length === 1;
+
+                if (isSwitch) {
+                    data[key] = el.checked;
+                } else {
+                    if (!data[key]) data[key] = [];
+                    if (el.checked) data[key].push(val);
+                }
+            } else if (el.type === 'radio') {
+                if (el.checked) data[key] = el.value;
+            } else {
+                data[key] = el.value;
+            }
+        });
+        return data;
+    },
+
     /**
      * ASISTENTE DE ENVÍO DE FORMULARIOS OPERATIVOS
-     * Estandariza el proceso de: Validar -> Extraer -> Guardar -> Feedback.
-     * 
-     * @param {Object} config
-     * @param {string} config.formId - ID del formulario
-     * @param {Object} config.service - El servicio que tiene el método .setByKey()
-     * @param {string} config.idField - ID/Name del campo que actúa como clave única (ej: 'hab')
-     * @param {Function} config.onSuccess - Callback tras guardar con éxito
-     * @param {string} [config.serviceIdField] - (Opcional) Nombre del campo ID en el objeto de datos (si difiere del form)
      */
-    handleFormSubmission: ({ formId, service, idField, onSuccess, mapData, serviceIdField }) => {
+    handleFormSubmission: ({ formId, service, idField, onSuccess, mapData, serviceIdField, validate }) => {
         const form = document.getElementById(formId);
         if (!form) return;
 
@@ -225,32 +242,19 @@ export const Ui = {
             const autor = Utils.validateUser();
             if (!autor) return;
 
-            // 2. Extraer Datos (Soporte para name e id)
-            const rawData = {};
-            form.querySelectorAll('input, select, textarea').forEach(el => {
-                const key = el.name || el.id;
-                if (!key) return;
+            // 2. Extraer Datos
+            const rawData = Ui.getFormData(form);
 
-                if (el.type === 'checkbox') {
-                    const val = el.value === 'on' ? true : el.value;
-                    // Si el elemento tiene un name/id que sugiere que es un switch (single)
-                    // lo tratamos como booleano puro.
-                    const isSwitch = form.querySelectorAll(`input[type="checkbox"][name="${key}"], input[type="checkbox"][id="${key}"]`).length === 1;
+            console.log(`[Ui] Form '${formId}' raw data:`, rawData);
 
-                    if (isSwitch) {
-                        rawData[key] = el.checked;
-                    } else {
-                        if (!rawData[key]) rawData[key] = [];
-                        if (el.checked) rawData[key].push(val);
-                    }
-                } else if (el.type === 'radio') {
-                    if (el.checked) rawData[key] = el.value;
-                } else {
-                    rawData[key] = el.value;
+            // 3. Validación Personalizada (Opcional)
+            if (validate) {
+                const validationResult = await validate(rawData);
+                if (validationResult !== true) {
+                    Ui.showToast(validationResult || "Error de validación.", "warning");
+                    return;
                 }
-            });
-
-            console.log(`[Ui] Form '${formId}' raw data extraction:`, rawData); // DEBUG: Validar captura de inputs
+            }
 
             let idValue = idField ? rawData[idField] : null;
 

@@ -408,22 +408,46 @@ window.imprimirTransferTicket = (id) => {
     document.getElementById('print_transfer_pax').textContent = item.pax;
     document.getElementById('print_transfer_notas').textContent = item.notas || 'Sin observaciones';
 
-    // Print Logic: Ocultar todo menos el ticket
-    const mainWrap = document.getElementById('transfers-container');
-    const headerWrap = document.getElementById('transfers-general-header');
+    // Lógica de Impresión Atómica - ESTABILIZACIÓN NUCLEAR V2
+    const appLayout = document.getElementById('app-layout');
+    const navbar = document.getElementById('navbar-container');
+    const ticketPrint = document.getElementById('print-transfer-ticket');
     const listHeaderWrap = document.querySelector('.report-header-print');
     
-    // Añadimos clases temporales para ocultar el resto durante la impresión de un solo ticket
-    if (mainWrap) mainWrap.classList.add('d-print-none');
-    if (headerWrap) headerWrap.classList.add('d-print-none');
-    if (listHeaderWrap) listHeaderWrap.classList.add('d-print-none');
+    // 1. Ocultar el layout principal y cabecera de reporte
+    if (appLayout) appLayout.classList.add('d-none', 'd-print-none');
+    if (navbar) navbar.classList.add('d-none', 'd-print-none');
+    if (listHeaderWrap) listHeaderWrap.classList.add('d-none', 'd-print-none');
+    
+    // 2. Forzar que el ticket sea lo ÚNICO en la página
+    if (ticketPrint) {
+        ticketPrint.classList.remove('d-none');
+        ticketPrint.classList.add('d-print-block');
+        ticketPrint.style.setProperty('display', 'block', 'important');
+        ticketPrint.style.setProperty('visibility', 'visible', 'important');
+        ticketPrint.style.setProperty('position', 'absolute', 'important');
+        ticketPrint.style.setProperty('top', '0', 'important');
+        ticketPrint.style.setProperty('left', '0', 'important');
+        ticketPrint.style.setProperty('width', '100%', 'important');
+    }
 
     window.print();
 
-    // Restauramos visibilidad después de imprimir
-    if (mainWrap) mainWrap.classList.remove('d-print-none');
-    if (headerWrap) headerWrap.classList.remove('d-print-none');
-    if (listHeaderWrap) listHeaderWrap.classList.remove('d-print-none');
+    // Restaurar para visualización en pantalla
+    if (appLayout) appLayout.classList.remove('d-none', 'd-print-none');
+    if (navbar) navbar.classList.remove('d-none', 'd-print-none');
+    if (listHeaderWrap) listHeaderWrap.classList.remove('d-none', 'd-print-none');
+    
+    if (ticketPrint) {
+        ticketPrint.classList.add('d-none');
+        ticketPrint.classList.remove('d-print-block');
+        ticketPrint.style.display = '';
+        ticketPrint.style.visibility = '';
+        ticketPrint.style.position = '';
+        ticketPrint.style.top = '';
+        ticketPrint.style.left = '';
+        ticketPrint.style.width = '';
+    }
 };
 
 window.filtrarTransfers = mostrarTransfers;

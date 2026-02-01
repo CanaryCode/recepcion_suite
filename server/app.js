@@ -47,6 +47,10 @@ app.use('/api/heartbeat', heartbeatRoutes);
 const frontendPath = path.join(__dirname, '../');
 app.use(express.static(frontendPath));
 
+// FIX: Servir explícitamente la carpeta storage para que las imágenes sean accesibles
+const storagePath = path.join(__dirname, '../storage');
+app.use('/storage', express.static(storagePath));
+
 // Fallback para SPA (aunque el index.html está en la raíz, express.static ya lo sirve si safePath era '/')
 app.get('*', (req, res) => {
     res.sendFile(path.join(frontendPath, 'index.html'));

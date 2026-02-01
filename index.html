@@ -105,6 +105,15 @@
                         <li><button class="dropdown-item" data-bs-toggle="tab" data-bs-target="#transfers-content">
                             <span data-tooltip="true" data-bs-placement="right" data-bs-title="Reservas de taxi y traslados"><i class="bi bi-taxi-front me-2"></i>Taxis & Transfers</span>
                         </button></li>
+                        <li><button class="dropdown-item" data-bs-toggle="tab" data-bs-target="#lost-found-content">
+                            <span data-tooltip="true" data-bs-placement="right" data-bs-title="Gestión de objetos perdidos"><i class="bi bi-box-seam me-2"></i>Objetos Perdidos</span>
+                        </button></li>
+                        <li><button class="dropdown-item" data-bs-toggle="tab" data-bs-target="#excursiones-content">
+                            <span data-tooltip="true" data-bs-placement="right" data-bs-title="Venta de excursiones y tickets"><i class="bi bi-ticket-perforated me-2"></i>Venta Excursiones</span>
+                        </button></li>
+                        <li><button class="dropdown-item" data-bs-toggle="tab" data-bs-target="#reservas-instalaciones-content">
+                            <span data-tooltip="true" data-bs-placement="right" data-bs-title="Reservas de pistas de tenis, gimnasio, etc."><i class="bi bi-calendar-check me-2"></i>Reservas Instalaciones</span>
+                        </button></li>
                         <!-- Movido desde Administración -->
                         <li><hr class="dropdown-divider"></li>
                         <li><button class="dropdown-item" data-bs-toggle="tab" data-bs-target="#safe-content">
@@ -936,6 +945,13 @@
   </div>
 </div>
             </div>
+            <div class="tab-pane fade" id="lost-found-content" role="tabpanel">
+                <div class="text-center p-5">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-2 text-muted">Cargando Objetos Perdidos...</p>
+                </div>
+            </div>
+
             <div class="tab-pane fade" id="cobro-content" role="tabpanel">
 <div class="d-none d-print-block report-header-print">
     <div class="report-info-left">
@@ -1034,10 +1050,22 @@
 </div>
             </div>
             <div class="tab-pane fade" id="safe-content" role="tabpanel">
-                <!-- Loaded via CompLoader from assets/templates/safe.html -->
+                <!-- Loaded via CompLoader -->
+            </div>
+
+            <div class="tab-pane fade" id="lost-found-content" role="tabpanel">
+                <!-- Loaded via CompLoader -->
+            </div>
+
+            <div class="tab-pane fade" id="excursiones-content" role="tabpanel">
+                <!-- Loaded via CompLoader -->
+            </div>
+
+            <div class="tab-pane fade" id="reservas-instalaciones-content" role="tabpanel">
+                <!-- Loaded via CompLoader from assets/templates/reservas_instalaciones.html -->
                 <div class="text-center p-5">
                     <div class="spinner-border text-primary" role="status"></div>
-                    <p class="mt-2 text-muted">Cargando Control de Safe...</p>
+                    <p class="mt-2 text-muted">Cargando Reservas de Instalaciones...</p>
                 </div>
             </div>
             <div class="tab-pane fade" id="despertadores-content" role="tabpanel">
@@ -3120,7 +3148,7 @@
             // Opcional: Mostrar toast de "Cargando sistema..."
         };
     </script>
-    <script type="module" src="assets/js/main.js?v=V6_STABLE"></script>
+    <script type="module" src="assets/js/main.js?v=V11_PRINT_MASTER"></script>
 
 </body>
 

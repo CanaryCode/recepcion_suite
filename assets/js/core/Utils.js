@@ -122,12 +122,28 @@ export const Utils = {
     },
 
     /**
+     * OBTENER VALOR DE INPUT
+     */
+    getVal: (id) => {
+        const el = document.getElementById(id);
+        return el ? el.value : "";
+    },
+
+    /**
      * ASIGNAR VALOR A INPUT
      * Forma segura de cambiar el contenido de un campo de texto comprobando si existe.
      */
     setVal: (id, value) => {
         const el = document.getElementById(id);
         if (el) el.value = value;
+    },
+
+    /**
+     * ASIGNAR HTML A ELEMENTO
+     */
+    setHtml: (id, html) => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = html;
     },
 
     /**
@@ -138,5 +154,24 @@ export const Utils = {
         const input = document.getElementById(id);
         if(!input) return;
         input.type = input.type === "password" ? "text" : "password";
+    },
+
+    /**
+     * CONVERTIR ARCHIVO A BASE64
+     */
+    fileToBase64: (file) => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = error => reject(error);
+        });
+    },
+
+    /**
+     * VERIFICAR SOLAPAMIENTO DE HORARIOS
+     */
+    checkOverlap: (startA, endA, startB, endB) => {
+        return (startA < endB) && (startB < endA);
     }
 };

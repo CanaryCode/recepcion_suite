@@ -1,7 +1,7 @@
 // --- STARTUP ---
 console.log("Recepcion Suite V2 - Starting...");
 
-// --- IMPORTACI\u00D3N DE M\u00D3DULOS OPERATIVOS ---
+// --- IMPORTACIÓN DE MÓDULOS OPERATIVOS ---
 // Cada módulo gestiona una funcionalidad específica (Agenda, Caja, etc.)
 import { inicializarAgenda } from './modules/agenda.js';
 import { inicializarCaja } from './modules/caja.js';
@@ -10,33 +10,37 @@ import { Ui } from './core/Ui.js'; // Import Ui FIRST
 
 import { clock } from './modules/clock.js';
 import { inicializarAtenciones } from './modules/atenciones.js';
-import { inicializarSafe } from './modules/safe.js?v=V6_STABLE'; // Force Reload
+import { inicializarSafe } from './modules/safe.js'; // Force Reload
 import { inicializarDespertadores } from './modules/despertadores.js';
 import { inicializarDesayuno } from './modules/desayuno.js';
 import { inicializarEstancia } from './modules/estancia.js';
 import { inicializarNovedades } from './modules/novedades.js';
 import { inicializarCenaFria } from './modules/cena_fria.js';
-import { inicializarRiu } from './modules/riu.js?v=V6_STABLE'; // Force Reload
+import { inicializarRiu } from './modules/riu.js'; // Force Reload
 import { inicializarAyuda } from './modules/ayuda.js';
-import { inicializarTransfers } from './modules/transfers.js?v=V6_STABLE'; // Force Reload
+import { inicializarTransfers } from './modules/transfers.js'; // Force Reload
 import { inicializarNotasPermanentes } from './modules/notas_permanentes.js';
 import { inicializarPrecios } from './modules/precios.js';
 import { inicializarSystemAlarms } from './modules/alarms.js';
 import { inicializarSystemAlarmsUI } from './modules/system_alarms_ui.js';
-import { inicializarRack } from './modules/rack.js?v=V6_STABLE';
+import { inicializarLostFound } from './modules/lost_found.js';
+import { inicializarRack } from './modules/rack.js';
 import { inicializarConfiguracion } from './modules/configuracion.js';
+import { Excursiones } from './modules/excursiones.js';
+import { ReservasInstalaciones } from './modules/reservas_instalaciones.js';
 import { Gallery } from './modules/gallery.js';
 import { IconSelector } from './core/IconSelector.js';
 
-// --- SISTEMAS CORE (N\u00DACKLEO) ---
-import { APP_CONFIG, Config } from './core/Config.js'; // Cargador de configuraci\u00F3n
+// --- SISTEMAS CORE (NÚCLEO) ---
+import { APP_CONFIG, Config } from './core/Config.js'; // Cargador de configuración
 import { Modal } from './core/Modal.js';              // Gestor de ventanas modales
-import { Router } from './core/Router.js';            // Gestor de navegaci\u00F3n entre pesta\u00F1as
-import { CompLoader } from './core/CompLoader.js';    // Cargador din\u00E1mico de plantillas HTML
-import { Search } from './core/Search.js';            // Buscador global de m\u00F3dulos
+import { Router } from './core/Router.js';            // Gestor de navegación entre pestañas
+import { CompLoader } from './core/CompLoader.js';    // Cargador dinámico de plantillas HTML
+import { Search } from './core/Search.js';            // Buscador global de módulos
 import { sessionService } from './services/SessionService.js'; // Gestor de usuario logueado
-import { Utils } from './core/Utils.js?v=V6_STABLE';              // Utilidades generales (formateo, etc.)
-import { RoomDetailModal } from './core/RoomDetailModal.js?v=V6_STABLE'; // Modal Global de Habitaci\u00F3n
+import { Utils } from './core/Utils.js';              // Utilidades generales (formateo, etc.)
+import { migrateLostFoundImages } from '../../migrate_images.js';
+import { RoomDetailModal } from './core/RoomDetailModal.js'; // Modal Global de Habitación
 
 // Expose Utils globally for inline HTML events (like togglePassword)
 window.Utils = Utils;
@@ -99,10 +103,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         { id: 'atenciones-content', path: 'assets/templates/atenciones.html' },
         { id: 'ayuda-content', path: 'assets/templates/ayuda.html' },
         { id: 'transfers-content', path: 'assets/templates/transfers.html' },
+        { id: 'lost-found-content', path: 'assets/templates/lost_found.html' },
         { id: 'notas-content', path: 'assets/templates/notas_permanentes.html' },
         { id: 'precios-content', path: 'assets/templates/precios.html' },
         { id: 'system-alarms-content', path: 'assets/templates/system_alarms.html' },
         { id: 'rack-content', path: 'assets/templates/rack.html' },
+        { id: 'excursiones-content', path: 'assets/templates/excursiones.html' },
+        { id: 'reservas-instalaciones-content', path: 'assets/templates/reservas_instalaciones.html' },
         { id: 'configuracion-content', path: 'assets/templates/configuracion.html' }
     ];
 
@@ -137,6 +144,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         { nombre: 'Notas Permanentes', init: inicializarNotasPermanentes },
         { nombre: 'Precios', init: inicializarPrecios },
         { nombre: 'Rack', init: inicializarRack },
+        { nombre: 'Lost & Found', init: inicializarLostFound },
+        { nombre: 'Excursiones', init: () => Excursiones.init() },
+        { nombre: 'Reservas Instalaciones', init: () => ReservasInstalaciones.init() },
         { nombre: 'Configuración', init: inicializarConfiguracion },
         { nombre: 'Galería', init: () => Gallery.inicializar() }
     ];
@@ -202,7 +212,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                     background: rgba(0,0,0,0.85); z-index: 10000; 
                                     display: flex; flex-direction: column; align-items: center; justify-content: center; 
                                     color: white; font-family: 'Segoe UI', system-ui, sans-serif; text-align: center;">
-                            <div style="font-size: 4rem; color: #dc3545; margin-bottom: 20px;">
+                                <div style="font-size: 4rem; color: #dc3545; margin-bottom: 20px;">
                                 <i class="bi bi-wifi-off"></i>
                             </div>
                             <h1 style="font-size: 2rem; margin-bottom: 10px;">¡Conexión Perdida!</h1>

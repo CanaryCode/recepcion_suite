@@ -34,6 +34,12 @@ export async function inicializarAyuda() {
         if (select.value) turnoActual = select.value;
     }
 
+    const searchInput = document.getElementById('search-guia-ayuda');
+    if (searchInput) {
+        searchInput.removeEventListener('input', () => renderGuia());
+        searchInput.addEventListener('input', () => renderGuia());
+    }
+
     document.getElementById('btnImprimirAyuda')?.addEventListener('click', imprimirGuia);
 
     // Inyectar la barra de herramientas flotante (negrita, colores, etc.)
@@ -98,7 +104,19 @@ function inyectarToolbarFlotante() {
  * Genera la lista de pasos. Si modoEdicion = true, los elementos son editables y arrastrables.
  */
 function renderGuia() {
-    const lista = ayudaService.getGuia(turnoActual, obtenerGuiaPorDefecto(turnoActual));
+    let lista = ayudaService.getGuia(turnoActual, obtenerGuiaPorDefecto(turnoActual));
+    const term = document.getElementById('search-guia-ayuda')?.value.toLowerCase().trim() || '';
+
+    // Filter by keyword if term is present
+    if (term) {
+        lista = lista.filter(paso => {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = paso.texto;
+            const textContent = tempDiv.textContent || tempDiv.innerText || '';
+            return textContent.toLowerCase().includes(term);
+        });
+    }
+
     const container = document.getElementById('lista-pasos-container');
     const formAgregar = document.getElementById('form-agregar-paso');
     const infoFooter = document.getElementById('info-footer');

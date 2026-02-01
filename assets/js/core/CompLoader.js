@@ -3,6 +3,11 @@
  * ------------------------------------------
  * Para mantener el archivo index.html limpio, cada módulo (Agenda, Riu, etc.)
  * tiene su propio archivo HTML en la carpeta 'assets/templates'.
+ *
+ * MAPA DE COMPONENTES (para referencia):
+ * 'lost-found': { html: 'assets/templates/lost_found.html', js: 'assets/js/modules/lost_found.js', module: 'lostFoundModule' },
+ * 'excursiones': { html: 'assets/templates/excursiones.html', js: 'assets/js/modules/excursiones.js', module: 'Excursiones' }
+ *
  * Este módulo se encarga de leer esos archivos e inyectarlos en la página.
  */
 

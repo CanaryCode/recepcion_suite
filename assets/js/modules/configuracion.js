@@ -52,6 +52,8 @@ export const Configurator = {
         this.renderFiltros('TIPOS', 'list-filtros-tipos');
         this.renderFiltros('VISTAS', 'list-filtros-vistas');
         this.renderFiltros('CARACTERISTICAS', 'list-filtros-carac');
+        this.renderExcursionesCatalogo();
+        this.renderInstalaciones();
     },
 
     verificarEstructuras() {
@@ -62,6 +64,8 @@ export const Configurator = {
         if (!tempConfig.SYSTEM) tempConfig.SYSTEM = { LAUNCHERS: [] };
         if (!tempConfig.HOTEL.STATS_CONFIG) tempConfig.HOTEL.STATS_CONFIG = { RANGOS: [], FILTROS: {} };
         if (!tempConfig.HOTEL.STATS_CONFIG.FILTROS) tempConfig.HOTEL.STATS_CONFIG.FILTROS = { TIPOS: [], VISTAS: [], CARACTERISTICAS: [] };
+        if (!tempConfig.EXCURSIONES_CATALOGO) tempConfig.EXCURSIONES_CATALOGO = [];
+        if (!tempConfig.HOTEL.INSTALACIONES) tempConfig.HOTEL.INSTALACIONES = [];
     },
 
     // --- RENDERERS ---
@@ -162,6 +166,47 @@ export const Configurator = {
         });
     },
 
+    renderExcursionesCatalogo() {
+        Ui.renderTable('config-excursiones-list', tempConfig.EXCURSIONES_CATALOGO, (item, index) => `
+            <tr>
+                <td>
+                    <div class="fw-bold">${item.nombre}</div>
+                    <div class="small text-muted">${item.operador || 'Sin operador'}</div>
+                </td>
+                <td>
+                    <span class="badge ${item.esTicket ? 'bg-info' : 'bg-primary'} opacity-75">
+                        ${item.esTicket ? 'Ticket' : 'Excursión'}
+                    </span>
+                </td>
+                <td class="text-center">
+                    <div class="small text-muted">A: ${item.precioAdulto}€</div>
+                    <div class="small text-muted">N: ${item.precioNiño || 0}€</div>
+                    <div class="small text-muted text-primary">G: ${item.precioGrupo || 0}€</div>
+                </td>
+                <td class="text-end">
+                    <button type="button" class="btn btn-outline-danger btn-sm border-0" 
+                        onclick="Configurator.removeExcursionAlCatalogo(${index})">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `);
+    },
+
+    renderInstalaciones() {
+        Ui.renderTable('config-instalaciones-list', tempConfig.HOTEL.INSTALACIONES, (inst, index) => `
+            <div class="badge bg-white text-dark border p-2 d-flex align-items-center shadow-sm">
+                <i class="bi bi-${inst.icono || 'geo-fill'} me-2 text-primary"></i>
+                <div class="text-start me-3">
+                    <div class="fw-bold small">${inst.nombre}</div>
+                    <div class="text-muted" style="font-size: 0.65rem;">${inst.apertura} - ${inst.cierre}</div>
+                </div>
+                <button type="button" class="btn-close" style="width: 0.5em; height: 0.5em;" 
+                    onclick="Configurator.removeInstalacion(${index})"></button>
+            </div>
+        `);
+    },
+
     // --- EVENTOS ---
 
     configurarEventos() {
@@ -177,6 +222,7 @@ export const Configurator = {
         window.addDestinoTransfer = () => this.addDestinoTransfer();
         window.addRango = () => this.addRango();
         window.addFilter = (type) => this.addFilter(type);
+        window.addInstalacion = () => this.addInstalacion();
     },
 
     addRecepcionista() {
@@ -302,6 +348,73 @@ export const Configurator = {
             this.renderFiltros(type, (type === 'TIPOS' ? 'list-filtros-tipos' : (type === 'VISTAS' ? 'list-filtros-vistas' : 'list-filtros-carac')));
             input.value = '';
             emoji.value = '';
+        }
+    },
+
+    addExcursionAlCatalogo() {
+        const nombre = Utils.getVal('newExc_nombre');
+        const operador = Utils.getVal('newExc_operador');
+        const pAdulto = parseFloat(Utils.getVal('newExc_pAdulto')) || 0;
+        const pNiño = parseFloat(Utils.getVal('newExc_pNiño'));
+        const pGrupo = parseFloat(Utils.getVal('newExc_pGrupo'));
+        const esTicket = document.getElementById('newExc_esTicket').value;
+
+        if (!nombre || pAdulto <= 0) {
+            Ui.showToast("Nombre y precio de adulto son obligatorios.", "warning");
+            return;
+        }
+
+        const id = `CAT-${Date.now()}`;
+        tempConfig.EXCURSIONES_CATALOGO.push({
+            id,
+            nombre,
+            operador,
+            precioAdulto: pAdulto,
+            precioNiño: isNaN(pNiño) ? 0 : pNiño,
+            precioGrupo: isNaN(pGrupo) ? 0 : pGrupo,
+            esTicket: esTicket === 'true'
+        });
+
+        this.renderExcursionesCatalogo();
+        
+        // Limpiar
+        Utils.setVal('newExc_nombre', '');
+        Utils.setVal('newExc_operador', '');
+        Utils.setVal('newExc_pAdulto', '');
+        Utils.setVal('newExc_pNiño', '');
+        Utils.setVal('newExc_pGrupo', '');
+    },
+
+    async removeExcursionAlCatalogo(index) {
+        if (await Ui.showConfirm("¿Eliminar este producto del catálogo?")) {
+            tempConfig.EXCURSIONES_CATALOGO.splice(index, 1);
+            this.renderExcursionesCatalogo();
+        }
+    },
+
+    addInstalacion() {
+        const nombre = Utils.getVal('newInst_nombre');
+        const apertura = Utils.getVal('newInst_apertura');
+        const cierre = Utils.getVal('newInst_cierre');
+        const icono = Utils.getVal('newInst_icono') || 'geo-fill';
+
+        if (!nombre || !apertura || !cierre) {
+            Ui.showToast("El nombre y el horario son obligatorios.", "warning");
+            return;
+        }
+
+        tempConfig.HOTEL.INSTALACIONES.push({ nombre, apertura, cierre, icono });
+        this.renderInstalaciones();
+
+        // Limpiar
+        Utils.setVal('newInst_nombre', '');
+        Utils.setVal('newInst_icono', '');
+    },
+
+    async removeInstalacion(index) {
+        if (await Ui.showConfirm("¿Eliminar esta instalación del hotel?")) {
+            tempConfig.HOTEL.INSTALACIONES.splice(index, 1);
+            this.renderInstalaciones();
         }
     },
 

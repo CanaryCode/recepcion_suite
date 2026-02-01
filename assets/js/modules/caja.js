@@ -591,26 +591,55 @@ function imprimirCierreCaja() {
     return;
   }
 
-  // Sincronizar comentarios para impresión
-  const comentarios =
-    document.getElementById("caja_comentarios_cierre")?.value || "";
-  const printDiv = document.getElementById("print-comentarios-caja");
-  if (printDiv) printDiv.innerText = comentarios;
+  // Lógica de Impresión Atómica - ESTABILIZACIÓN NUCLEAR V2
+  const appLayout = document.getElementById('app-layout');
+  const navbar = document.getElementById('navbar-container');
+  const interactiveView = document.getElementById('caja-web-interactive-view');
+  const reportView = document.getElementById('caja-print-report-view');
+  
+  // 1. Preparar metadatos en la vista de reporte
+  const now = new Date();
+  const dateStr = now.toLocaleDateString() + ' ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  
+  const pDate = document.getElementById('print-date-caja');
+  const pName = document.getElementById('print-repc-nombre-caja');
+  if (pDate) pDate.textContent = dateStr;
+  if (pName) pName.textContent = user;
 
-  // Sincronizar Turno Label
-  const turno = document.getElementById("caja_turno")?.value || "";
-  const turnoLabel = document.getElementById("print-turno-label");
-  if (turnoLabel) turnoLabel.textContent = turno;
+  // 2. Ocultar el layout principal y la vista interactiva
+  if (appLayout) appLayout.classList.add('d-none', 'd-print-none');
+  if (navbar) navbar.classList.add('d-none', 'd-print-none');
+  if (interactiveView) interactiveView.classList.add('d-none', 'd-print-none');
+  
+  // 3. Forzar que el reporte sea lo ÚNICO en la página
+  if (reportView) {
+      reportView.classList.remove('d-none');
+      reportView.classList.add('d-print-block');
+      reportView.style.setProperty('display', 'block', 'important');
+      reportView.style.setProperty('visibility', 'visible', 'important');
+      reportView.style.setProperty('position', 'absolute', 'important');
+      reportView.style.setProperty('top', '0', 'important');
+      reportView.style.setProperty('left', '0', 'important');
+      reportView.style.setProperty('width', '100%', 'important');
+  }
 
-  // FIX IMPRESIÓN: Sincronizar valor visual con atributo DOM para que salga en papel
-  const inputs = document.querySelectorAll("#caja-content input");
-  inputs.forEach((i) => {
-    if (i.type === "number" || i.type === "text") {
-      i.setAttribute("value", i.value);
-    }
-  });
+  window.print();
 
-  Utils.printSection("print-date-caja", "print-repc-nombre-caja", user);
+  // 4. Restaurar para visualización en pantalla
+  if (appLayout) appLayout.classList.remove('d-none', 'd-print-none');
+  if (navbar) navbar.classList.remove('d-none', 'd-print-none');
+  if (interactiveView) interactiveView.classList.remove('d-none', 'd-print-none');
+  
+  if (reportView) {
+      reportView.classList.add('d-none');
+      reportView.classList.remove('d-print-block');
+      reportView.style.display = '';
+      reportView.style.visibility = '';
+      reportView.style.position = '';
+      reportView.style.top = '';
+      reportView.style.left = '';
+      reportView.style.width = '';
+  }
 }
 
 /**

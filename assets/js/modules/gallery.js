@@ -42,10 +42,19 @@ export const Gallery = {
                 folderPath: galleryPath
             });
 
-            if (response && response.images) {
+            if (response && response.images && response.images.length > 0) {
                 this.renderGrid(response.images);
             } else {
-                container.innerHTML = '<div class="col-12 text-center text-muted py-5"><i class="bi bi-images fs-1 mb-3"></i><p>No hay imágenes en la carpeta configurada.</p></div>';
+                const displayPath = response?.path || galleryPath;
+                container.innerHTML = `
+                    <div class="col-12 text-center text-muted py-5">
+                        <i class="bi bi-images fs-1 mb-3"></i>
+                        <p>No se encontraron imágenes en la carpeta:</p>
+                        <code class="d-block mb-3">${displayPath}</code>
+                        <div class="alert alert-info d-inline-block small">
+                            <i class="bi bi-info-circle me-2"></i>Verifica que la carpeta exista y contenga archivos .jpg, .png o .webp
+                        </div>
+                    </div>`;
             }
 
         } catch (error) {

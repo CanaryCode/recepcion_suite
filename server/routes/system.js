@@ -86,25 +86,27 @@ router.get('/image-proxy', async (req, res) => {
  */
 router.post('/list-images', async (req, res) => {
     console.log('[System Routes] POST /list-images called');
-    try {
-        let { folderPath } = req.body;
-        
         if (!folderPath) {
             folderPath = path.join(__dirname, '../../assets/gallery');
         } else if (!path.isAbsolute(folderPath)) {
-             folderPath = path.join(__dirname, '../../', folderPath);
+            folderPath = path.join(__dirname, '../../', folderPath);
         }
 
         // Sanitize folderPath for internal use but preserve absolute nature
-        folderPath = path.resolve(folderPath);
-        console.log(`[System Routes] Resolved folderPath: ${folderPath}`);
+        // path.resolve normaliza \ y / según el OS.
+        folderPath = path.resolve(folderPath).replace(/\\/g, '/');
+        console.log(`[System Routes] Target folderPath: ${folderPath}`);
 
         try {
             await fs.access(folderPath);
         } catch (accessErr) {
-            console.warn(`[System Routes] Path NOT accessible or missing: ${folderPath}`);
-            // If it's the external one and fails, let's at least return empty instead of crashing
-            return res.json({ path: folderPath, images: [] });
+            console.warn(`[System Routes] Path NOT accessible or missing: ${folderPath}`, accessErr.message);
+            // Si no existe, intentamos ver si el problema es que falta algún nivel de carpeta
+            return res.json({ 
+                path: folderPath, 
+                images: [], 
+                error: 'Carpeta no encontrada o inaccesible' 
+            });
         }
 
         const dirents = await fs.readdir(folderPath, { withFileTypes: true });

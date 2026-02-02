@@ -151,6 +151,20 @@
       "Emiliano",
       "Domingo",
       "Antonio"
+    ],
+    "INSTALACIONES": [
+      {
+        "nombre": "Cancha de tennis",
+        "apertura": "08:00",
+        "cierre": "18:00",
+        "icono": "🏠"
+      },
+      {
+        "nombre": "Cancha de squash",
+        "apertura": "08:00",
+        "cierre": "18:00",
+        "icono": "calendar"
+      }
     ]
   },
   "AGENDA": {
@@ -265,5 +279,16 @@
       "Aeropuerto Norte",
       "Aeropuerto Sur"
     ]
-  }
+  },
+  "EXCURSIONES_CATALOGO": [
+    {
+      "id": "CAT-1769894964475",
+      "nombre": "loro parque",
+      "operador": "atlantico",
+      "precioAdulto": 23,
+      "precioNiño": 12,
+      "precioGrupo": 0,
+      "esTicket": false
+    }
+  ]
 }

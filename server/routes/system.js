@@ -60,6 +60,27 @@ router.post('/list-files', async (req, res) => {
 console.log('[System Routes] Module Loaded');
 
 /**
+ * GET /api/system/image-proxy
+ * Serves an image file from the local system safely.
+ */
+router.get('/image-proxy', async (req, res) => {
+    const { path: filePath } = req.query;
+    if (!filePath) return res.status(400).send('No path provided');
+
+    try {
+        // En Windows, path.resolve manejará tanto \ como /
+        const absolutePath = path.resolve(filePath);
+        
+        // Verificación básica de seguridad (opcional, podrías restringir a ciertas carpetas)
+        await fs.access(absolutePath);
+        res.sendFile(absolutePath);
+    } catch (err) {
+        console.error('Image proxy error:', err);
+        res.status(404).send('Image not found');
+    }
+});
+
+/**
  * POST /api/system/list-images
  * Lists image files in a specific directory.
  */
@@ -68,15 +89,15 @@ router.post('/list-images', async (req, res) => {
     try {
         let { folderPath } = req.body;
         
-        // Default to assets/gallery in the project root if no path provided
-        // or if the path is relative
         if (!folderPath) {
             folderPath = path.join(__dirname, '../../assets/gallery');
         } else if (!path.isAbsolute(folderPath)) {
              folderPath = path.join(__dirname, '../../', folderPath);
         }
 
-        // Ensure directory exists
+        // Sanitize folderPath for internal use but preserve absolute nature
+        folderPath = path.resolve(folderPath);
+
         try {
             await fs.access(folderPath);
         } catch {
@@ -91,33 +112,36 @@ router.post('/list-images', async (req, res) => {
                 const ext = path.extname(dirent.name).toLowerCase();
                 return ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'].includes(ext);
             })
-            .map(dirent => ({
-                name: dirent.name,
-                path: path.join(folderPath, dirent.name),
-                // Create a relative URL for frontend if it's inside assets
-                url: folderPath.includes('assets') 
-                    ? `assets/gallery/${dirent.name}` // Simplification: assuming standard structure
-                    : `file://${path.join(folderPath, dirent.name)}` // Fallback for external
-            }));
-            
-        // Fix URL generation logic to be more robust for subfolders or external folders
-        // If the path contains 'assets', we try to make it relative to the web root
-        // This is a bit hacky but works for the default use case
-        images.forEach(img => {
-            const assetsIndex = img.path.indexOf('assets');
-            const resourcesIndex = img.path.indexOf('resources');
-            
-            if (assetsIndex !== -1) {
-                // Convert backslashes to forward slashes for URLs
-                img.url = img.path.substring(assetsIndex).replace(/\\/g, '/');
-            } else if (resourcesIndex !== -1) {
-                // Also serve resources directory statically if configured
-                img.url = img.path.substring(resourcesIndex).replace(/\\/g, '/');
-            }
-        });
+            .map(dirent => {
+                const fullPath = path.join(folderPath, dirent.name);
+                // SANITIZACIÓN CRÍTICA: Convertir todas las \ a / para evitar SyntaxError en el cliente
+                const sanitizedPath = fullPath.replace(/\\/g, '/');
+                
+                let url = '';
+                const assetsIndex = sanitizedPath.indexOf('assets');
+                const resourcesIndex = sanitizedPath.indexOf('resources');
+                const storageIndex = sanitizedPath.indexOf('storage');
+
+                if (assetsIndex !== -1) {
+                    url = sanitizedPath.substring(assetsIndex);
+                } else if (resourcesIndex !== -1) {
+                    url = sanitizedPath.substring(resourcesIndex);
+                } else if (storageIndex !== -1) {
+                    url = sanitizedPath.substring(storageIndex);
+                } else {
+                    // Si es externo, usar el proxy
+                    url = `/api/system/image-proxy?path=${encodeURIComponent(sanitizedPath)}`;
+                }
+
+                return {
+                    name: dirent.name,
+                    path: sanitizedPath,
+                    url: url
+                };
+            });
 
         res.json({ 
-            path: folderPath,
+            path: folderPath.replace(/\\/g, '/'),
             images: images
         });
 

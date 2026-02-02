@@ -32,6 +32,10 @@ export const Config = {
             // FIX CRITICO: Forzamos ruta relativa para asegurar que funciona en cualquier PC/IP
             if (APP_CONFIG.SYSTEM) {
                 APP_CONFIG.SYSTEM.API_URL = '/api';
+                // Sanitizar paths de galería si existen
+                if (APP_CONFIG.SYSTEM.GALLERY_PATH) {
+                    APP_CONFIG.SYSTEM.GALLERY_PATH = APP_CONFIG.SYSTEM.GALLERY_PATH.replace(/\\/g, '/');
+                }
             } else {
                 // Si la config no tiene bloque SYSTEM, algo anda mal, usamos defaults
                 APP_CONFIG.SYSTEM = { API_URL: '/api' };
@@ -42,12 +46,22 @@ export const Config = {
             try {
                 const localOverride = localStorage.getItem('app_config_override');
                 if (localOverride) {
-                    const localConfig = JSON.parse(localOverride);
+                    // Sanitización PRE-PARSE: Escapar backslashes si vienen sin escapar (común en copiado manual)
+                    // Nota: JSON.parse fallará con C:\Users a menos que sea C:\\Users. 
+                    // Si el usuario guardó un texto plano, intentamos ayudar.
+                    let safeOverride = localOverride;
+                    if (safeOverride.includes('\\') && !safeOverride.includes('\\\\')) {
+                        safeOverride = safeOverride.replace(/\\/g, '/');
+                    }
+                    
+                    const localConfig = JSON.parse(safeOverride);
                     Object.assign(APP_CONFIG, localConfig);
                     console.log("Config cargada con sobrescrituras de LocalStorage");
                 }
             } catch (e) {
-                console.warn("Error cargando sobrescritura de configuración local", e);
+                console.warn("Error cargando sobrescritura de configuración local (posible SyntaxError):", e);
+                // Limpiar si está corrupto para evitar bucles de error
+                // localStorage.removeItem('app_config_override');
             }
             
             console.log("Configuración del sistema cargada:", APP_CONFIG);
@@ -55,7 +69,7 @@ export const Config = {
         } catch (error) {
             console.error("Crítico: No se pudo cargar config.json", error);
             // Mostrar mensaje real del error para depuración
-            alert(`Error cargando config.json: ${error.message}`);
+            // alert(`Error cargando config.json: ${error.message}`);
             return false;
         }
     },

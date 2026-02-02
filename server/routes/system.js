@@ -86,6 +86,9 @@ router.get('/image-proxy', async (req, res) => {
  */
 router.post('/list-images', async (req, res) => {
     console.log('[System Routes] POST /list-images called');
+    try {
+        let { folderPath } = req.body;
+        
         if (!folderPath) {
             folderPath = path.join(__dirname, '../../assets/gallery');
         } else if (!path.isAbsolute(folderPath)) {

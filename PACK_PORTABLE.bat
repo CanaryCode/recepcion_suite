@@ -82,8 +82,9 @@ if %errorlevel% equ 0 (
     echo   =======================================================
     echo.
     echo   1. Copia toda esta carpeta ("RECEPCION SUITE") a un USB.
-    echo   2. En el otro PC, NO necesitas instalar nada.
-    echo   3. Ejecuta solo "INICIAR_APP.bat".
+    echo   2. IMPORTANTE: Asegúrate de que la carpeta 'server/node_modules' esté incluida.
+    echo   3. En el otro PC, NO necesitas instalar nada.
+    echo   4. Ejecuta solo "INICIAR_APP.bat".
     echo.
 ) else (
     echo.

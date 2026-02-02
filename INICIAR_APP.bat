@@ -69,16 +69,29 @@ exit /b
 
 if not exist "%~dp0server\node_modules" (
     echo.
-    echo   [!] PRIMERA EJECUCION DETECTADA
-    echo   [i] Instalando librerias necesarias...
+    echo   [!] PRIMERA EJECUCION O LIBRERIAS FALTANTES
+    echo   [i] Intentando instalar librerias necesarias...
     echo.
     
-    cd server
-    call npm install
-    cd ..
-    
-    echo.
-    echo   [+] Instalacion completada.
+    :: Verificar si tenemos NPM
+    where npm >nul 2>nul
+    if !errorlevel! equ 0 (
+        cd server
+        call npm install
+        cd ..
+        echo.
+        echo   [+] Instalacion completada de forma automatica.
+    ) else (
+        echo   [!] ERROR: No se encontro 'node_modules' y tampoco tenemos 'npm' 
+        echo       instalado en este equipo para descargarlos.
+        echo.
+        echo       SOLUCION: 
+        echo       1. Instala Node.js en este PC (https://nodejs.org/)
+        echo       2. O copia el programa desde el PC original INCLUYENDO la carpeta 'server/node_modules'.
+        echo.
+        pause
+        exit /b
+    )
     echo.
 )
 

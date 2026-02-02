@@ -7,32 +7,32 @@
     "LAUNCHERS": [
       {
         "label": "SIHOT",
-        "path": "C:\\Users\\usuario\\Desktop\\SIHOT.url",
+        "path": "",
         "icon": "display"
       },
       {
         "label": "ALTA RIU",
-        "path": "C:\\Users\\usuario\\Desktop\\ALTA RIU.lnk",
+        "path": "",
         "icon": "house"
       },
       {
         "label": "GESTATUR",
-        "path": "C:\\Users\\usuario\\Desktop\\GESTATUR.lnk",
+        "path": "",
         "icon": "receipt"
       },
       {
         "label": "SUPREMO",
-        "path": "C:\\Users\\usuario\\Desktop\\Supremo.exe",
+        "path": "",
         "icon": "tablet"
       },
       {
         "label": "ATLANTICO EXCURSIONES",
-        "path": "C:\\Users\\usuario\\Desktop\\GAROE.lnk",
+        "path": "",
         "icon": "camera"
       },
       {
         "label": "EXTRANET RIU",
-        "path": "C:\\Users\\usuario\\Desktop\\Extranet RIU.url",
+        "path": "",
         "icon": "globe"
       }
     ],

@@ -44,11 +44,12 @@ app.use('/api/heartbeat', heartbeatRoutes);
 
 // --- STATIC FILES ---
 // Servidor de archivos estáticos para el frontend
-const frontendPath = path.join(__dirname, '../');
+// __dirname es /server, por lo que .. sube a la raíz
+const frontendPath = path.resolve(__dirname, '..');
 app.use(express.static(frontendPath));
 
 // FIX: Servir explícitamente la carpeta storage para que las imágenes sean accesibles
-const storagePath = path.join(__dirname, '../storage');
+const storagePath = path.resolve(__dirname, '../storage');
 app.use('/storage', express.static(storagePath));
 
 // Fallback para SPA (aunque el index.html está en la raíz, express.static ya lo sirve si safePath era '/')

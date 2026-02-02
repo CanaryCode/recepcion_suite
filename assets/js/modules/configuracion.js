@@ -42,7 +42,8 @@ export const Configurator = {
         Utils.setVal('conf_admin_pass', tempConfig.SYSTEM?.ADMIN_PASSWORD || '');
         Utils.setVal('conf_safe_precio', tempConfig.SAFE?.PRECIO_DIARIO || 2.00);
         Utils.setVal('conf_caja_fondo', tempConfig.CAJA?.FONDO !== undefined ? tempConfig.CAJA.FONDO : -2000.00);
-        Utils.setVal('conf_gallery_path', tempConfig.SYSTEM?.GALLERY_PATH || 'resources/informacion');
+        Utils.setVal('conf_gallery_path', tempConfig.SYSTEM?.GALLERY_PATH || 'assets/gallery');
+        Utils.setVal('conf_sync_interval', tempConfig.SYSTEM?.SYNC_INTERVAL || 10000);
 
         // Listas dinámicas
         this.renderRecepcionistas();
@@ -69,6 +70,10 @@ export const Configurator = {
         if (!tempConfig.HOTEL.STATS_CONFIG.FILTROS) tempConfig.HOTEL.STATS_CONFIG.FILTROS = { TIPOS: [], VISTAS: [], CARACTERISTICAS: [] };
         if (!tempConfig.EXCURSIONES_CATALOGO) tempConfig.EXCURSIONES_CATALOGO = [];
         if (!tempConfig.HOTEL.INSTALACIONES) tempConfig.HOTEL.INSTALACIONES = [];
+        if (!tempConfig.HOTEL.ALARMAS_SISTEMA) tempConfig.HOTEL.ALARMAS_SISTEMA = [];
+        if (!tempConfig.AGENDA) tempConfig.AGENDA = { PAISES: [] };
+        if (!tempConfig.CAJA) tempConfig.CAJA = { BILLETES: [], MONEDAS: [], FONDO: -2000 };
+        if (!tempConfig.COBRO) tempConfig.COBRO = { VALORES: [] };
     },
 
     // --- RENDERERS ---
@@ -76,9 +81,9 @@ export const Configurator = {
     renderRecepcionistas() {
         Ui.renderTable('config-recepcionistas-list', tempConfig.HOTEL.RECEPCIONISTAS, (nombre) => `
             <div class="badge bg-light text-dark border p-2 d-flex align-items-center">
-                <span class="fs-6 text-truncate" style="max-width: 150px;">${nombre}</span>
-                <button type="button" class="btn-close ms-2" style="width: 0.5em; height: 0.5em;" 
-                    onclick="Configurator.removeRecepcionista('${nombre}')"></button>
+                <span class="fs-6 text-truncate me-2" style="max-width: 150px;">${nombre}</span>
+                <button type="button" class="btn btn-link link-primary p-0 text-decoration-none me-2" onclick="Configurator.editRecepcionista('${nombre}')" title="Editar"><i class="bi bi-pencil-square"></i></button>
+                <button type="button" class="btn-close" style="width: 0.5em; height: 0.5em;" onclick="Configurator.removeRecepcionista('${nombre}')" title="Eliminar"></button>
             </div>
         `);
     },
@@ -87,8 +92,8 @@ export const Configurator = {
         Ui.renderTable('list-destinos-transfers', tempConfig.TRANSFERS.DESTINOS, (d) => `
             <div class="badge bg-light text-dark border p-2 d-flex align-items-center">
                 <span class="fs-6 me-2 text-truncate" style="max-width: 150px;">${d}</span>
-                <button type="button" class="btn-close" style="width: 0.5em; height: 0.5em;" 
-                    onclick="Configurator.removeDestinoTransfer('${d}')"></button>
+                <button type="button" class="btn btn-link link-primary p-0 text-decoration-none me-2" onclick="Configurator.editDestinoTransfer('${d}')" title="Editar"><i class="bi bi-pencil-square"></i></button>
+                <button type="button" class="btn-close" style="width: 0.5em; height: 0.5em;" onclick="Configurator.removeDestinoTransfer('${d}')" title="Eliminar"></button>
             </div>
         `);
     },
@@ -98,8 +103,8 @@ export const Configurator = {
             <div class="badge bg-white text-primary border p-2 d-flex align-items-center shadow-sm">
                 <i class="bi bi-tag-fill me-2 small opacity-50"></i>
                 <span class="fs-6 me-2 text-truncate" style="max-width: 150px;">${d}</span>
-                <button type="button" class="btn-close" style="width: 0.5em; height: 0.5em;" 
-                    onclick="Configurator.removeDepartamentoGlobal('${d}')"></button>
+                <button type="button" class="btn btn-link link-primary p-0 text-decoration-none me-2" onclick="Configurator.editDepartamentoGlobal('${d}')" title="Editar"><i class="bi bi-pencil-square"></i></button>
+                <button type="button" class="btn-close" style="width: 0.5em; height: 0.5em;" onclick="Configurator.removeDepartamentoGlobal('${d}')" title="Eliminar"></button>
             </div>
         `);
     },
@@ -126,8 +131,10 @@ export const Configurator = {
                             <div class="text-muted text-truncate" style="font-size: 0.6rem;">${l.path}</div>
                         </div>
                     </div>
-                    <button type="button" class="btn btn-sm btn-outline-danger border-0" 
-                        onclick="Configurator.removeAppLauncher(${index})"><i class="bi bi-trash"></i></button>
+                    <div>
+                        <button type="button" class="btn btn-sm btn-outline-primary border-0 me-1" onclick="Configurator.editAppLauncher(${index})" title="Editar"><i class="bi bi-pencil"></i></button>
+                        <button type="button" class="btn btn-sm btn-outline-danger border-0" onclick="Configurator.removeAppLauncher(${index})" title="Eliminar"><i class="bi bi-trash"></i></button>
+                    </div>
                 </div>
             </div>`;
         });
@@ -148,9 +155,8 @@ export const Configurator = {
                  <td>${r.min}</td>
                  <td>${r.max}</td>
                  <td class="text-end">
-                     <button type="button" class="btn btn-outline-danger btn-sm border-0" onclick="Configurator.removeRango(${originalIndex})">
-                         <i class="bi bi-trash"></i>
-                     </button>
+                     <button type="button" class="btn btn-outline-primary btn-sm border-0 me-1" onclick="Configurator.editRango(${originalIndex})" title="Editar"><i class="bi bi-pencil"></i></button>
+                     <button type="button" class="btn btn-outline-danger btn-sm border-0" onclick="Configurator.removeRango(${originalIndex})" title="Eliminar"><i class="bi bi-trash"></i></button>
                  </td>
              </tr>`;
         });
@@ -210,18 +216,13 @@ export const Configurator = {
                     <div class="small text-muted text-primary">G: ${item.precioGrupo || 0}€</div>
                 </td>
                 <td class="text-end">
-                    <button type="button" class="btn btn-outline-danger btn-sm border-0" 
-                        onclick="Configurator.removeExcursionAlCatalogo(${originalIndex})">
-                        <i class="bi bi-trash"></i>
-                    </button>
+                    <button type="button" class="btn btn-outline-primary btn-sm border-0 me-1" onclick="Configurator.editExcursionAlCatalogo(${originalIndex})" title="Editar"><i class="bi bi-pencil"></i></button>
+                    <button type="button" class="btn btn-outline-danger btn-sm border-0" onclick="Configurator.removeExcursionAlCatalogo(${originalIndex})" title="Eliminar"><i class="bi bi-trash"></i></button>
                 </td>
             </tr>`;
         });
 
-        // Initialize sorting (Idempótente: Ui.enableTableSorting should handle multiple calls gracefully or be called once)
-        // Since we re-render often, but the table HEADERS don't change, we should be careful.
-        // Ui.enableTableSorting attaches listeners. Redoing it might duplicate listeners if not handled.
-        // My implementation in Ui.js overwrites onclick, so it's safe!
+        // Initialize sorting
         if (!data) {
              Ui.enableTableSorting('table-excursiones', tempConfig.EXCURSIONES_CATALOGO, (sorted) => this.renderExcursionesCatalogo(sorted));
         }
@@ -235,8 +236,8 @@ export const Configurator = {
                     <div class="fw-bold small">${inst.nombre}</div>
                     <div class="text-muted" style="font-size: 0.65rem;">${inst.apertura} - ${inst.cierre}</div>
                 </div>
-                <button type="button" class="btn-close" style="width: 0.5em; height: 0.5em;" 
-                    onclick="Configurator.removeInstalacion(${index})"></button>
+                <button type="button" class="btn btn-link link-primary p-0 text-decoration-none me-2" onclick="Configurator.editInstalacion(${index})" title="Editar"><i class="bi bi-pencil-square"></i></button>
+                <button type="button" class="btn-close" style="width: 0.5em; height: 0.5em;" onclick="Configurator.removeInstalacion(${index})" title="Eliminar"></button>
             </div>
         `);
     },
@@ -478,6 +479,88 @@ export const Configurator = {
         }
     },
 
+    // --- EDIT HANDLERS (Pop & Fill Pattern) ---
+
+    async editRecepcionista(nombre) {
+        if (!await Ui.showConfirm(`¿Editar a ${nombre}?`)) return;
+        this.removeRecepcionista(nombre);
+        document.getElementById('newRecepcionista').value = nombre;
+        document.getElementById('newRecepcionista').focus();
+    },
+
+    async editDestinoTransfer(val) {
+        if (!await Ui.showConfirm(`¿Editar destino ${val}?`)) return;
+        this.removeDestinoTransfer(val);
+        document.getElementById('newDestinoTransfer').value = val;
+        document.getElementById('newDestinoTransfer').focus();
+    },
+
+    async editDepartamentoGlobal(val) {
+        if (!await Ui.showConfirm(`¿Editar departamento ${val}?`)) return;
+        this.removeDepartamentoGlobal(val);
+        document.getElementById('newDepartamentoGlobal').value = val;
+        document.getElementById('newDepartamentoGlobal').focus();
+    },
+
+    async editAppLauncher(index) {
+        const item = tempConfig.SYSTEM.LAUNCHERS[index];
+        if (!await Ui.showConfirm(`¿Editar lanzador "${item.label}"?`)) return;
+        
+        tempConfig.SYSTEM.LAUNCHERS.splice(index, 1);
+        this.renderAppLaunchers();
+
+        document.getElementById('newLauncherLabel').value = item.label || '';
+        document.getElementById('newLauncherPath').value = item.path || '';
+        document.getElementById('newLauncherIcon').value = item.icon || '';
+        if (document.getElementById('newLauncherType')) {
+            document.getElementById('newLauncherType').value = item.type || 'app';
+            this.onLauncherTypeChange(item.type || 'app');
+        }
+    },
+
+    async editRango(index) {
+        const r = tempConfig.HOTEL.STATS_CONFIG.RANGOS[index];
+        if (!await Ui.showConfirm(`¿Editar rango Planta ${r.planta}?`)) return;
+
+        tempConfig.HOTEL.STATS_CONFIG.RANGOS.splice(index, 1);
+        this.renderRangos();
+
+        document.getElementById('newRangePlanta').value = r.planta;
+        document.getElementById('newRangeMin').value = r.min;
+        document.getElementById('newRangeMax').value = r.max;
+    },
+
+    async editExcursionAlCatalogo(index) {
+        const item = tempConfig.EXCURSIONES_CATALOGO[index];
+        if (!await Ui.showConfirm(`¿Editar ${item.nombre}?`)) return;
+
+        tempConfig.EXCURSIONES_CATALOGO.splice(index, 1);
+        this.renderExcursionesCatalogo();
+
+        Utils.setVal('newExc_nombre', item.nombre);
+        Utils.setVal('newExc_operador', item.operador || '');
+        Utils.setVal('newExc_pAdulto', item.precioAdulto);
+        Utils.setVal('newExc_pNiño', item.precioNiño || '');
+        Utils.setVal('newExc_pGrupo', item.precioGrupo || '');
+        if (document.getElementById('newExc_esTicket')) {
+            document.getElementById('newExc_esTicket').value = item.esTicket ? 'true' : 'false';
+        }
+    },
+
+    async editInstalacion(index) {
+        const item = tempConfig.HOTEL.INSTALACIONES[index];
+        if (!await Ui.showConfirm(`¿Editar ${item.nombre}?`)) return;
+
+        tempConfig.HOTEL.INSTALACIONES.splice(index, 1);
+        this.renderInstalaciones();
+
+        Utils.setVal('newInst_nombre', item.nombre);
+        Utils.setVal('newInst_apertura', item.apertura);
+        Utils.setVal('newInst_cierre', item.cierre);
+        Utils.setVal('newInst_icono', item.icono || '');
+    },
+
+
     async saveConfigLocal() {
         const btn = document.querySelector('button[onclick="saveConfigLocal()"]');
         if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Guardando...'; }
@@ -489,13 +572,15 @@ export const Configurator = {
             tempConfig.SYSTEM.ADMIN_PASSWORD = document.getElementById('conf_admin_pass').value;
             tempConfig.SAFE.PRECIO_DIARIO = parseFloat(document.getElementById('conf_safe_precio').value) || 2.0;
             tempConfig.CAJA.FONDO = parseFloat(document.getElementById('conf_caja_fondo').value) || -2000.0;
-            tempConfig.SYSTEM.GALLERY_PATH = document.getElementById('conf_gallery_path').value || 'resources/informacion';
-
+            tempConfig.SYSTEM.GALLERY_PATH = document.getElementById('conf_gallery_path').value || 'assets/gallery';
+            tempConfig.SYSTEM.SYNC_INTERVAL = parseInt(document.getElementById('conf_sync_interval').value) || 10000;
+            
             await configService.saveConfig(tempConfig);
             Ui.showToast("Configuración guardada correctamente.", "success");
             setTimeout(() => location.reload(), 1500);
         } catch (e) {
             Ui.showToast("Error al guardar la configuración.", "error");
+            console.error(e);
             if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-save me-2"></i>Guardar Ajustes'; }
         }
     },
@@ -507,12 +592,6 @@ export const Configurator = {
         const a = document.createElement('a');
         a.href = url; a.download = "config.json";
         a.click(); URL.revokeObjectURL(url);
-    },
-
-    async resetConfigToDefault() {
-        if (await Ui.showConfirm("¿Restablecer configuración? Se perderán los ajustes no guardados.")) {
-            location.reload();
-        }
     }
 };
 
@@ -539,4 +618,5 @@ window.pickGalleryFolder = () => {
 window.Configurator = Configurator;
 window.saveConfigLocal = () => Configurator.saveConfigLocal();
 window.exportConfig = () => Configurator.exportConfig();
-window.resetConfigToDefault = () => Configurator.resetConfigToDefault();
+window.resetConfigToDefault = () => console.warn("Feature disabled");
+

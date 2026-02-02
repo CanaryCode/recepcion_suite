@@ -28,14 +28,27 @@ export async function inicializarDesayuno() {
         formId: 'formNuevoDesayuno',
         service: desayunoService,
         idField: 'desayuno_hab',
-        mapData: (data) => ({
-            pax: parseInt(data.desayuno_pax),
-            hora: data.desayuno_hora,
-            obs: data.desayuno_obs
-        }),
+        serviceIdField: 'hab', // Crucial para evitar duplicados en actualizaciones
+        mapData: (rawData) => {
+            const hab = rawData.desayuno_hab.trim().padStart(3, '0');
+            const autor = Utils.validateUser();
+            if (!autor) return null;
+
+            return {
+                hab,
+                pax: parseInt(rawData.desayuno_pax),
+                hora: rawData.desayuno_hora,
+                obs: rawData.desayuno_obs,
+                autor: rawData.autor || autor,
+                timestamp: Date.now()
+            };
+        },
         onSuccess: () => {
             const btnSubmit = document.getElementById('btnSubmitDesayuno');
             if (btnSubmit) btnSubmit.innerHTML = '<i class="bi bi-save-fill me-2"></i>Guardar';
+            // Reset form title/mode if needed, though Ui.handleFormSubmission usually resets form
+            const titleEl = document.querySelector('#formNuevoDesayuno h6');
+            if (titleEl) titleEl.innerHTML = '<i class="bi bi-cup-hot me-2"></i>Nuevo Desayuno';
             mostrarDesayunos();
         }
     });
@@ -84,7 +97,8 @@ function renderTablaDesayunos(lista) {
                 </div>
             </td>
             <td class="text-end">
-                <button onclick="eliminarDesayuno('${item.hab}')" class="btn btn-sm btn-outline-danger border-0"><i class="bi bi-trash"></i></button>
+                <button onclick="editarDesayuno('${item.hab}')" class="btn btn-sm btn-outline-primary border-0 me-1" data-bs-toggle="tooltip" title="Editar"><i class="bi bi-pencil"></i></button>
+                <button onclick="eliminarDesayuno('${item.hab}')" class="btn btn-sm btn-outline-danger border-0" data-bs-toggle="tooltip" title="Eliminar"><i class="bi bi-trash"></i></button>
             </td>
         </tr>`, 'No hay pedidos de desayuno registrados.');
 }
@@ -147,6 +161,29 @@ window.eliminarDesayuno = async (hab) => {
         desayunoService.removeByKey(hab);
         mostrarDesayunos();
     }
+};
+
+window.editarDesayuno = (hab) => {
+    const data = desayunoService.getByKey(hab);
+    if (!data) return;
+
+    Utils.setVal('desayuno_hab', hab);
+    Utils.setVal('desayuno_pax', data.pax);
+    Utils.setVal('desayuno_hora', data.hora);
+    Utils.setVal('desayuno_obs', data.obs || '');
+
+    const btnSubmit = document.getElementById('btnSubmitDesayuno');
+    if (btnSubmit) btnSubmit.innerHTML = '<i class="bi bi-pencil-square me-2"></i>Actualizar Desayuno';
+    
+    // Change title to indicate edit mode
+    const titleEl = document.querySelector('#formNuevoDesayuno h6');
+    if (titleEl) titleEl.innerHTML = '<i class="bi bi-pencil me-2"></i>Editar Desayuno';
+
+    // Set original ID to handle renaming/cleanup
+    document.getElementById('formNuevoDesayuno').dataset.originalId = hab;
+
+    document.getElementById('btnVistaTrabajoDesayuno').click();
+    document.getElementById('desayuno_hab').focus();
 };
 
 window.irADesayuno = (hab) => {

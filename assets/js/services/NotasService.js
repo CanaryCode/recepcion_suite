@@ -12,8 +12,9 @@ class NotasService extends BaseService {
         // Esquema de validación para notas
         this.schema = {
             id: 'number',
-            texto: 'string',
-            autor: 'string',
+            titulo: 'string',
+            contenido: 'string',
+            color: 'string',
             fecha: 'string'
         };
     }

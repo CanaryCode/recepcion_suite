@@ -7,6 +7,7 @@
  */
 
 import { systemAlarmsService } from '../services/SystemAlarmsService.js';
+import { desayunoService } from '../services/DesayunoService.js';
 
 let audioCtx = null;
 let beepInterval = null;
@@ -66,15 +67,16 @@ function iniciarMonitorAlarmas() {
     intervalId = setInterval(checkAlarmas, ALARM_CHECK_INTERVAL);
 }
 
-// Global interval definition if not already defined (it was missing in previous view?) 
-// Wait, 'intervalId' is used but not defined in top scope in previous snippets. 
-// CHECK module scope variables. In step 615, line 6 is 'let beepInterval'.
-// 'intervalId' appears in 'iniciarMonitorAlarmas'.
-// It must be defined.
+// Global interval definition
 let intervalId = null; 
 
 function checkAlarmas() {
     const now = new Date();
+    checkSystemAlarms(now);
+    checkBreakfasts(now);
+}
+
+function checkSystemAlarms(now) {
     const alarms = systemAlarmsService.getAlarms() || []; // Safeguard against null
     let pendingToday = false;
 
@@ -116,6 +118,28 @@ function checkAlarmas() {
     });
     
     updateBellStatus(pendingToday);
+}
+
+function checkBreakfasts(now) {
+    const desayunos = desayunoService.getAll() || {};
+    const currentHour = now.getHours().toString().padStart(2, '0');
+    const currentMinute = now.getMinutes().toString().padStart(2, '0');
+    const currentTime = `${currentHour}:${currentMinute}`;
+
+    Object.keys(desayunos).forEach(hab => {
+        const item = desayunos[hab];
+        if (item.hora === currentTime) {
+            const fakeAlarm = {
+                id: `bk_${hab}_${currentTime}`,
+                titulo: 'DESAYUNO TEMPRANO',
+                mensaje: `Habitación ${hab} (${item.pax} pax) - ${item.obs || 'Sin observaciones'}`,
+                hora: item.hora,
+                active: true,
+                type: 'daily' 
+            };
+            triggerAlarm(fakeAlarm);
+        }
+    });
 }
 
 function updateBellStatus(hasPending) {

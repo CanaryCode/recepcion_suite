@@ -1,10 +1,21 @@
 [
-  {
-    "id": "sys_default_0",
-    "hora": "23:30",
-    "mensaje": "Realizar lecturas de las VISAS",
-    "dias": "todos",
-    "titulo": "Realizar lecturas de las VISAS",
-    "active": true
-  }
+    {
+        "id": "sys_1770026049584",
+        "hora": "09:55",
+        "mensaje": "44",
+        "titulo": "44",
+        "type": "daily",
+        "active": true,
+        "dias": "todos",
+        "autor": "Anadelia",
+        "actualizadoEn": "2026-02-02T09:54:09.584Z"
+    },
+    {
+        "id": "sys_default_0",
+        "hora": "23:30",
+        "mensaje": "Realizar lecturas de las VISAS",
+        "dias": "todos",
+        "titulo": "Realizar lecturas de las VISAS",
+        "active": true
+    }
 ]

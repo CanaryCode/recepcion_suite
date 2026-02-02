@@ -261,13 +261,15 @@ export const Ui = {
             // FIX: Prevent crash if idValue is undefined/null
             if (idValue === undefined || idValue === null) {
                 idValue = ''; 
+            } else {
+                idValue = String(idValue).trim();
             }
 
 
             // 3. Validar Habitación si aplica (Solo si el ID de campo es exactamente 'habitacion' o termina en '_hab')
             const isHabField = idField && (idField === 'habitacion' || idField === 'hab' || idField.endsWith('_hab'));
             if (isHabField) {
-                idValue = idValue.toString().padStart(3, '0');
+                idValue = idValue.toString().trim().padStart(3, '0');
                 const validHabs = Utils.getHabitaciones().map(h => h.num);
                 if (!validHabs.includes(idValue)) {
                     Ui.showToast(`Error: La habitación ${idValue} no existe.`, "danger");
@@ -294,7 +296,22 @@ export const Ui = {
                 const finalId = idValue || Date.now();
                 // Usamos serviceIdField si existe, sino idField (comportamiento legacy), sino 'id' (default BaseService)
                 const targetKeyField = serviceIdField || idField;
+
+                // CRITICAL: Handle Edit/Rename logic (Delete Old -> Create New)
+                // Usamos dataset.originalId para saber si estamos editando
+                const originalId = form.dataset.originalId;
+
+                if (originalId) {
+                     // Borrado forzoso del registro anterior para asegurar limpieza total
+                     // especialmente si la clave (hab) ha cambiado.
+                     await service.removeByKey(originalId.toString().trim(), targetKeyField);
+                }
+                
+                // Guardar el registro NUEVO (o actualizado)
                 await service.setByKey(finalId, finalData, targetKeyField);
+                
+                // Cleanup dataset
+                delete form.dataset.originalId;
 
                 // 6. Feedback
                 Ui.showToast("Registro guardado correctamente.", "success");

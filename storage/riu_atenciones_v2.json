@@ -1,12 +1,14 @@
 {
-  "102": {
-    "hab": "102",
-    "tipos": [
-      "Fruta"
-    ],
-    "comentario": "",
-    "autor": "Javi",
-    "timestamp": 1769723007274,
-    "actualizadoEn": "2026-01-29T21:43:27.274Z"
-  }
+    "102": {
+        "hab": "102",
+        "tipos": [
+            "Fruta",
+            "SPA",
+            "Regalo"
+        ],
+        "comentario": "",
+        "autor": "Anadelia",
+        "timestamp": 1770027950587,
+        "actualizadoEn": "2026-02-02T10:25:50.587Z"
+    }
 }

@@ -7,7 +7,9 @@ export const APP_CONFIG = {
     SYSTEM: { 
         USE_API: false, 
         USE_SYNC_SERVER: true,
-        API_URL: '/api'
+        API_URL: '/api',
+        GALLERY_PATH: 'assets/gallery',
+        LAUNCHERS: []
     },
     HOTEL: { RECEPCIONISTAS: [] }
 };

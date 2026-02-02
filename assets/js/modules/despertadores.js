@@ -46,8 +46,9 @@ export async function inicializarDespertadores() {
         formId: 'formNuevoDespertador',
         service: despertadorService,
         idField: 'desp_hab',
+        serviceIdField: 'habitacion', // Crucial para que BaseService encuentre el registro y actualice
         mapData: (rawData) => ({
-            habitacion: rawData.desp_hab.toString().padStart(3, '0'),
+            habitacion: rawData.desp_hab.toString().trim().padStart(3, '0'),
             hora: rawData.desp_hora,
             comentario: rawData.desp_comentario
         }),
@@ -326,23 +327,27 @@ function abrirVisorAlarmasManual() {
     }
 }
 
-window.atenderAlarma = (id) => {
+window.atenderAlarma = async (id) => {
     const el = document.getElementById(`alarm-item-${id}`);
     if (el) {
         el.classList.add('opacity-25', 'text-decoration-line-through');
         const btns = el.querySelectorAll('button');
         btns.forEach(b => b.disabled = true);
         
+        // ELIMINAR EL REGISTRO REAL (Ya se atendió)
+        await despertadorService.removeDespertador(id);
+        mostrarDespertadores(); // Actualizar tabla de fondo
+
         // Comprobar si quedan pendientes visualmente
         const container = document.getElementById('alarma-lista-display');
         const pendientes = container.querySelectorAll('div[id^="alarm-item-"]:not(.opacity-25)');
         if (pendientes.length === 0) {
-            // Opcional: Cerrar modal automáticamente o dejar que el usuario lo cierre con el botón grande
-            // setTimeout(() => {
-            //     const modalEl = document.getElementById('modalAlarmaDespertador');
-            //     const modal = bootstrap.Modal.getInstance(modalEl);
-            //     modal.hide();
-            // }, 1000);
+            // Si no quedan, podemos cerrar el modal tras un breve delay o dejar que el recepcionista lo haga
+             setTimeout(() => {
+                 const modalEl = document.getElementById('modalAlarmaDespertador');
+                 const modal = bootstrap.Modal.getInstance(modalEl);
+                 if (modal) modal.hide();
+             }, 1000);
         }
     }
 };
@@ -448,6 +453,10 @@ window.prepararEdicionDespertador = (hab) => {
             formCard.classList.add('border-primary', 'border-2');
             setTimeout(() => formCard.classList.remove('border-primary', 'border-2'), 2000);
         }
+
+        // Set original ID for renaming support (Rename = Delete Old + Create New)
+        document.getElementById('formNuevoDespertador').dataset.originalId = hab;
+
         document.getElementById('desp_hora')?.focus();
     }
 };
@@ -461,7 +470,7 @@ window.eliminarDespertador = async (hab) => {
 
 window.limpiarDespertadoresPasados = async () => {
     if (await Ui.showConfirm("¿Deseas limpiar todos los despertadores programados?")) {
-        despertadorService.clearAll();
+        await despertadorService.clear();
         mostrarDespertadores();
     }
 };

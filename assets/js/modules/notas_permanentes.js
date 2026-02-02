@@ -1,5 +1,6 @@
 import { notasService } from '../services/NotasService.js';
 import { Utils } from '../core/Utils.js';
+import { Ui } from '../core/Ui.js';
 
 /**
  * MÓDULO DE NOTAS PERMANENTES (NOTAS ADHESIVAS / POST-ITS)
@@ -109,6 +110,7 @@ function guardarNota(e) {
 
     if (notaEnEdicionId) {
         // Editar
+        const notaExistente = notasService.getNotaById(notaEnEdicionId);
         if (notaExistente) {
             const notaActualizada = {
                 ...notaExistente,

@@ -4,6 +4,7 @@
     "USE_SYNC_SERVER": true,
     "API_URL": "http://localhost:3000/api",
     "SYNC_INTERVAL": 10000,
+    "GALLERY_PATH": "assets/gallery",
     "LAUNCHERS": []
   },
   "HOTEL": {

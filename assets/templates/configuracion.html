@@ -27,14 +27,7 @@
     >
       <i class="bi bi-sliders me-2"></i>General
     </button>
-    <button
-      class="btn btn-outline-danger"
-      onclick="resetConfigToDefault()"
-      data-bs-toggle="tooltip"
-      data-bs-title="Restaurar valores de fábrica"
-    >
-      <i class="bi bi-arrow-counterclockwise me-2"></i>Reset
-    </button>
+
   </div>
 
   <div class="btn-print-wrapper gap-2">
@@ -61,6 +54,7 @@
 <div id="configuracion-content-wrapper" class="animate-fade-in">
   <form
     id="formConfig"
+    autocomplete="off"
     onsubmit="
       event.preventDefault();
       saveConfigLocal();
@@ -170,7 +164,60 @@
 
     <!-- 1.2 Ejecutables / Apps Externas -->
     <div class="card mb-4 shadow-sm border-0">
-      <!-- ... (contenido anterior de apps) ... -->
+      <div class="card-header py-3 bg-white">
+        <h6 class="mb-0 fw-bold text-primary">
+          <i class="bi bi-grid-3x3-gap-fill me-2"></i>Lanzador de Aplicaciones (LaunchPad)
+        </h6>
+      </div>
+      <div class="card-body">
+        <p class="small text-muted mb-3">
+          Configura los accesos directos que aparecen en el menú "LaunchPad". 
+          Puedes añadir programas (.exe) o carpetas locales.
+        </p>
+
+        <!-- Container for list -->
+        <div id="list-app-launchers" class="row g-2 mb-3"></div>
+
+        <!-- Add Form -->
+        <div class="p-3 bg-light rounded border">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold">Tipo</label>
+                    <select id="newLauncherType" class="form-select form-select-sm" onchange="Configurator.onLauncherTypeChange(this.value)">
+                        <option value="app">Aplicación / Archivo</option>
+                        <option value="folder">Carpeta</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold">Nombre</label>
+                    <input type="text" id="newLauncherLabel" class="form-control form-control-sm" placeholder="Ej: Word">
+                </div>
+                <div class="col-md-4">
+                    <label id="labelLauncherPath" class="form-label small fw-bold">Ruta</label>
+                    <div class="input-group input-group-sm">
+                        <input type="text" id="newLauncherPath" class="form-control" placeholder="C:\Program Files\...">
+                        <button class="btn btn-outline-secondary" type="button" onclick="pickLauncherFile()">
+                            <i class="bi bi-folder2-open"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold">Icono (Opcional)</label>
+                    <div class="input-group input-group-sm">
+                        <button class="btn btn-outline-secondary" type="button" onclick="IconSelector.open('newLauncherIcon')" title="Elegir Icono">
+                            <i class="bi bi-palette"></i>
+                        </button>
+                        <input type="text" id="newLauncherIcon" class="form-control" placeholder="bi-box">
+                    </div>
+                </div>
+                <div class="col-md-1">
+                    <button class="btn btn-primary btn-sm w-100 fw-bold" type="button" onclick="addAppLauncher()">
+                        <i class="bi bi-plus-lg"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+      </div>
     </div>
 
     <!-- 1.25 Catálogo de Excursiones & Tickets -->
@@ -429,6 +476,16 @@
               id="conf_caja_fondo"
               class="form-control"
               placeholder="2000.00"
+            />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small fw-bold">Intervalo Sincro (ms)</label>
+            <input
+              type="number"
+              step="1000"
+              id="conf_sync_interval"
+              class="form-control"
+              placeholder="10000"
             />
           </div>
         </div>

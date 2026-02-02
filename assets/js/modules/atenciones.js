@@ -37,6 +37,7 @@ export async function inicializarAtenciones() {
         formId: 'formNuevaAtencion',
         service: atencionesService,
         idField: 'atencion_hab', // Usamos la hab como ID para atenciones
+        serviceIdField: 'hab',     // Campo real en la base de datos para la clave primaria
         mapData: (rawData) => {
             const autor = Utils.validateUser();
             if (!autor) return null;
@@ -159,6 +160,9 @@ window.prepararEdicionAtencion = async (hab) => {
     const btn = document.getElementById('btnSubmitAtenciones');
     if (btn) btn.innerHTML = '<i class="bi bi-pencil-square me-2"></i>Actualizar Atención';
     
+    // Set original ID for renaming support
+    document.getElementById('formNuevaAtencion').dataset.originalId = hab;
+
     document.getElementById('btnVistaTrabajo').click();
     document.getElementById('atencion_hab').focus();
 };

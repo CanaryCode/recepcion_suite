@@ -257,6 +257,10 @@ window.prepararEdicionSafe = (hab) => {
 
         const btnSubmit = document.querySelector('#formNuevoSafe button[type="submit"]');
         if (btnSubmit) btnSubmit.innerHTML = '<i class="bi bi-pencil-square me-2"></i>Actualizar Alquiler';
+        
+        // Set original ID for renaming support
+        document.getElementById('formNuevoSafe').dataset.originalId = hab;
+
         cambiarVistaSafe('trabajo');
     }
 };

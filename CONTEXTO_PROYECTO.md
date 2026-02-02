@@ -242,6 +242,19 @@ Los atributos de las habitaciones no deben estar harcodeados en el código JS ("
     - Al renderizar filtros o selectores, iterar sobre estas variables de configuración.
     - No usar `if (tipo === "Doble")` si "Doble" no está definido en la configuración.
 
+### 6.9. Capacidad de Edición y Actualización (CRUD Completo)
+
+Todos los módulos que gestionen registros (tablas) deben implementar obligatoriamente la capacidad de **Edición**:
+
+1.  **UI**: Incluir un botón de "Editar" (icono `bi-pencil`, color `btn-outline-primary`) junto al botón de eliminar en cada fila de la tabla.
+2.  **UX**: Al pulsar editar:
+    - Cargar los datos del registro en el formulario principal (Vista Trabajo).
+    - Cambiar el foco a ese formulario.
+    - Cambiar el texto del botón de guardar a "Guardar Cambios" o "Actualizar".
+3.  **Lógica (Limpieza y Renombrado)**:
+    - Si se edita la clave principal (ej: Número de Habitación), el sistema debe **ELIMINAR** el registro original y **CREAR** uno nuevo con la nueva clave.
+    - Esto se gestiona automáticamente en `Ui.handleFormSubmission` si se establece el atributo `data-original-id` en el formulario durante la preparación de la edición.
+
 ## 7. Reglas de UX/UI y "Resumen del Día" (CRÍTICO)
 
 ### 7.1. Módulos de "Resumen del Día"
@@ -457,7 +470,7 @@ La aplicación aplica las siguientes reglas estrictas de validación de datos:
 
 - **Despertadores**: Obligatorio `habitacion` y `hora`. `comentarios` es opcional.
 - **Cenas Frías**: Obligatorio `habitacion`, `hora` y `pax`.
-- **Desayunos**: Obligatorio `habitacion`, `hora` y `pax`.
+- **Desayunos**: Obligatorio `habitacion`, `hora` y `pax`. **Integración con Alarmas**: Los desayunos deben disparar automáticamente una Alarma de Sistema cuando llegue su hora.
 - **Atenciones**: Obligatorio `habitacion` y `tipo` (atención/motivo).
 - **Transfers**: Obligatorio `fecha_recogida`, `destino`, `hora`, `habitacion` y `pax`.
 - **Safe**: Obligatorio `habitacion` y `fecha_inicio`.
@@ -484,3 +497,33 @@ Bootstrap 5 prohíbe tener más de un tipo de instancia (ej: Tooltip y Dropdown)
 
 - **ID de Habitaciones:** Las IDs de los elementos dinámicos dentro del Modal de Detalle deben llevar el prefijo `v8-` (ej: `v8-check-sofa`) para evitar colisiones con elementos duplicados en el DOM principal.
 - **Limpieza**: Evitar dejar contenedores de modales ocultos en el `index.html` si el modal se genera y destruye vía JS (Inyección en el Overlay).
+
+## 15. Refinamiento del Módulo de Configuración (Iteración 11+)
+
+Para mejorar la seguridad y la usabilidad del sistema de ajustes:
+
+### 15.1. Seguridad y Mantenimiento
+
+- **Eliminación del Botón Reset**: Se ha eliminado el botón de "Restaurar valores de fábrica" para evitar borrados accidentales de la configuración crítica del hotel.
+- **Limpieza de Secciones**: Se han eliminado las secciones de configuración que no requieren edición frecuente o que son manejadas por otros servicios (Alarmas de Sistema, Países de Agenda, Sistema Monetario).
+
+### 15.2. Edición Completa ("Pop & Fill")
+
+Todas las listas de configuración (Recepcionistas, Transfers, Departamentos, Launchers, Excursiones, Instalaciones, Rangos) utilizan ahora un patrón de **Edición Dinámica**:
+
+1.  Al pulsar el botón **Editar (Lápiz)**, el elemento se elimina temporalmente de la lista local.
+2.  Los datos del elemento se cargan automáticamente en el formulario de "Añadir".
+3.  El usuario modifica los datos y pulsa "Añadir" para devolver el elemento actualizado a la lista.
+4.  Los cambios solo son permanentes tras pulsar **Aplicar Cambios** (Save Config).
+
+Este patrón simplifica la interfaz al no requerir modales adicionales para cada tipo de dato.
+
+### 15.3. Estética de Ventanas Emergentes (Modales)
+
+Para mantener la coherencia visual "Premium", todos los modales deben:
+
+- **Evitar `confirm()` nativos**: Usar siempre `Ui.showConfirm()` que despliega un modal estilizado.
+- **Sombra y Bordes**: Usar `shadow-lg` y bordes redondeados (`rounded-3` o superior).
+- **Color de Contexto**: El encabezado o los botones principales deben reflejar la acción (Verde para éxito/añadir, Azul para información, Rojo para eliminación/peligro).
+- **Animación**: Deben incluir la clase `fade` para una transición suave de entrada y salida.
+- **Fondo**: El backdrop debe ser oscuro y difuminado si es posible (`modal-backdrop` estándar de Bootstrap).

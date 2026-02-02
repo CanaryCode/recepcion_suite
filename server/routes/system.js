@@ -97,11 +97,14 @@ router.post('/list-images', async (req, res) => {
 
         // Sanitize folderPath for internal use but preserve absolute nature
         folderPath = path.resolve(folderPath);
+        console.log(`[System Routes] Resolved folderPath: ${folderPath}`);
 
         try {
             await fs.access(folderPath);
-        } catch {
-            await fs.mkdir(folderPath, { recursive: true });
+        } catch (accessErr) {
+            console.warn(`[System Routes] Path NOT accessible or missing: ${folderPath}`);
+            // If it's the external one and fails, let's at least return empty instead of crashing
+            return res.json({ path: folderPath, images: [] });
         }
 
         const dirents = await fs.readdir(folderPath, { withFileTypes: true });
@@ -140,6 +143,7 @@ router.post('/list-images', async (req, res) => {
                 };
             });
 
+        console.log(`[System Routes] Found ${images.length} images in ${folderPath}`);
         res.json({ 
             path: folderPath.replace(/\\/g, '/'),
             images: images

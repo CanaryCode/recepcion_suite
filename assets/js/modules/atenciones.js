@@ -89,7 +89,16 @@ async function mostrarAtenciones() {
     if (window.checkDailySummaryVisibility) window.checkDailySummaryVisibility();
 
     // Tabla Principal
-    Ui.renderTable('tablaAtencionesActivas', listaDatos, (item) => {
+    // Tabla Principal
+    renderTablaAtenciones(listaDatos);
+
+    Ui.enableTableSorting('table-atenciones', listaDatos, (sortedData) => {
+        renderTablaAtenciones(sortedData);
+    });
+}
+
+function renderTablaAtenciones(lista) {
+    Ui.renderTable('tablaAtencionesActivas', lista, (item) => {
         const badges = item.tipos.map(a => 
             `<span class="badge bg-info text-dark me-1"><i class="bi ${ICONOS_ATENCION[a] || 'bi-tag'} me-1"></i>${a}</span>`
         ).join('');

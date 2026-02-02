@@ -87,6 +87,10 @@ function mostrarSafeRentals() {
     
     // 1. Mostrar en Tabla (Lista)
     Ui.renderTable('tablaSafeActivos', rentals, renderFilaSafe, 'No hay alquileres registrados.');
+
+    Ui.enableTableSorting('table-safe', rentals, (sortedData) => {
+        Ui.renderTable('tablaSafeActivos', sortedData, renderFilaSafe, 'No hay alquileres registrados.');
+    });
     
     // 2. Renderizar Rack
     renderSafeRack();

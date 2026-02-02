@@ -130,6 +130,12 @@ export async function mostrarClientes() {
         : clientes;
 
     Ui.renderTable('tablaCuerpo', filtered, renderFilaRiu, 'No hay clientes RIU registrados hoy.');
+    
+    // Enable Sorting
+    Ui.enableTableSorting('table-riu', filtered, (sortedData) => {
+        Ui.renderTable('tablaCuerpo', sortedData, renderFilaRiu, 'No hay clientes RIU registrados hoy.');
+    });
+
     actualizarEstadisticas(clientes);
 }
 

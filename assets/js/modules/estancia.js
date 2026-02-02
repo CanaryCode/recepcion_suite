@@ -149,26 +149,46 @@ function mostrarEstancia() {
     // Generar array de días para la tabla
     const listaDias = [];
     for (let d = 1; d <= diasEnMes; d++) {
-        listaDias.push({ d, data: dataByDay[d] });
+        const registro = dataByDay[d];
+        const item = { d, data: registro };
+        
+        // Flatten properties for sorting
+        if (registro) {
+            item.ocupadas = registro.ocupadas;
+            item.vacias = registro.vacias;
+            item.libres = registro.totalHab - registro.ocupadas - registro.vacias;
+            item.porcentaje = parseFloat(((registro.ocupadas / registro.totalHab) * 100).toFixed(1));
+        } else {
+            // For sorting purposes, put empties at bottom or top? Let's treat as -1 or 0
+            item.ocupadas = -1;
+            item.vacias = -1;
+            item.libres = -1;
+            item.porcentaje = -1;
+        }
+        
+        listaDias.push(item);
     }
 
-    Ui.renderTable('tablaEstanciaCuerpo', listaDias, (item) => {
+    const renderRow = (item) => {
         const { d, data } = item;
         
         if (data) {
-            const libres = data.totalHab - data.ocupadas - data.vacias;
-            const porcentaje = ((data.ocupadas / data.totalHab) * 100).toFixed(1);
+            const libres = item.libres;   // Use calculated
+            const porcentaje = item.porcentaje; // Use calculated
+            const ocupadas = data.ocupadas;
+            const vacias = data.vacias;
 
-            sumaOcupadas += data.ocupadas;
-            sumaVacias += data.vacias;
-            sumaTotal += data.totalHab;
-            diasContados++;
-
+            // These sums need to be calculated separately or just once?
+            // Since enabling table sorting re-renders ONLY rows and not re-calculates globals usually...
+            // But here the original logic calculated sums DURING rendering loop.
+            // This is dangerous if we re-render sorted.
+            // BETTER: Calculate sums BEFORE creating the list.
+            
             return `
                 <tr>
                     <td class="fw-bold text-start ps-4">Día ${d}</td>
-                    <td>${data.ocupadas}</td>
-                    <td>${data.vacias}</td>
+                    <td>${ocupadas}</td>
+                    <td>${vacias}</td>
                     <td>${libres}</td>
                     <td><span class="badge bg-primary">${porcentaje}%</span></td>
                     <td class="text-end pe-4">
@@ -178,6 +198,20 @@ function mostrarEstancia() {
         } else {
             return `<tr class="text-muted opacity-50"><td class="text-start ps-4">Día ${d}</td><td colspan="5">Sin registro</td></tr>`;
         }
+    };
+
+    // Calculate Totals SEPARATELY from rendering
+    monthRegistros.forEach(data => {
+         sumaOcupadas += data.ocupadas;
+         sumaVacias += data.vacias;
+         sumaTotal += data.totalHab;
+         diasContados++;
+    });
+
+    Ui.renderTable('tablaEstanciaCuerpo', listaDias, renderRow);
+
+    Ui.enableTableSorting('table-estancia', listaDias, (sortedData) => {
+        Ui.renderTable('tablaEstanciaCuerpo', sortedData, renderRow);
     });
 
     if (diasContados > 0) {

@@ -274,6 +274,18 @@ function renderListaNovedades(append = false) {
     }
 
     if (window.checkDailySummaryVisibility) window.checkDailySummaryVisibility();
+
+    if (!append) {
+        Ui.enableTableSorting('table-novedades', currentFilteredNovedades, (sorted) => {
+             currentFilteredNovedades = sorted;
+             // Reset paging ?? Sorting full list usually means resetting custom paging or rendering all.
+             // Our infinite scroll supports partial rendering.
+             // If we sort, we sort the WHOLE currentFilteredNovedades array.
+             // Then we should re-render from scratch (page 1) to show top results.
+             visibleCount = PAGE_SIZE;
+             renderListaNovedades(false);
+        });
+    }
 }
 
 window.cargarMasNovedades = function() {

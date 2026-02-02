@@ -62,7 +62,17 @@ function mostrarDesayunos() {
     if (window.checkDailySummaryVisibility) window.checkDailySummaryVisibility();
 
     // B. Tabla Principal (API Ui)
-    Ui.renderTable('tablaDesayunoActivos', listaDesayunos, (item) => `
+    // B. Tabla Principal (API Ui)
+    renderTablaDesayunos(listaDesayunos);
+
+    // Initial Sort Enablement
+    Ui.enableTableSorting('table-desayunos', listaDesayunos, (sortedData) => {
+        renderTablaDesayunos(sortedData);
+    });
+}
+
+function renderTablaDesayunos(lista) {
+    Ui.renderTable('tablaDesayunoActivos', lista, (item) => `
         <tr id="desayuno-row-${item.hab}">
             <td class="fw-bold text-primary">${item.hab}</td>
             <td><span class="badge bg-light text-dark border">${item.pax} pax</span></td>

@@ -132,14 +132,7 @@ function renderAlarmsList() {
         return hA.localeCompare(hB);
     });
     console.log(`[UI] Rendering ${alarms.length} alarms:`, alarms);
-    tbody.innerHTML = '';
-
-    if (alarms.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">No hay alarmas configuradas.</td></tr>';
-        return;
-    }
-
-    alarms.forEach(a => {
+    const renderRow = (a) => {
         let freqBadge = '';
         if (a.type === 'date') {
             freqBadge = `<span class="badge bg-secondary">${Utils.formatDate(a.date)}</span>`;
@@ -159,7 +152,7 @@ function renderAlarmsList() {
             <input class="form-check-input" type="checkbox" ${a.active ? 'checked' : ''} onclick="toggleActiveSystemAlarm('${a.id}')">
         </div>`;
 
-        tbody.innerHTML += `
+        return `
             <tr class="${!a.active ? 'opacity-50' : ''}">
                 <td class="fw-bold text-primary fs-5 font-monospace">${a.hora}</td>
                 <td>${a.mensaje}</td>
@@ -175,6 +168,12 @@ function renderAlarmsList() {
                 </td>
             </tr>
         `;
+    };
+
+    Ui.renderTable('tableSystemAlarmsBody', alarms, renderRow, 'No hay alarmas configuradas.');
+
+    Ui.enableTableSorting('table-system-alarms', alarms, (sortedData) => {
+        Ui.renderTable('tableSystemAlarmsBody', sortedData, renderRow, 'No hay alarmas configuradas.');
     });
 }
 

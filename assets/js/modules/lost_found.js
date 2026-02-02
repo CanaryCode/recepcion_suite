@@ -12,7 +12,6 @@ import { MediaService } from "../services/MediaService.js";
 
 let moduleInitialized = false;
 let currentImageArray = [];
-let currentSort = { field: 'fecha', direction: 'desc' };
 
 export const lostFoundModule = {
     async init() {
@@ -106,24 +105,16 @@ export const lostFoundModule = {
             return matchesSearch && matchesStatus;
         });
 
-        // Sorting Logic
-        filtered.sort((a, b) => {
-            let valA = a[currentSort.field] || '';
-            let valB = b[currentSort.field] || '';
-            
-            if (typeof valA === 'string') valA = valA.toLowerCase();
-            if (typeof valB === 'string') valB = valB.toLowerCase();
-            
-            if (valA < valB) return currentSort.direction === 'asc' ? -1 : 1;
-            if (valA > valB) return currentSort.direction === 'asc' ? 1 : -1;
-            return 0;
-        });
+        // Default Sort (Newest first)
+        filtered.sort((a, b) => b.id - a.id);
 
         // Update Total Badge
         const badge = document.getElementById('lostFoundTotalBadge');
         if (badge) badge.innerText = filtered.length;
 
-        Ui.renderTable('lostFoundFullBody', filtered, (item) => `
+        // Render Table Function
+        const renderTable = (data) => {
+             Ui.renderTable('lostFoundFullBody', data, (item) => `
             <tr style="cursor: pointer;" onclick="lostFoundModule.openDetail('${item.id}')">
                 <td class="text-center">
                     <div class="d-flex justify-content-center" style="margin-left: 8px;">
@@ -153,6 +144,15 @@ export const lostFoundModule = {
                 </td>
             </tr>
         `, 'No hay objetos que coincidan con la búsqueda.');
+        };
+
+        // Render Initial
+        renderTable(filtered);
+
+        // Enable Global Sorting
+        Ui.enableTableSorting('table-lost-found', filtered, (sortedData) => {
+            renderTable(sortedData);
+        });
     },
 
     getStatusBadge(status) {
@@ -185,16 +185,6 @@ export const lostFoundModule = {
 
         // Fallback: si no sabemos qué es, asumimos que es una ruta relativa de storage
         return `/storage/media/lost_found/${path}`;
-    },
-
-    setSort(field) {
-        if (currentSort.field === field) {
-            currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
-        } else {
-            currentSort.field = field;
-            currentSort.direction = 'asc';
-        }
-        this.renderFullList();
     },
 
     openImageZoom(imgData) {

@@ -385,7 +385,12 @@ Para evitar duplicidad de código y asegurar consistencia, se ha creado una API 
 - Usar `Ui.preparePrintReport({ dateId, memberId, memberName, extraMappings })`: Centraliza la preparación de metadatos de impresión.
 - Usar `PdfService.generateReport({ title, author, htmlContent, filename, metadata })`: **ESTÁNDAR OBLIGATORIO** para generar reportes PDF profesionales. Sustituye la lógica manual de `html2pdf.js` en los módulos. Centraliza cabeceras, logos y pie de página.
 
-6.  **Vistas Complejas (RackView)**:
+6.  **Tablas Ordenables (Sorting Global)**:
+    - **Política**: Todas las tablas que muestren listados de datos deben ser ordenables por columnas relevantes.
+    - **Implementación**: Usar `Ui.enableTableSorting(tableId, data, renderCallback)`.
+    - **Requisito HTML**: La tabla debe tener `<thead`> con `th` que incluyan el atributo `data-sort="nombrePropiedad"`.
+
+7.  **Vistas Complejas (RackView)**:
     - **Módulo**: `assets/js/core/RackView.js`.
     - **Uso**: `RackView.render(containerId, itemRenderer, floorRenderer, floorFilter)` para pintar el estado del hotel (habitaciones). Soporta filtros.
 

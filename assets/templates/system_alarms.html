@@ -112,13 +112,13 @@
         <div class="content-panel h-100">
             <h5 class="fw-bold mb-3">Alertas Programadas</h5>
             <div class="table-responsive">
-                <table class="table table-hover align-middle">
+                <table id="table-system-alarms" class="table table-hover align-middle">
                     <thead class="table-light">
                         <tr>
-                            <th style="width: 80px;">Hora</th>
-                            <th>Mensaje</th>
-                            <th>Frecuencia</th>
-                            <th class="text-center" style="width: 50px;">Activa</th>
+                            <th style="width: 80px;" data-sort="hora">Hora</th>
+                            <th data-sort="mensaje">Mensaje</th>
+                            <th data-sort="type">Frecuencia</th>
+                            <th class="text-center" style="width: 50px;" data-sort="active">Activa</th>
                             <th class="text-end" style="width: 100px;">Acciones</th>
                         </tr>
                     </thead>

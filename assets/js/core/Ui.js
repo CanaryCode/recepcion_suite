@@ -361,6 +361,103 @@ export const Ui = {
     },
 
     /**
+     * ENABLE TABLE SORTING
+     * Adds sorting functionality to a table based on its headers.
+     * 
+     * @param {string} tableId - The ID of the table element.
+     * @param {Array} data - The array of objects to sort.
+     * @param {Function} renderCallback - Function to re-render the table body with sorted data.
+     * @param {Object} options - Optional settings (e.g., initialSortColumn, initialSortDirection).
+     */
+    enableTableSorting: (tableId, data, renderCallback, options = {}) => {
+        const table = document.getElementById(tableId);
+        if (!table) return;
+
+        const thead = table.querySelector('thead');
+        if (!thead) return;
+
+        let currentSortColumn = options.initialSortColumn || null;
+        let currentSortDirection = options.initialSortDirection || 'asc';
+
+        // Helper to update arrow icons
+        const updateIcons = () => {
+            thead.querySelectorAll('th[data-sort]').forEach(th => {
+                const col = th.dataset.sort;
+                const icon = th.querySelector('.sort-icon');
+                if (!icon) {
+                    // Create icon if missing
+                    const i = document.createElement('i');
+                    i.className = 'sort-icon ms-1 text-muted small bi bi-arrow-down-up opacity-25';
+                    th.appendChild(i);
+                } else {
+                    // Reset
+                    icon.className = 'sort-icon ms-1 text-muted small bi bi-arrow-down-up opacity-25';
+                    if (col === currentSortColumn) {
+                        icon.className = `sort-icon ms-1 small bi bi-arrow-${currentSortDirection === 'asc' ? 'down' : 'up'} text-primary`;
+                    }
+                }
+            });
+        };
+
+        // Attach click handlers
+        thead.querySelectorAll('th[data-sort]').forEach(th => {
+            // Ensure cursor pointer
+            th.style.cursor = 'pointer';
+            
+            // Add icon initially
+            if (!th.querySelector('.sort-icon')) {
+                const i = document.createElement('i');
+                i.className = 'sort-icon ms-1 text-muted small bi bi-arrow-down-up opacity-25';
+                th.appendChild(i);
+            }
+
+            // Remove old listeners (cloning is a quick way, but might break other listeners. 
+            // Better to check if already initialized or use a specific class).
+            // For now, we assume this is called once per table init.
+            
+            th.onclick = () => {
+                const column = th.dataset.sort;
+                
+                if (currentSortColumn === column) {
+                    currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+                } else {
+                    currentSortColumn = column;
+                    currentSortDirection = 'asc';
+                }
+
+                // Sort Data
+                const sortedData = [...data].sort((a, b) => {
+                    let valA = a[column];
+                    let valB = b[column];
+
+                    // Handle nulls
+                    if (valA == null) valA = "";
+                    if (valB == null) valB = "";
+
+                    // Numeric check
+                    if (!isNaN(valA) && !isNaN(valB) && valA !== "" && valB !== "") {
+                        return currentSortDirection === 'asc' ? valA - valB : valB - valA;
+                    }
+
+                    // String Compare
+                    valA = valA.toString().toLowerCase();
+                    valB = valB.toString().toLowerCase();
+
+                    if (valA < valB) return currentSortDirection === 'asc' ? -1 : 1;
+                    if (valA > valB) return currentSortDirection === 'asc' ? 1 : -1;
+                    return 0;
+                });
+
+                updateIcons();
+                renderCallback(sortedData);
+            };
+        });
+
+        // Initial Icon State
+        updateIcons();
+    },
+
+    /**
      * MOSTRAR PROMPT (Entrada de texto)
      */
     showPrompt: async (message, type = 'text') => {

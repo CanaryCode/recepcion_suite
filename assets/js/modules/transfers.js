@@ -238,6 +238,14 @@ function renderListaTransfers(append = false) {
         if (contenedor) contenedor.appendChild(sentinelRow);
         if (infiniteScrollControllerTransfers) infiniteScrollControllerTransfers.reconnect();
     }
+
+    if (!append) {
+        Ui.enableTableSorting('table-transfers', currentFilteredTransfers, (sorted) => {
+            currentFilteredTransfers = sorted;
+            visibleCountTransfers = PAGE_SIZE_TRANSFERS;
+            renderListaTransfers(false);
+        });
+    }
 }
 
 /**

@@ -138,7 +138,16 @@ function mostrarDespertadores() {
     `);
 
     // Tabla Principal usando Ui.renderTable
-    Ui.renderTable('tablaDespertadoresActivos', sorted, (data) => `
+    renderTablaDespertadores(sorted);
+
+    // Initial Sort Enablement
+    Ui.enableTableSorting('table-despertadores', sorted, (sortedData) => {
+        renderTablaDespertadores(sortedData);
+    });
+}
+
+function renderTablaDespertadores(lista) {
+    Ui.renderTable('tablaDespertadoresActivos', lista, (data) => `
         <tr id="desp-row-${data.habitacion}">
             <td class="fw-bold text-primary">${data.habitacion}</td>
             <td><span class="badge bg-warning text-dark fs-6"><i class="bi bi-clock me-1"></i>${data.hora}</span></td>

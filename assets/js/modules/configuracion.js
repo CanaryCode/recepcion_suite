@@ -47,6 +47,7 @@ export const Configurator = {
         // Listas dinámicas
         this.renderRecepcionistas();
         this.renderDestinosTransfers();
+        this.renderDepartamentosGlobal();
         this.renderAppLaunchers();
         this.renderRangos();
         this.renderFiltros('TIPOS', 'list-filtros-tipos');
@@ -61,6 +62,8 @@ export const Configurator = {
         if (!tempConfig.HOTEL.RECEPCIONISTAS) tempConfig.HOTEL.RECEPCIONISTAS = [];
         if (!tempConfig.CAJA) tempConfig.CAJA = { FONDO: -2000 };
         if (!tempConfig.TRANSFERS) tempConfig.TRANSFERS = { DESTINOS: [] };
+        if (!tempConfig.NOVEDADES) tempConfig.NOVEDADES = { DEPARTAMENTOS: [] };
+        if (!tempConfig.NOVEDADES.DEPARTAMENTOS) tempConfig.NOVEDADES.DEPARTAMENTOS = [];
         if (!tempConfig.SYSTEM) tempConfig.SYSTEM = { LAUNCHERS: [] };
         if (!tempConfig.HOTEL.STATS_CONFIG) tempConfig.HOTEL.STATS_CONFIG = { RANGOS: [], FILTROS: {} };
         if (!tempConfig.HOTEL.STATS_CONFIG.FILTROS) tempConfig.HOTEL.STATS_CONFIG.FILTROS = { TIPOS: [], VISTAS: [], CARACTERISTICAS: [] };
@@ -86,6 +89,17 @@ export const Configurator = {
                 <span class="fs-6 me-2 text-truncate" style="max-width: 150px;">${d}</span>
                 <button type="button" class="btn-close" style="width: 0.5em; height: 0.5em;" 
                     onclick="Configurator.removeDestinoTransfer('${d}')"></button>
+            </div>
+        `);
+    },
+
+    renderDepartamentosGlobal() {
+        Ui.renderTable('list-departamentos-global', tempConfig.NOVEDADES.DEPARTAMENTOS, (d) => `
+            <div class="badge bg-white text-primary border p-2 d-flex align-items-center shadow-sm">
+                <i class="bi bi-tag-fill me-2 small opacity-50"></i>
+                <span class="fs-6 me-2 text-truncate" style="max-width: 150px;">${d}</span>
+                <button type="button" class="btn-close" style="width: 0.5em; height: 0.5em;" 
+                    onclick="Configurator.removeDepartamentoGlobal('${d}')"></button>
             </div>
         `);
     },
@@ -119,29 +133,34 @@ export const Configurator = {
         });
     },
 
-    renderRangos() {
-        const tbody = document.getElementById('config-rangos-table');
-        if (!tbody) return;
-        const rangos = tempConfig.HOTEL.STATS_CONFIG.RANGOS || [];
+    renderRangos(data = null) {
+        const list = data || tempConfig.HOTEL.STATS_CONFIG.RANGOS || [];
         let totalRooms = 0;
 
-        tbody.innerHTML = rangos.map((r, index) => {
-            totalRooms += (r.max - r.min) + 1;
-            return `
-            <tr>
-                <td>PB ${r.planta}</td>
-                <td>${r.min}</td>
-                <td>${r.max}</td>
-                <td class="text-end">
-                    <button type="button" class="btn btn-outline-danger btn-sm border-0" onclick="Configurator.removeRango(${index})">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                </td>
-            </tr>`;
-        }).join('');
+        Ui.renderTable('config-rangos-table', list, (r, index) => {
+             // Find original index
+             const originalIndex = tempConfig.HOTEL.STATS_CONFIG.RANGOS.indexOf(r);
+             
+             totalRooms += (r.max - r.min) + 1;
+             return `
+             <tr>
+                 <td>PB ${r.planta}</td>
+                 <td>${r.min}</td>
+                 <td>${r.max}</td>
+                 <td class="text-end">
+                     <button type="button" class="btn btn-outline-danger btn-sm border-0" onclick="Configurator.removeRango(${originalIndex})">
+                         <i class="bi bi-trash"></i>
+                     </button>
+                 </td>
+             </tr>`;
+        });
 
         const totalDisplay = document.getElementById('total-rooms-count');
         if(totalDisplay) totalDisplay.textContent = totalRooms;
+
+        if (!data) {
+            Ui.enableTableSorting('table-rangos', tempConfig.HOTEL.STATS_CONFIG.RANGOS, (sorted) => this.renderRangos(sorted));
+        }
     },
 
     renderFiltros(type, containerId) {
@@ -166,8 +185,15 @@ export const Configurator = {
         });
     },
 
-    renderExcursionesCatalogo() {
-        Ui.renderTable('config-excursiones-list', tempConfig.EXCURSIONES_CATALOGO, (item, index) => `
+    renderExcursionesCatalogo(data = null) {
+        // Support for external data (sorting) or default from config
+        const list = data || tempConfig.EXCURSIONES_CATALOGO;
+        
+        Ui.renderTable('config-excursiones-list', list, (item, index) => {
+            // Find original index if sorted to allow deletion
+            const originalIndex = tempConfig.EXCURSIONES_CATALOGO.indexOf(item);
+            
+            return `
             <tr>
                 <td>
                     <div class="fw-bold">${item.nombre}</div>
@@ -185,12 +211,20 @@ export const Configurator = {
                 </td>
                 <td class="text-end">
                     <button type="button" class="btn btn-outline-danger btn-sm border-0" 
-                        onclick="Configurator.removeExcursionAlCatalogo(${index})">
+                        onclick="Configurator.removeExcursionAlCatalogo(${originalIndex})">
                         <i class="bi bi-trash"></i>
                     </button>
                 </td>
-            </tr>
-        `);
+            </tr>`;
+        });
+
+        // Initialize sorting (Idempótente: Ui.enableTableSorting should handle multiple calls gracefully or be called once)
+        // Since we re-render often, but the table HEADERS don't change, we should be careful.
+        // Ui.enableTableSorting attaches listeners. Redoing it might duplicate listeners if not handled.
+        // My implementation in Ui.js overwrites onclick, so it's safe!
+        if (!data) {
+             Ui.enableTableSorting('table-excursiones', tempConfig.EXCURSIONES_CATALOGO, (sorted) => this.renderExcursionesCatalogo(sorted));
+        }
     },
 
     renderInstalaciones() {
@@ -220,9 +254,28 @@ export const Configurator = {
         window.pickLauncherFile = () => this.pickLauncherFile();
         window.addAppLauncher = () => this.addAppLauncher();
         window.addDestinoTransfer = () => this.addDestinoTransfer();
+        window.addDepartamentoGlobal = () => this.addDepartamentoGlobal();
         window.addRango = () => this.addRango();
         window.addFilter = (type) => this.addFilter(type);
         window.addInstalacion = () => this.addInstalacion();
+    },
+
+    addDepartamentoGlobal() {
+        const input = document.getElementById('newDepartamentoGlobal');
+        const val = input.value.trim();
+        if (val && !tempConfig.NOVEDADES.DEPARTAMENTOS.includes(val)) {
+            tempConfig.NOVEDADES.DEPARTAMENTOS.push(val);
+            this.renderDepartamentosGlobal();
+            input.value = '';
+            input.focus();
+        }
+    },
+
+    async removeDepartamentoGlobal(val) {
+        if (await Ui.showConfirm(`¿Eliminar el departamento "${val}"? Toda la aplicación se actualizará al guardar.`)) {
+            tempConfig.NOVEDADES.DEPARTAMENTOS = tempConfig.NOVEDADES.DEPARTAMENTOS.filter(d => d !== val);
+            this.renderDepartamentosGlobal();
+        }
     },
 
     addRecepcionista() {
@@ -483,3 +536,7 @@ window.pickGalleryFolder = () => {
     });
 };
 
+window.Configurator = Configurator;
+window.saveConfigLocal = () => Configurator.saveConfigLocal();
+window.exportConfig = () => Configurator.exportConfig();
+window.resetConfigToDefault = () => Configurator.resetConfigToDefault();

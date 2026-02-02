@@ -66,7 +66,17 @@ function mostrarCenasFrias() {
     if (window.checkDailySummaryVisibility) window.checkDailySummaryVisibility();
 
     // B. Actualizar Tabla Principal (API Ui)
-    Ui.renderTable('tablaCenaActivos', listaCenas, (item) => `
+    // B. Actualizar Tabla Principal (API Ui)
+    renderTablaCenas(listaCenas);
+
+    // Initial Sort Enablement
+    Ui.enableTableSorting('table-cena', listaCenas, (sortedData) => {
+        renderTablaCenas(sortedData);
+    });
+}
+
+function renderTablaCenas(lista) {
+    Ui.renderTable('tablaCenaActivos', lista, (item) => `
         <tr id="cena-row-${item.hab}">
             <td class="fw-bold text-primary">${item.hab}</td>
             <td><span class="badge bg-light text-dark border">${item.pax} pax</span></td>

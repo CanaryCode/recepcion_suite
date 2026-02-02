@@ -248,10 +248,6 @@ let currentFilteredContacts = [];
 let visibleCount = 50;
 const PAGE_SIZE = 50;
 
-// Estado de ordenación
-let currentSortColumn = 'nombre';
-let currentSortDirection = 'asc';
-
 /**
  * CONFIGURACIÓN DE FILTROS AVANZADOS
  */
@@ -281,38 +277,8 @@ window.resetAgendaFilters = function() {
     
     const favEl = document.getElementById('filterAgendaFavorito');
     if(favEl) favEl.checked = false;
-
-    // Reset Sort
-    currentSortColumn = 'nombre';
-    currentSortDirection = 'asc';
-    updateSortIcons();
     
     mostrarContactos();
-}
-
-/**
- * ORDENAR AGENDA (Click en Cabecera)
- */
-window.ordenarAgenda = function(column) {
-    if (currentSortColumn === column) {
-        currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
-    } else {
-        currentSortColumn = column;
-        currentSortDirection = 'asc';
-    }
-    updateSortIcons();
-    mostrarContactos();
-}
-
-function updateSortIcons() {
-    // Reset all icons
-    document.querySelectorAll('.sort-icon').forEach(i => i.className = 'bi bi-arrow-down-up ms-1 small text-muted sort-icon');
-    
-    // Update active icon
-    const activeIcon = document.getElementById(`sort-icon-${currentSortColumn}`);
-    if (activeIcon) {
-        activeIcon.className = `bi bi-arrow-${currentSortDirection === 'asc' ? 'down' : 'up'} ms-1 small text-primary sort-icon`;
-    }
 }
 
 /**
@@ -372,27 +338,13 @@ async function mostrarContactos() {
         return true;
     });
 
-    // 3. Aplicar Ordenación
+    // 3. Aplicar Ordenación (Ahora manejada por Ui.enableTableSorting para la TABLA, en el renderListaContactos)
+    // Pero para la paginación inicial, necesitamos un orden por defecto consistente.
     currentFilteredContacts.sort((a, b) => {
-        // Siempre Favoritos primero, a menos que el filtro Favorito esté activado (entonces todos son favoritos)
-        // Pero mantenemos la coherencia UX.
+        // Siempre Favoritos primero
         if (a.favorito !== b.favorito) return b.favorito ? -1 : 1;
-
-        let valA, valB;
-        
-        if (currentSortColumn === 'nombre') {
-            valA = a.nombre;
-            valB = b.nombre;
-        } else if (currentSortColumn === 'vinculo') {
-            valA = a.vinculo;
-            valB = b.vinculo;
-        } else if (currentSortColumn === 'categoria') {
-            valA = a.categoria;
-            valB = b.categoria;
-        }
-
-        const comparison = valA.localeCompare(valB);
-        return currentSortDirection === 'asc' ? comparison : -comparison;
+        // Luego alfabético por nombre
+        return a.nombre.localeCompare(b.nombre);
     });
 
     // Resetear paginación en cada búsqueda/filtro
@@ -441,6 +393,19 @@ function renderListaContactos(append = false) {
         const sentinelRow = Ui.createSentinelRow('sentinel-loader', 'Cargando más contactos...', 5);
         agendaCuerpo.appendChild(sentinelRow);
         if (infiniteScrollController) infiniteScrollController.reconnect();
+    }
+
+    // Initialize Sorting
+    // Important: We only pass the current SLICE or the FULL list? 
+    // If we sort, we usually want to sort the FULL list and reset pagination.
+    // The current Ui.enableTableSorting sorts the provided array and calls the callback.
+    // So we should pass 'currentFilteredContacts' to it.
+    if (!append) {
+        Ui.enableTableSorting('table-agenda', currentFilteredContacts, (sortedData) => {
+            currentFilteredContacts = sortedData;
+            visibleCount = PAGE_SIZE; // Reset pagination on sort
+            renderListaContactos(false);
+        });
     }
 }
 

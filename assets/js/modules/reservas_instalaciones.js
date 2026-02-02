@@ -315,9 +315,16 @@ export const ReservasInstalaciones = {
             data = data.filter(r => r.fecha === fechaFiltro);
         }
 
+        // Default Sort: Sort by date and time descending
         data.sort((a, b) => `${b.fecha} ${b.hora_inicio}`.localeCompare(`${a.fecha} ${a.hora_inicio}`));
 
+        // Initial Render
         Ui.renderTable('reservas-instalaciones-table-body', data, (res) => this.renderFila(res), 'No hay reservas para los filtros seleccionados.');
+
+        // Enable Table Sorting
+        Ui.enableTableSorting('table-reservas-instalaciones', data, (sortedData) => {
+            Ui.renderTable('reservas-instalaciones-table-body', sortedData, (res) => this.renderFila(res), 'No hay reservas para los filtros seleccionados.');
+        });
     },
 
     renderFila(r) {

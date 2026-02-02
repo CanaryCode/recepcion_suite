@@ -174,21 +174,21 @@
             </div>
         </div>
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+            <table id="table-lost-found" class="table table-hover align-middle mb-0">
                 <thead class="table-light">
                     <tr class="table-light">
                         <th class="text-center" style="width: 80px;">Fotos</th>
-                        <th class="text-center pointer" style="width: 100px;" onclick="lostFoundModule.setSort('fecha')">
-                            Fecha <i class="bi bi-sort-numeric-down"></i>
+                        <th class="text-center" style="width: 100px;" data-sort="fecha">
+                            Fecha
                         </th>
-                        <th class="pointer" onclick="lostFoundModule.setSort('objeto')">
-                            Objeto <i class="bi bi-sort-alpha-down"></i>
+                        <th data-sort="objeto">
+                            Objeto
                         </th>
-                        <th class="pointer" onclick="lostFoundModule.setSort('lugar')">
-                            Lugar/Persona <i class="bi bi-sort-alpha-down"></i>
+                        <th data-sort="lugar">
+                            Lugar/Persona
                         </th>
-                        <th class="text-center pointer" style="width: 130px;" onclick="lostFoundModule.setSort('estado')">
-                            Estado <i class="bi bi-filter"></i>
+                        <th class="text-center" style="width: 130px;" data-sort="estado">
+                            Estado
                         </th>
                         <th class="text-center no-print" style="width: 100px;">Acciones</th>
                     </tr>

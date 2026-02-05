@@ -5,6 +5,9 @@
     "API_URL": "http://localhost:3000/api",
     "SYNC_INTERVAL": 10000,
     "GALLERY_PATH": "assets/gallery",
+    "GALLERY_FOLDERS": [
+      { "label": "García Galería", "path": "assets/gallery" }
+    ],
     "LAUNCHERS": []
   },
   "HOTEL": {

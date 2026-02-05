@@ -18,8 +18,16 @@ export const Router = {
         // This fixes the issue where dropdown tabs might not effectively hide the Dashboard or other views.
         const tabElsp = document.querySelectorAll('button[data-bs-toggle="tab"]');
         tabElsp.forEach(tabBtn => {
+            // Trigger reload on CLICK (even if tab is already active)
+            tabBtn.addEventListener('click', (event) => {
+                const targetId = tabBtn.getAttribute('data-bs-target');
+                console.log(`[Router] Tab button clicked: ${targetId}`);
+                Router.handleModuleReload(targetId);
+            });
+
             tabBtn.addEventListener('show.bs.tab', (event) => {
                 const targetId = event.target.getAttribute('data-bs-target');
+                console.log(`[Router] show.bs.tab event: ${targetId}`);
                 if(!targetId) return;
 
                 // Force hide ALL other tab-panes
@@ -32,9 +40,24 @@ export const Router = {
                 
                 // Ensure target is prepared to be shown
                 const targetPane = document.querySelector(targetId);
-                if(targetPane) targetPane.style.display = ''; 
+                if(targetPane) {
+                    targetPane.style.display = ''; 
+                    // Manual trigger for first-show if click didn't happen (mobile etc)
+                    Router.handleModuleReload(targetId);
+                }
             });
         });
+    },
+
+    /**
+     * GESTIÓN DE RECARGAS DE MÓDULOS
+     * Se llama cuando una pestaña se activa para asegurar que los datos estén frescos.
+     */
+    handleModuleReload: (selector) => {
+        if (selector === '#gallery-content') {
+            if (window.Gallery) window.Gallery.loadImages(true);
+        }
+        // Aquí se pueden añadir otros módulos que necesiten refresco al abrir
     },
 
     /**
@@ -100,5 +123,8 @@ export const Router = {
         } else {
             location.hash = selector;
         }
+
+        // 6. MODULE-SPECIFIC AUTO-RELOADS
+        Router.handleModuleReload(selector);
     }
 };

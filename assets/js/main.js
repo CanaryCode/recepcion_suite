@@ -276,7 +276,12 @@ window.filterLaunchPad = (filter) => {
     window._currentLaunchPadFilter = filter;
     
     // UI Update
-    const btnMap = { 'all': 'btnFilterLaunchAll', 'app': 'btnFilterLaunchApps', 'folder': 'btnFilterLaunchFolders' };
+    const btnMap = { 
+        'all': 'btnFilterLaunchAll', 
+        'app': 'btnFilterLaunchApps', 
+        'folder': 'btnFilterLaunchFolders',
+        'url': 'btnFilterLaunchUrls'
+    };
     Object.values(btnMap).forEach(id => {
         const btn = document.getElementById(id);
         if (btn) {
@@ -317,21 +322,26 @@ window.renderLaunchPad = (query = '', filter = 'all') => {
         apps.forEach(app => {
             const isImage = app.icon && (app.icon.startsWith('data:') || app.icon.includes('.') || app.icon.includes('/'));
             const isFolder = app.type === 'folder';
-            const iconColor = isFolder ? 'text-warning' : 'text-primary';
+            const isUrl = app.type === 'url';
+            
+            let iconColor = 'text-primary';
+            if (isFolder) iconColor = 'text-warning';
+            if (isUrl) iconColor = 'text-success';
+
             const iconHtml = isImage 
                 ? `<img src="${app.icon}" style="width: 70px; height: 70px; object-fit: cover; border-radius: 12px;" class="mb-2 shadow-sm">`
-                : `<div class="mb-2 ${iconColor} text-center"><i class="bi bi-${app.icon || (isFolder ? 'folder-fill' : 'app')} fs-1"></i></div>`;
+                : `<div class="mb-2 ${iconColor} text-center"><i class="bi bi-${app.icon || (isFolder ? 'folder-fill' : (isUrl ? 'globe-americas' : 'app'))} fs-1"></i></div>`;
 
             container.innerHTML += `
             <div class="col-6 col-md-4 col-lg-3">
                 <div class="card h-100 border-0 shadow-sm hover-scale text-center p-3" 
-                     style="cursor:pointer;" onclick="window.launchExternalApp('${app.path.replace(/\\/g, '\\\\')}')">
+                     style="cursor:pointer;" onclick="window.launchExternalApp('${app.path.replace(/\\/g, '\\\\')}', '${app.type || 'app'}')">
                     <div class="position-absolute top-0 end-0 p-2 opacity-50">
-                        <i class="bi bi-${isFolder ? 'folder-symlink' : 'cpu-fill'} small"></i>
+                        <i class="bi bi-${isFolder ? 'folder-symlink' : (isUrl ? 'globe' : 'cpu-fill')} small"></i>
                     </div>
                     <div class="d-flex justify-content-center">${iconHtml}</div>
                     <div class="fw-bold text-dark small text-truncate mt-1">${app.label}</div>
-                    <div class="text-muted" style="font-size: 0.6rem;">${isFolder ? 'Carpeta' : 'App / Archivo'}</div>
+                    <div class="text-muted" style="font-size: 0.6rem;">${isFolder ? 'Carpeta' : (isUrl ? 'URL Web' : 'App / Archivo')}</div>
                 </div>
             </div>
             `;
@@ -340,9 +350,15 @@ window.renderLaunchPad = (query = '', filter = 'all') => {
 };
 
 /**
- * EJECUTAR APP EXTERNA
+ * EJECUTAR APP EXTERNA O ABRIR URL
  */
-window.launchExternalApp = async (command) => {
+window.launchExternalApp = async (command, type = 'app') => {
+    // Si es una URL o el comando parece una URL, abrir en nueva pestaña
+    if (type === 'url' || command.startsWith('http')) {
+        window.open(command, '_blank');
+        return;
+    }
+
     try {
         const response = await fetch('/api/system/launch', {
             method: 'POST',

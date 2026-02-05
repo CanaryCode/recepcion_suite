@@ -50,6 +50,7 @@ export const Configurator = {
         this.renderDestinosTransfers();
         this.renderDepartamentosGlobal();
         this.renderAppLaunchers();
+        this.renderGalleryFolders();
         this.renderRangos();
         this.renderFiltros('TIPOS', 'list-filtros-tipos');
         this.renderFiltros('VISTAS', 'list-filtros-vistas');
@@ -125,7 +126,7 @@ export const Configurator = {
                             <div class="fw-bold small text-truncate">
                                 ${l.type === 'folder' 
                                     ? '<span class="badge bg-warning-subtle text-warning border-warning border-opacity-25 me-1" style="font-size: 0.5rem;">CARPETA</span>' 
-                                    : '<span class="badge bg-info-subtle text-info border-info border-opacity-25 me-1" style="font-size: 0.5rem;">APP / ARCHIVO</span>'}
+                                    : (l.type === 'url' ? '<span class="badge bg-success-subtle text-success border-success border-opacity-25 me-1" style="font-size: 0.5rem;">WEB</span>' : '<span class="badge bg-info-subtle text-info border-info border-opacity-25 me-1" style="font-size: 0.5rem;">APP / ARCHIVO</span>')}
                                 ${l.label}
                             </div>
                             <div class="text-muted text-truncate" style="font-size: 0.6rem;">${l.path}</div>
@@ -138,6 +139,27 @@ export const Configurator = {
                 </div>
             </div>`;
         });
+    },
+
+    renderGalleryFolders() {
+        if (!tempConfig.SYSTEM.GALLERY_FOLDERS) tempConfig.SYSTEM.GALLERY_FOLDERS = [];
+        Ui.renderTable('list-gallery-folders', tempConfig.SYSTEM.GALLERY_FOLDERS, (f, index) => `
+            <div class="col-md-6 mb-2">
+                <div class="border rounded p-2 d-flex align-items-center justify-content-between bg-white shadow-sm">
+                    <div class="d-flex align-items-center text-truncate">
+                        <i class="bi bi-images fs-3 text-primary me-3"></i>
+                        <div class="text-truncate">
+                            <div class="fw-bold small text-truncate">${f.label}</div>
+                            <div class="text-muted text-truncate" style="font-size: 0.6rem;">${f.path}</div>
+                        </div>
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-sm btn-outline-primary border-0 me-1" onclick="Configurator.editGalleryFolder(${index})" title="Editar"><i class="bi bi-pencil"></i></button>
+                        <button type="button" class="btn btn-sm btn-outline-danger border-0" onclick="Configurator.removeGalleryFolder(${index})" title="Eliminar"><i class="bi bi-trash"></i></button>
+                    </div>
+                </div>
+            </div>
+        `);
     },
 
     renderRangos(data = null) {
@@ -259,6 +281,66 @@ export const Configurator = {
         window.addRango = () => this.addRango();
         window.addFilter = (type) => this.addFilter(type);
         window.addInstalacion = () => this.addInstalacion();
+        window.addGalleryFolder = () => this.addGalleryFolder();
+        window.pickNewGalleryFolder = () => this.pickNewGalleryFolder();
+        window.pickGalleryFolder = () => this.pickGalleryFolder();
+    },
+
+    pickGalleryFolder() {
+        MediaPicker.pickFile({
+            fileType: 'folder',
+            startPath: 'C:\\',
+            onSelect: (path) => {
+                document.getElementById('conf_gallery_path').value = path;
+            }
+        });
+    },
+
+    addGalleryFolder() {
+        const labelFn = document.getElementById('newGalleryLabel');
+        const pathFn = document.getElementById('newGalleryPath');
+        const label = labelFn.value.trim();
+        const path = pathFn.value.trim();
+
+        if (!label || !path) {
+            Ui.showToast("Nombre y Ruta son obligatorios.", "warning");
+            return;
+        }
+
+        if (!tempConfig.SYSTEM.GALLERY_FOLDERS) tempConfig.SYSTEM.GALLERY_FOLDERS = [];
+        tempConfig.SYSTEM.GALLERY_FOLDERS.push({ label, path });
+        this.renderGalleryFolders();
+
+        labelFn.value = '';
+        pathFn.value = '';
+    },
+
+    async removeGalleryFolder(index) {
+        if (await Ui.showConfirm("¿Eliminar esta carpeta de la galería?")) {
+            tempConfig.SYSTEM.GALLERY_FOLDERS.splice(index, 1);
+            this.renderGalleryFolders();
+        }
+    },
+
+    async editGalleryFolder(index) {
+        const item = tempConfig.SYSTEM.GALLERY_FOLDERS[index];
+        if (!await Ui.showConfirm(`¿Editar galería "${item.label}"?`)) return;
+
+        tempConfig.SYSTEM.GALLERY_FOLDERS.splice(index, 1);
+        this.renderGalleryFolders();
+
+        document.getElementById('newGalleryLabel').value = item.label;
+        document.getElementById('newGalleryPath').value = item.path;
+    },
+
+    async pickNewGalleryFolder() {
+        MediaPicker.pickFile({
+            fileType: 'folder',
+            startPath: 'C:\\',
+            onSelect: (path) => {
+                document.getElementById('newGalleryPath').value = path;
+            }
+        });
     },
 
     addDepartamentoGlobal() {
@@ -324,7 +406,7 @@ export const Configurator = {
         const label = labelFn.value.trim();
         const path = pathFn.value.trim();
         const type = typeFn ? typeFn.value : 'app';
-        const icon = iconFn.value.trim() || (type === 'folder' ? 'folder2-open' : 'box-arrow-up-right');
+        const icon = iconFn.value.trim() || (type === 'folder' ? 'folder2-open' : (type === 'url' ? 'globe-americas' : 'box-arrow-up-right'));
 
         if (!label || !path) {
             if (!silent) Ui.showToast("Nombre y Ruta son obligatorios.", "warning");
@@ -344,12 +426,20 @@ export const Configurator = {
     onLauncherTypeChange(type) {
         const label = document.getElementById('labelLauncherPath');
         const pathInput = document.getElementById('newLauncherPath');
+        const pickBtn = pathInput?.nextElementSibling?.querySelector('button') || document.querySelector('button[onclick="pickLauncherFile()"]');
+        
         if (type === 'folder') {
             if (label) label.textContent = 'Ruta de Carpeta';
             if (pathInput) pathInput.placeholder = 'Ej: C:\\Mis Documentos';
+            if (pickBtn) pickBtn.style.display = 'block';
+        } else if (type === 'url') {
+            if (label) label.textContent = 'Dirección Web (URL)';
+            if (pathInput) pathInput.placeholder = 'Ej: https://google.com';
+            if (pickBtn) pickBtn.style.display = 'none'; // No file picker for URLs
         } else {
             if (label) label.textContent = 'Ruta de App o Archivo';
             if (pathInput) pathInput.placeholder = 'Ej: C:\\Docs\\Informe.docx o .exe';
+            if (pickBtn) pickBtn.style.display = 'block';
         }
     },
 
@@ -573,6 +663,7 @@ export const Configurator = {
             tempConfig.SAFE.PRECIO_DIARIO = parseFloat(document.getElementById('conf_safe_precio').value) || 2.0;
             tempConfig.CAJA.FONDO = parseFloat(document.getElementById('conf_caja_fondo').value) || -2000.0;
             tempConfig.SYSTEM.GALLERY_PATH = document.getElementById('conf_gallery_path').value || 'assets/gallery';
+            // Note: GALLERY_FOLDERS is already managed in tempConfig by its add/remove methods
             tempConfig.SYSTEM.SYNC_INTERVAL = parseInt(document.getElementById('conf_sync_interval').value) || 10000;
             
             await configService.saveConfig(tempConfig);

@@ -114,6 +114,10 @@
                         <li><button class="dropdown-item" data-bs-toggle="tab" data-bs-target="#reservas-instalaciones-content">
                             <span data-tooltip="true" data-bs-placement="right" data-bs-title="Reservas de pistas de tenis, gimnasio, etc."><i class="bi bi-calendar-check me-2"></i>Reservas Instalaciones</span>
                         </button></li>
+                        <!-- Nuevo Módulo Vales -->
+                        <li><button class="dropdown-item" id="nav-vales-tab" data-bs-toggle="tab" data-bs-target="#vales-content" onclick="import('./assets/js/modules/vales.js').then(m => m.initVales())">
+                            <span data-tooltip="true" data-bs-placement="right" data-bs-title="Gestión y emisión de vales de caja"><i class="bi bi-receipt me-2"></i>Control de Vales</span>
+                        </button></li>
                         <!-- Movido desde Administración -->
                         <li><hr class="dropdown-divider"></li>
                         <li><button class="dropdown-item" data-bs-toggle="tab" data-bs-target="#safe-content">
@@ -409,6 +413,14 @@
             </div>
                 </div>
             </div>
+            <!-- NUEVO MÓDULO VALES -->
+            <div class="tab-pane fade" id="vales-content" role="tabpanel">
+                <div class="text-center p-5">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-2 text-muted">Cargando Módulo de Vales...</p>
+                </div>
+            </div>
+
             <div class="tab-pane fade" id="riu-content" role="tabpanel">
                 <!-- Loaded via CompLoader from assets/templates/riu.html -->
                 <div class="text-center p-5">
@@ -642,10 +654,15 @@
   <div class="no-print" id="caja-web-interactive-view">
     <h4 class="module-title-discrete text-end mb-2"><i class="bi bi-cash-coin"></i>Cierre de Caja</h4>
     <div class="module-toolbar d-flex justify-content-end mb-3">
-      <div class="btn-print-wrapper gap-2">
-        <button class="btn btn-danger btn-sm fw-bold" onclick="guardarCajaPDF()"><i class="bi bi-file-earmark-pdf me-2"></i>PDF</button>
-        <button class="btn btn-info btn-sm fw-bold text-white" onclick="enviarCajaEmail()"><i class="bi bi-envelope me-2"></i>Email</button>
-        <button class="btn btn-primary btn-sm fw-bold" onclick="imprimirCierreCaja()"><i class="bi bi-printer me-2"></i>Imprimir Cierre</button>
+      <div class="btn-print-wrapper d-flex gap-2">
+        <button class="btn btn-danger btn-sm fw-bold" onclick="guardarCajaPDF()"><i class="bi bi-file-earmark-pdf me-1"></i>PDF</button>
+        <button class="btn btn-info btn-sm fw-bold text-white" onclick="enviarCajaEmail()"><i class="bi bi-envelope me-1"></i>Email</button>
+        <button class="btn btn-outline-primary btn-sm fw-bold shadow-sm px-3" onclick="imprimirCierreCaja()">
+            <i class="bi bi-printer me-1"></i>Imprimir / Vista
+        </button>
+        <button class="btn btn-success btn-sm fw-bold shadow-sm px-3 border-2" onclick="cerrarCajaDefinitivo()">
+            <i class="bi bi-check2-circle me-1"></i>CIERRE DEFINITIVO (Contabilizar)
+        </button>
       </div>
     </div>
 
@@ -878,15 +895,23 @@
           <div class="card border-0 shadow-sm mb-3">
             <div class="card-body p-2">
               <form id="formAddVale" class="row g-2 align-items-end" onsubmit="agregarVale(event)">
-                <div class="col-8">
-                  <label class="small fw-bold text-muted">Concepto / Descripción</label>
-                  <input type="text" id="vale_concepto" class="form-control form-control-sm" placeholder="Ej: Taxi Sr. Smith..." required />
+                <div class="col-md-3">
+                  <label class="small fw-bold text-muted">Receptor</label>
+                  <input type="text" id="vale_receptor" class="form-control form-control-sm" placeholder="Nombre..." required />
                 </div>
-                <div class="col-4">
+                <div class="col-md-4">
+                  <label class="small fw-bold text-muted">Concepto</label>
+                  <input type="text" id="vale_concepto" class="form-control form-control-sm" placeholder="Razón..." required />
+                </div>
+                <div class="col-md-3">
+                  <label class="small fw-bold text-muted">Comentario</label>
+                  <input type="text" id="vale_comentario" class="form-control form-control-sm" placeholder="Observaciones..." />
+                </div>
+                <div class="col-md-2">
                   <label class="small fw-bold text-muted">Importe (€)</label>
                   <div class="input-group input-group-sm">
                     <input type="number" id="vale_importe" class="form-control" step="0.01" min="0.01" placeholder="0.00" required />
-                    <button class="btn btn-primary" type="submit"><i class="bi bi-plus-lg"></i></button>
+                    <button class="btn btn-primary px-2" type="submit"><i class="bi bi-plus-lg"></i></button>
                   </div>
                 </div>
               </form>
@@ -2115,15 +2140,135 @@
             <div class="tab-pane fade" id="gallery-content" role="tabpanel">
                 <h4 class="module-title-discrete"><i class="bi bi-images"></i>Galería de Información</h4>
                 
-                <div class="module-toolbar d-flex justify-content-between align-items-center mb-3">
-                    <div class="input-group input-group-sm" style="max-width: 300px;">
-                        <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
-                        <input type="text" id="gallerySearch" class="form-control" placeholder="Filtrar por nombre...">
+                <div class="module-toolbar mb-4 no-print">
+                    <!-- Row 1: Search and Filters -->
+                    <div class="row g-2 mb-2 align-items-center">
+                        <div class="col-md-4">
+                            <div class="input-group input-group-sm shadow-sm">
+                                <span class="input-group-text bg-white border-end-0 text-muted px-3"><i class="bi bi-search"></i></span>
+                                <input type="text" id="gallerySearch" class="form-control border-start-0 py-2" placeholder="Buscar en galer&iacute;as...">
+                            </div>
+                        </div>
+                        <div class="col-md-auto d-flex gap-2 flex-grow-1">
+                            <select id="galleryTypeFilter" class="form-select form-select-sm shadow-sm border-0 bg-white" style="width: auto;">
+                                <option value="all">Filtro: Todo</option>
+                                <option value="image">Im&aacute;genes</option>
+                                <option value="pdf">PDFs</option>
+                            </select>
+
+                            <select id="galleryFolderFilter" class="form-select form-select-sm shadow-sm border-0 bg-white" style="max-width: 250px;">
+                                <option value="all">Todas las Carpetas</option>
+                            </select>
+
+                            <select id="gallerySort" class="form-select form-select-sm shadow-sm border-0 bg-white" style="width: auto;">
+                                <option value="mtime_desc">Recientes primero</option>
+                                <option value="mtime_asc">Antiguos primero</option>
+                                <option value="name_asc">Nombre (A-Z)</option>
+                            </select>
+                        </div>
                     </div>
-                    <button class="btn btn-primary btn-sm fw-bold" onclick="Gallery.loadImages()">
-                        <i class="bi bi-arrow-clockwise me-2"></i>Recargar
-                    </button>
+
+                    <!-- Row 2: Actions and Tools -->
+                    <div class="row g-2 align-items-center border-top pt-2">
+                        <div class="col-md-auto d-flex gap-2">
+                            <!-- Favorite Filter -->
+                            <div class="btn-group btn-group-sm" role="group">
+                                <input type="checkbox" class="btn-check" id="galleryFavoriteFilter" autocomplete="off">
+                                <label class="btn btn-outline-warning shadow-sm border-0 bg-white" for="galleryFavoriteFilter">
+                                    <i class="bi bi-star-fill me-1"></i> Favoritos
+                                </label>
+                            </div>
+
+                            <!-- Selection Mode -->
+                            <div class="btn-group btn-group-sm" role="group">
+                                <input type="checkbox" class="btn-check" id="gallerySelectionMode" autocomplete="off">
+                                <label class="btn btn-outline-primary shadow-sm border-0 bg-white" for="gallerySelectionMode">
+                                    <i class="bi bi-check2-square me-1"></i> Selecci&oacute;n
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="col-md d-flex align-items-center justify-content-between">
+                            <!-- Bulk Actions (Hidden by default) -->
+                            <div id="galleryBulkActions" class="d-none align-items-center gap-2">
+                                <span class="small fw-bold text-primary mx-2"><i class="bi bi-layers me-1"></i><span id="gallerySelectedCount">0</span> seleccionados</span>
+                                <button class="btn btn-primary btn-sm fw-bold shadow-sm" onclick="Gallery.copySelected()">
+                                    <i class="bi bi-clipboard-plus me-1"></i>Copiar lote
+                                </button>
+                                <button class="btn btn-outline-info btn-sm fw-bold shadow-sm bg-white text-info" onclick="Gallery.printSelected()">
+                                    <i class="bi bi-printer me-1"></i>Imprimir lote
+                                </button>
+                                <button class="btn btn-outline-secondary btn-sm border-0" onclick="Gallery.clearSelection()">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </div>
+
+                            <!-- Refresh -->
+                            <button class="btn btn-outline-primary btn-sm fw-bold shadow-sm border-0 bg-white ms-auto" onclick="Gallery.loadImages(true)" title="Sincronizar carpetas">
+                                <i class="bi bi-arrow-clockwise me-1"></i>Sincronizar
+                            </button>
+                        </div>
+                    </div>
                 </div>
+
+                <style>
+                    .gallery-card { transition: transform 0.2s, box-shadow 0.2s; position: relative; }
+                    .gallery-card:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important; }
+                    .favorite-btn {
+                        position: absolute;
+                        top: 10px;
+                        right: 10px;
+                        z-index: 10;
+                        background: rgba(255,255,255,0.8);
+                        border-radius: 50%;
+                        width: 32px;
+                        height: 32px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        cursor: pointer;
+                        transition: all 0.2s;
+                        border: 1px solid #eee;
+                    }
+                    .favorite-btn:hover { transform: scale(1.1); background: #fff; }
+                    .favorite-btn.active { color: #ffc107; background: #fff; border-color: #ffc107; }
+                    .favorite-btn i { font-size: 1.1rem; }
+                    
+                    /* Grid improvements */
+                    .gallery-item-col { transition: all 0.3s ease; }
+                    .card-img-wrapper canvas { width: 100%; height: 100%; object-fit: cover; }
+
+                    /* Fullscreen mode */
+                    #gallery-viewer-wrapper.fullscreen-active {
+                        position: fixed;
+                        top: 0; left: 0; width: 100vw; height: 100vh;
+                        z-index: 2000;
+                        background: black;
+                    }
+                    #gallery-viewer-wrapper.fullscreen-active .viewer-controls-overlay,
+                    #gallery-viewer-wrapper.fullscreen-active .viewer-nav-btn {
+                        opacity: 0;
+                        transition: opacity 0.3s;
+                    }
+                    #gallery-viewer-wrapper.fullscreen-active:hover .viewer-controls-overlay,
+                    #gallery-viewer-wrapper.fullscreen-active:hover .viewer-nav-btn {
+                        opacity: 1;
+                    }
+
+                    /* Selection Styles */
+                    .selection-checkbox {
+                        position: absolute;
+                        top: 10px;
+                        left: 10px;
+                        z-index: 10;
+                        width: 24px;
+                        height: 24px;
+                        cursor: pointer;
+                        accent-color: #0d6efd;
+                    }
+                    .gallery-card.selected { outline: 3px solid #0d6efd; box-shadow: 0 0 15px rgba(13,110,253,0.3) !important; }
+                    .gallery-card.selection-active { cursor: pointer; }
+                </style>
 
                 <div class="content-panel" style="min-height: 400px;">
                     <div class="row g-3" id="gallery-grid">
@@ -3055,16 +3200,28 @@
             <div class="modal-content bg-dark text-white border-0">
                 <!-- Header de Controles con Z-Index Corregido -->
                 <div class="modal-header border-0 bg-transparent position-absolute top-0 start-0 w-100 p-3" style="z-index: 1100; pointer-events: none;">
-                    <h5 class="modal-title text-shadow ps-3" id="galleryViewerTitle" style="pointer-events: auto;"></h5>
+                    <h5 class="modal-title shadow-sm ps-3 px-2 py-1 rounded bg-dark bg-opacity-25" id="galleryViewerTitle" style="pointer-events: auto;"></h5>
                     <div class="ms-auto pe-3 d-flex align-items-center gap-2" style="pointer-events: auto;">
-                        <button type="button" class="btn btn-outline-light border-0 bg-dark bg-opacity-50 btn-sm rounded-circle" id="galleryRotateLeft" title="Rotar Izquierda"><i class="bi bi-arrow-counterclockwise"></i></button>
-                        <button type="button" class="btn btn-outline-light border-0 bg-dark bg-opacity-50 btn-sm rounded-circle" id="galleryRotateRight" title="Rotar Derecha"><i class="bi bi-arrow-clockwise"></i></button>
+                        <div id="galleryViewerControls" class="d-flex align-items-center gap-2">
+                             <button type="button" class="btn btn-outline-light border-0 bg-dark bg-opacity-50 btn-sm fw-bold px-3 rounded-pill" onclick="Gallery.copyCurrent()" title="Copiar al portapapeles">
+                                <i class="bi bi-clipboard-plus me-1"></i>Copiar
+                            </button>
+                            <button type="button" class="btn btn-outline-light border-0 bg-dark bg-opacity-50 btn-sm fw-bold px-3 rounded-pill" onclick="Gallery.printCurrent()" title="Imprimir">
+                                <i class="bi bi-printer me-1"></i>Imprimir
+                            </button>
+                            <button type="button" class="btn btn-outline-light border-0 bg-dark bg-opacity-50 btn-sm fw-bold px-3 rounded-pill" onclick="Gallery.toggleFullscreen()" title="Pantalla Completa">
+                                <i class="bi bi-arrows-fullscreen me-1"></i>Pantalla Completa
+                            </button>
+                            <span class="mx-1 text-white-25">|</span>
+                            <button type="button" class="btn btn-outline-light border-0 bg-dark bg-opacity-50 btn-sm rounded-circle" id="galleryRotateLeft" title="Rotar Izquierda"><i class="bi bi-arrow-counterclockwise"></i></button>
+                            <button type="button" class="btn btn-outline-light border-0 bg-dark bg-opacity-50 btn-sm rounded-circle" id="galleryRotateRight" title="Rotar Derecha"><i class="bi bi-arrow-clockwise"></i></button>
+                            <span class="mx-1 text-white-25">|</span>
+                            <button type="button" class="btn btn-outline-light border-0 bg-dark bg-opacity-50 btn-sm rounded-circle" id="galleryZoomOut" title="Zoom -"><i class="bi bi-dash-lg"></i></button>
+                            <button type="button" class="btn btn-outline-light border-0 bg-dark bg-opacity-50 btn-sm rounded-circle" id="galleryResetView" title="Restablecer"><i class="bi bi-fullscreen-exit"></i></button>
+                            <button type="button" class="btn btn-outline-light border-0 bg-dark bg-opacity-50 btn-sm rounded-circle" id="galleryZoomIn" title="Zoom +"><i class="bi bi-plus-lg"></i></button>
+                        </div>
                         <span class="mx-1 text-white-25">|</span>
-                        <button type="button" class="btn btn-outline-light border-0 bg-dark bg-opacity-50 btn-sm rounded-circle" id="galleryZoomOut" title="Zoom -"><i class="bi bi-dash-lg"></i></button>
-                        <button type="button" class="btn btn-outline-light border-0 bg-dark bg-opacity-50 btn-sm rounded-circle" id="galleryResetView" title="Restablecer"><i class="bi bi-fullscreen-exit"></i></button>
-                        <button type="button" class="btn btn-outline-light border-0 bg-dark bg-opacity-50 btn-sm rounded-circle" id="galleryZoomIn" title="Zoom +"><i class="bi bi-plus-lg"></i></button>
-                        <span class="mx-1 text-white-25">|</span>
-                        <button type="button" class="btn-close btn-close-white ms-2" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <button type="button" class="btn-close btn-close-white ms-2 shadow-sm" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                 </div>
 
@@ -3076,6 +3233,8 @@
                     
                     <img src="" id="galleryViewerImage" style="max-width: 100%; max-height: 100vh; transition: transform 0.1s ease-out; transform-origin: center;">
                     
+                    <iframe src="" id="galleryViewerPdf" class="d-none w-100 h-100 border-0" style="min-height: 90vh;"></iframe>
+
                     <button class="btn btn-dark bg-opacity-25 position-absolute end-0 top-50 translate-middle-y me-4 rounded-circle p-3 shadow-lg viewer-nav-btn" id="galleryNextBtn" style="z-index: 1100;" title="Siguiente (Flecha Derecha)">
                         <i class="bi bi-chevron-right fs-2"></i>
                     </button>
@@ -3096,18 +3255,19 @@
                 </div>
                 <div class="modal-body p-4 bg-light">
                     <!-- Buscador y Filtros -->
-                    <div class="row g-2 mb-4">
-                        <div class="col-md-7">
+                    <div class="row g-3 mb-4">
+                        <div class="col-12">
                             <div class="input-group shadow-sm">
-                                <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
-                                <input type="text" id="launchPadSearch" class="form-control border-start-0" placeholder="Buscar por nombre..." onkeyup="window.renderLaunchPad(this.value, window._currentLaunchPadFilter)">
+                                <span class="input-group-text bg-white border-end-0 text-muted px-3"><i class="bi bi-search"></i></span>
+                                <input type="text" id="launchPadSearch" class="form-control border-start-0 py-2" placeholder="Buscar por nombre..." onkeyup="window.renderLaunchPad(this.value, window._currentLaunchPadFilter)">
                             </div>
                         </div>
-                        <div class="col-md-5">
+                        <div class="col-12">
                             <div class="btn-group w-100 shadow-sm" role="group">
-                                <button type="button" class="btn btn-white border px-3 active" id="btnFilterLaunchAll" onclick="window.filterLaunchPad('all')">Todos</button>
-                                <button type="button" class="btn btn-white border px-3" id="btnFilterLaunchApps" onclick="window.filterLaunchPad('app')">Apps</button>
-                                <button type="button" class="btn btn-white border px-3" id="btnFilterLaunchFolders" onclick="window.filterLaunchPad('folder')">Carpetas</button>
+                                <button type="button" class="btn btn-white border px-3 active" id="btnFilterLaunchAll" onclick="window.filterLaunchPad('all')">Todos los Accesos</button>
+                                <button type="button" class="btn btn-white border px-3" id="btnFilterLaunchApps" onclick="window.filterLaunchPad('app')">Aplicaciones</button>
+                                <button type="button" class="btn btn-white border px-3" id="btnFilterLaunchFolders" onclick="window.filterLaunchPad('folder')">Carpetas Locales</button>
+                                <button type="button" class="btn btn-white border px-3" id="btnFilterLaunchUrls" onclick="window.filterLaunchPad('url')">Recursos Web</button>
                             </div>
                         </div>
                     </div>
@@ -3121,6 +3281,12 @@
     </div>
 
     <!-- CORE VENDOR SCRIPTS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <script>
+        if (window['pdfjs-dist/build/pdf']) {
+            window['pdfjs-dist/build/pdf'].GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+        }
+    </script>
     <script src="assets/vendor/bootstrap.bundle.min.js?v=2"></script>
     <script src="assets/vendor/chart.min.js?v=2"></script>
     <script src="assets/vendor/html2pdf.bundle.min.js?v=2"></script>

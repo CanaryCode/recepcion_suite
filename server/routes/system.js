@@ -1,8 +1,25 @@
 const express = require('express');
 const router = express.Router();
 const fs = require('fs').promises;
+const fsSync = require('fs');
 const path = require('path');
 const { exec } = require('child_process');
+
+const STORAGE_DIR = path.resolve(__dirname, '../../storage');
+const LOG_FILE = path.join(STORAGE_DIR, 'server_debug.log');
+
+const logToFile = (msg) => {
+    const timestamp = new Date().toISOString();
+    const entry = `[${timestamp}] [SYSTEM] ${msg}\n`;
+    try {
+        if (!fsSync.existsSync(STORAGE_DIR)) {
+            fsSync.mkdirSync(STORAGE_DIR, { recursive: true });
+        }
+        fsSync.appendFileSync(LOG_FILE, entry);
+    } catch (e) {
+        console.error('CRITICAL: Could not write to log file from system.js', e);
+    }
+};
 
 /**
  * POST /api/system/launch
@@ -87,75 +104,162 @@ router.get('/image-proxy', async (req, res) => {
 router.post('/list-images', async (req, res) => {
     console.log('[System Routes] POST /list-images called');
     try {
-        let { folderPath } = req.body;
+        let { folderPath, folderPaths } = req.body;
         
-        if (!folderPath) {
-            folderPath = path.join(__dirname, '../../assets/gallery');
-        } else if (!path.isAbsolute(folderPath)) {
-            folderPath = path.join(__dirname, '../../', folderPath);
+        let foldersToProcess = folderPaths || [];
+        if (folderPath && !foldersToProcess.includes(folderPath)) {
+            foldersToProcess.unshift(folderPath);
+        }
+        
+        // Default if empty
+        if (foldersToProcess.length === 0) {
+            foldersToProcess = [path.join(__dirname, '../../assets/gallery')];
         }
 
-        // Sanitize folderPath for internal use but preserve absolute nature
-        // path.resolve normaliza \ y / según el OS.
-        folderPath = path.resolve(folderPath).replace(/\\/g, '/');
-        console.log(`[System Routes] Target folderPath: ${folderPath}`);
+        const allMedia = [];
+        const debugInfo = [];
 
-        try {
-            await fs.access(folderPath);
-        } catch (accessErr) {
-            console.warn(`[System Routes] Path NOT accessible or missing: ${folderPath}`, accessErr.message);
-            // Si no existe, intentamos ver si el problema es que falta algún nivel de carpeta
-            return res.json({ 
-                path: folderPath, 
-                images: [], 
-                error: 'Carpeta no encontrada o inaccesible' 
-            });
-        }
-
-        const dirents = await fs.readdir(folderPath, { withFileTypes: true });
-        
-        const images = dirents
-            .filter(dirent => {
-                if (!dirent.isFile()) return false;
-                const ext = path.extname(dirent.name).toLowerCase();
-                return ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'].includes(ext);
-            })
-            .map(dirent => {
-                const fullPath = path.join(folderPath, dirent.name);
-                // SANITIZACIÓN CRÍTICA: Convertir todas las \ a / para evitar SyntaxError en el cliente
-                const sanitizedPath = fullPath.replace(/\\/g, '/');
+        for (let targetPath of foldersToProcess) {
+            logToFile(`Processing folder: "${targetPath}"`);
+            try {
+                let absolutePath = targetPath;
                 
-                let url = '';
-                const assetsIndex = sanitizedPath.indexOf('assets');
-                const resourcesIndex = sanitizedPath.indexOf('resources');
-                const storageIndex = sanitizedPath.indexOf('storage');
-
-                if (assetsIndex !== -1) {
-                    url = sanitizedPath.substring(assetsIndex);
-                } else if (resourcesIndex !== -1) {
-                    url = sanitizedPath.substring(resourcesIndex);
-                } else if (storageIndex !== -1) {
-                    url = sanitizedPath.substring(storageIndex);
+                // Si la ruta empieza con una letra de unidad (C:\, D:/, etc) o es absoluta según el sistema
+                const isWindowsAbsolute = /^[a-zA-Z]:[\\/]/.test(targetPath);
+                
+                if (isWindowsAbsolute) {
+                    absolutePath = path.resolve(targetPath);
+                } else if (path.isAbsolute(targetPath)) {
+                    absolutePath = path.resolve(targetPath);
                 } else {
-                    // Si es externo, usar el proxy
-                    url = `/api/system/image-proxy?path=${encodeURIComponent(sanitizedPath)}`;
+                    absolutePath = path.resolve(path.join(__dirname, '../../', targetPath));
                 }
 
-                return {
-                    name: dirent.name,
-                    path: sanitizedPath,
-                    url: url
-                };
-            });
+                // Normalización final
+                const fsPath = path.normalize(absolutePath);
+                logToFile(`Resolved path: "${targetPath}" -> "${fsPath}"`);
+                
+                debugInfo.push({ target: targetPath, resolved: fsPath });
 
-        console.log(`[System Routes] Found ${images.length} images in ${folderPath}`);
+                await fs.access(fsPath);
+                const dirents = await fs.readdir(fsPath, { withFileTypes: true });
+                
+                logToFile(`found ${dirents.length} entries in "${fsPath}"`);
+
+                // For debugging: Capture first 100 items to see what's there
+                const firstItems = dirents.slice(0, 100).map(d => ({
+                    name: d.name,
+                    isFile: d.isFile(),
+                    isDir: d.isDirectory(),
+                    isSymlink: d.isSymbolicLink(),
+                    ext: path.extname(d.name).toLowerCase()
+                }));
+
+                const mediaPromises = dirents
+                    .filter(dirent => {
+                        const isFile = dirent.isFile() || dirent.isSymbolicLink();
+                        const ext = path.extname(dirent.name).toLowerCase();
+                        const isMedia = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.pdf'].includes(ext);
+                        return isFile && isMedia;
+                    })
+                    .map(async (dirent) => {
+                        const fullPath = path.join(fsPath, dirent.name);
+                        const sanitizedPath = fullPath.replace(/\\/g, '/');
+                        const ext = path.extname(dirent.name).toLowerCase();
+                        
+                        // Obtener fecha de modificación (Async)
+                        let mtime = new Date();
+                        try {
+                            const stats = await fs.stat(fullPath);
+                            mtime = stats.mtime;
+                        } catch (e) {
+                            console.warn(`Could not get stats for ${fullPath}:`, e.message);
+                        }
+
+                        let url = '';
+                        const sanitizedPathLower = sanitizedPath.toLowerCase();
+                        if (sanitizedPathLower.indexOf('assets') !== -1) {
+                            url = sanitizedPath.substring(sanitizedPathLower.indexOf('assets'));
+                        } else if (sanitizedPathLower.indexOf('resources') !== -1) {
+                            url = sanitizedPath.substring(sanitizedPathLower.indexOf('resources'));
+                        } else if (sanitizedPathLower.indexOf('storage') !== -1) {
+                            url = sanitizedPath.substring(sanitizedPathLower.indexOf('storage'));
+                        } else {
+                            url = `/api/system/image-proxy?path=${encodeURIComponent(sanitizedPath)}`;
+                        }
+
+                        return {
+                            name: dirent.name,
+                            path: sanitizedPath,
+                            url: url,
+                            type: ext === '.pdf' ? 'pdf' : 'image',
+                            folder: targetPath,
+                            mtime: mtime.toISOString() // Formato robusto
+                        };
+                    });
+                
+                const mediaItems = await Promise.all(mediaPromises);
+                logToFile(`Successfully processed ${mediaItems.length} media files from "${fsPath}"`);
+                
+                debugInfo.push({ 
+                    target: targetPath, 
+                    resolved: fsPath, 
+                    totalFound: dirents.length,
+                    mediaFound: mediaItems.length,
+                    sampleItems: firstItems 
+                });
+                
+                allMedia.push(...mediaItems);
+            } catch (err) {
+                console.warn(`[System Routes] Skip folder: ${targetPath} - ${err.message}`);
+                debugInfo.push({ target: targetPath, error: err.message, stack: err.stack });
+            }
+        }
+
         res.json({ 
-            path: folderPath.replace(/\\/g, '/'),
-            images: images
+            images: allMedia,
+            debug: debugInfo
         });
 
     } catch (err) {
-        console.error('Image list error:', err);
+        console.error('Media list error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+/**
+ * POST /api/system/copy-to-clipboard
+ * Copies one or more files to the Windows clipboard using PowerShell.
+ */
+router.post('/copy-to-clipboard', async (req, res) => {
+    try {
+        const { paths: filePaths } = req.body;
+        if (!filePaths || !Array.isArray(filePaths) || filePaths.length === 0) {
+            return res.status(400).json({ error: 'No paths provided' });
+        }
+
+        // Normalizamos y escapamos las rutas para PowerShell
+        const normalizedPaths = filePaths.map(p => {
+            // Aseguramos que sea una ruta de Windows absoluta y escapamos comillas
+            let winPath = path.normalize(p).replace(/\//g, '\\');
+            return `"${winPath}"`;
+        }).join(',');
+
+        // Comando PowerShell para copiar archivos al portapapeles
+        // Set-Clipboard -Path requiere un array de strings en PS
+        const command = `powershell -Command "Set-Clipboard -Path ${normalizedPaths}"`;
+        
+        console.log(`[System Routes] Executing clipboard copy: ${command}`);
+
+        exec(command, (err) => {
+            if (err) {
+                console.error('[System Routes] Clipboard copy error:', err);
+                return res.status(500).json({ error: err.message });
+            }
+            res.json({ success: true });
+        });
+    } catch (err) {
+        console.error('Clipboard copy route error:', err);
         res.status(500).json({ error: err.message });
     }
 });

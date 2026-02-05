@@ -19,7 +19,7 @@ let systemModalInstance = null; // Instancia única del modal en el sistema
 
 // HTML base que se inyectará en la página al arrancar
 const modalHTML = `
-<div class="modal fade" id="globalSystemModal" tabindex="-1" style="z-index: 10060;" data-bs-backdrop="static" data-bs-keyboard="false" aria-labelledby="globalModalTitle">
+<div class="modal fade d-print-none" id="globalSystemModal" tabindex="-1" style="z-index: 10060;" data-bs-backdrop="static" data-bs-keyboard="false" aria-labelledby="globalModalTitle">
     <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content shadow-lg border-0 overflow-hidden" id="globalModalContent">
             <div class="modal-header text-white border-0 py-2" id="globalModalHeader">

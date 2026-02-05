@@ -1,6 +1,25 @@
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
+const fsSync = require('fs');
+
+const STORAGE_DIR = path.resolve(__dirname, '../storage');
+const LOG_FILE = path.join(STORAGE_DIR, 'server_debug.log');
+
+const logToFile = (msg) => {
+    const timestamp = new Date().toISOString();
+    const entry = `[${timestamp}] [SERVER] ${msg}\n`;
+    try {
+        if (!fsSync.existsSync(STORAGE_DIR)) {
+            fsSync.mkdirSync(STORAGE_DIR, { recursive: true });
+        }
+        fsSync.appendFileSync(LOG_FILE, entry);
+    } catch (e) {
+        console.error('CRITICAL: Could not write to log file from app.js', e);
+    }
+};
+
+logToFile('Starting Server Lifecycle');
 
 // Import modular routes
 const storageRoutes = require('./routes/storage');
@@ -30,16 +49,16 @@ app.get('/api/health', (req, res) => {
     });
 });
 
-console.log('[Server] Mounting Storage Routes...');
+logToFile('Mounting Storage Routes...');
 app.use('/api/storage', storageRoutes);
-console.log('[Server] Mounting System Routes...');
+logToFile('Mounting System Routes...');
 try {
     app.use('/api/system', systemRoutes);
-    console.log('[Server] SUCCESS: System Routes mounted at /api/system');
+    logToFile('SUCCESS: System Routes mounted at /api/system');
 } catch (e) {
-    console.error('[Server] CRITICAL FAIL: Could not mount System Routes:', e);
+    logToFile(`CRITICAL FAIL: Could not mount System Routes: ${e.message}`);
 }
-console.log('[Server] Mounting Heartbeat Routes...');
+logToFile('Mounting Heartbeat Routes...');
 app.use('/api/heartbeat', heartbeatRoutes);
 
 // --- STATIC FILES ---

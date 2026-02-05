@@ -9,118 +9,532 @@ let isDragging = false;
 let startX, startY, translateX = 0, translateY = 0;
 let currentImages = [];
 let currentIndex = -1;
+let currentTypeFilter = 'all'; // all, image, pdf
+let currentFolderFilter = 'all';
+let currentSearchQuery = '';
+let currentSort = 'mtime_desc';
+let showOnlyFavorites = false;
+let selectionMode = false;
+let selectedItems = []; // Array of URLs
+let favorites = [];
+let pdfThumbnailsCache = {};
 
 export const Gallery = {
     async inicializar() {
         if (moduloInicializado) return;
         
+        // Cargar favoritos del servidor
+        await this.loadFavorites();
+        
         // Initial load
         await this.loadImages();
         
-        // Event listeners for Filters
+        // Debounce para la búsqueda (300ms)
+        let searchTimeout;
         document.getElementById('gallerySearch')?.addEventListener('input', (e) => {
-            this.filterImages(e.target.value);
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                this.filterImages(e.target.value);
+            }, 300);
         });
 
-        // setupModalEvents will handle the viewer controls
-        this.setupModalEvents();
+        // Event for Type Filter
+        document.getElementById('galleryTypeFilter')?.addEventListener('change', (e) => {
+            currentTypeFilter = e.target.value;
+            this.renderGrid(currentImages);
+        });
 
+        // Event for Folder Filter
+        document.getElementById('galleryFolderFilter')?.addEventListener('change', (e) => {
+            currentFolderFilter = e.target.value;
+            this.renderGrid(currentImages);
+        });
+
+        // Event for Sort
+        document.getElementById('gallerySort')?.addEventListener('change', (e) => {
+            currentSort = e.target.value;
+            this.renderGrid(currentImages);
+        });
+
+        // Event for Favorite Filter
+        document.getElementById('galleryFavoriteFilter')?.addEventListener('change', (e) => {
+            showOnlyFavorites = e.target.checked;
+            this.renderGrid(currentImages);
+        });
+
+        // Event for Selection Mode
+        document.getElementById('gallerySelectionMode')?.addEventListener('change', (e) => {
+            this.toggleSelectionMode(e.target.checked);
+        });
+
+        this.setupModalEvents();
         moduloInicializado = true;
     },
 
-    async loadImages() {
+    async loadFavorites() {
+        try {
+            const data = await Api.get('/storage/gallery_favorites');
+            if (data && Array.isArray(data)) {
+                favorites = data;
+            }
+        } catch (e) {
+            console.error("[Gallery] Error loading favorites:", e);
+        }
+    },
+
+    async saveFavorites() {
+        try {
+            await Api.post('/storage/gallery_favorites', favorites);
+        } catch (e) {
+            console.error("[Gallery] Error saving favorites:", e);
+        }
+    },
+
+    async toggleFavorite(url, event) {
+        if (event) event.stopPropagation();
+        
+        const index = favorites.indexOf(url);
+        if (index === -1) {
+            favorites.push(url);
+            Ui.showToast("Agregado a favoritos", "info");
+        } else {
+            favorites.splice(index, 1);
+            Ui.showToast("Eliminado de favoritos", "secondary");
+        }
+        
+        await this.saveFavorites();
+        this.renderGrid(currentImages);
+    },
+
+    toggleSelectionMode(active) {
+        selectionMode = active;
+        if (!active) {
+            this.clearSelection();
+        }
+        const bulkBar = document.getElementById('galleryBulkActions');
+        if (bulkBar) {
+            bulkBar.classList.toggle('d-none', !active);
+            bulkBar.classList.toggle('d-flex', active);
+        }
+        this.renderGrid(currentImages);
+    },
+
+    toggleSelection(url, event) {
+        if (event) event.stopPropagation();
+        
+        const idx = selectedItems.indexOf(url);
+        if (idx === -1) {
+            selectedItems.push(url);
+        } else {
+            selectedItems.splice(idx, 1);
+        }
+        
+        this.updateSelectionUI();
+    },
+
+    updateSelectionUI() {
+        const countEl = document.getElementById('gallerySelectedCount');
+        if (countEl) countEl.textContent = selectedItems.length;
+        
+        // Update cards classes without full re-render for performance
+        document.querySelectorAll('.gallery-card').forEach(card => {
+            const url = card.dataset.url;
+            if (url) {
+                const isSelected = selectedItems.includes(url);
+                card.classList.toggle('selected', isSelected);
+                const checkbox = card.querySelector('.selection-checkbox');
+                if (checkbox) checkbox.checked = isSelected;
+            }
+        });
+    },
+
+    clearSelection() {
+        selectedItems = [];
+        this.updateSelectionUI();
+    },
+
+    async copyCurrent() {
+        const item = currentImages[currentIndex];
+        if (!item) return;
+        await this.copyToClipboard([item.url]);
+    },
+
+    async copySelected() {
+        if (selectedItems.length === 0) {
+            Ui.showToast("No hay elementos seleccionados", "warning");
+            return;
+        }
+        await this.copyToClipboard(selectedItems);
+    },
+
+    async copyToClipboard(urls) {
+        try {
+            const paths = urls.map(url => {
+                const item = currentImages.find(img => img.url === url);
+                return item ? item.path : null;
+            }).filter(p => p !== null);
+
+            if (paths.length === 0) return;
+
+            Ui.showToast(urls.length > 1 ? `Copiando ${urls.length} archivos...` : "Copiando archivo...", "info");
+            
+            const response = await Api.post('/system/copy-to-clipboard', { paths });
+            
+            if (response.success) {
+                Ui.showToast(urls.length > 1 ? `${urls.length} archivos copiados` : "Archivo copiado", "success");
+            } else {
+                throw new Error(response.error || "Error al copiar");
+            }
+        } catch (e) {
+            console.error("[Gallery] Copy error:", e);
+            Ui.showToast("Error al copiar al portapapeles", "danger");
+        }
+    },
+
+    async printCurrent() {
+        const item = currentImages[currentIndex];
+        if (!item) return;
+        this.printUrls([item.url]);
+    },
+
+    async printSelected() {
+        if (selectedItems.length === 0) {
+            Ui.showToast("No hay elementos seleccionados", "warning");
+            return;
+        }
+        this.printUrls(selectedItems);
+    },
+
+    printUrls(urls) {
+        Ui.showToast("Preparando impresi\u00f3n...", "info");
+        
+        // Crear un frame oculto para imprimir
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = '0';
+        document.body.appendChild(iframe);
+
+        const doc = iframe.contentWindow.document;
+        doc.open();
+        
+        let content = '<html><head><title>Imprimir Galer\u00eda</title><style>';
+        content += 'body { margin: 0; padding: 0; text-align: center; }';
+        content += 'img, canvas { max-width: 100%; max-height: 100vh; page-break-after: always; display: block; margin: 0 auto; object-fit: contain; }';
+        content += '@media print { body { margin: 0; } img { width: 100%; height: auto; } }';
+        content += '</style></head><body>';
+
+        urls.forEach(url => {
+            if (url.toLowerCase().endsWith('.pdf')) {
+                // Para PDFs, mostramos un aviso de que deben imprimirse desde el visor de PDF
+                content += `<div style="padding: 50px; border: 1px solid #ccc; margin: 20px;">
+                    <h3>Documento PDF: ${url.split('/').pop()}</h3>
+                    <p>Los PDFs deben imprimirse individualmente desde el visualizador para mantener su formato original.</p>
+                </div>`;
+            } else {
+                content += `<img src="${url}">`;
+            }
+        });
+
+        content += '</body></html>';
+        doc.write(content);
+        doc.close();
+
+        iframe.contentWindow.focus();
+        setTimeout(() => {
+            iframe.contentWindow.print();
+            setTimeout(() => document.body.removeChild(iframe), 1000);
+        }, 500);
+    },
+
+    toggleFullscreen() {
+        const wrapper = document.getElementById('galleryModal').querySelector('.modal-content');
+        if (!document.fullscreenElement) {
+            wrapper.requestFullscreen().catch(err => {
+                console.error(`Error attempting to enable full-screen mode: ${err.message}`);
+            });
+        } else {
+            document.exitFullscreen();
+        }
+    },
+
+    async loadImages(resetFilters = false) {
+        console.log("[Gallery] loadImages - Starting load...");
         const container = document.getElementById('gallery-grid');
         if (!container) return;
 
-        container.innerHTML = '<div class="col-12 text-center py-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-2 text-muted">Cargando imágenes...</p></div>';
+        // Reset filtros si se solicita (Manual Sync o Cambio de Módulo)
+        if (resetFilters) {
+            currentSearchQuery = '';
+            currentTypeFilter = 'all';
+            currentFolderFilter = 'all';
+            showOnlyFavorites = false;
+            
+            // Sincronizar UI
+            const searchInput = document.getElementById('gallerySearch');
+            if (searchInput) searchInput.value = '';
+            
+            const typeSelect = document.getElementById('galleryTypeFilter');
+            if (typeSelect) typeSelect.value = 'all';
+            
+            const folderSelect = document.getElementById('galleryFolderFilter');
+            if (folderSelect) folderSelect.value = 'all';
+
+            const favCheck = document.getElementById('galleryFavoriteFilter');
+            if (favCheck) favCheck.checked = false;
+        }
+
+        container.innerHTML = '<div class="col-12 text-center py-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-2 text-muted px-4">Recuperando archivos y miniaturas...</p></div>';
 
         try {
-            const galleryPath = APP_CONFIG.SYSTEM?.GALLERY_PATH || 'assets/gallery';
+            const mainPath = (APP_CONFIG.SYSTEM?.GALLERY_PATH || 'assets/gallery').trim();
+            const configFolders = APP_CONFIG.SYSTEM?.GALLERY_FOLDERS || [];
             
-            // Call the new system endpoint
-            const response = await Api.post('/system/list-images', {
-                folderPath: galleryPath
+            let folderPaths = [mainPath, ...configFolders.map(f => f.path.trim())];
+            folderPaths = [...new Set(folderPaths)].filter(p => p !== '');
+
+            console.log("[Gallery] folderPaths to scan:", folderPaths);
+
+            this.updateFolderFilterUI(mainPath, configFolders);
+
+            // FIX: Forzar lectura de disco con timestamp
+            const response = await Api.post('/system/list-images?t=' + Date.now(), {
+                folderPaths: folderPaths
             });
 
+            console.log(`[Gallery] loadImages finished. Found ${response?.images?.length || 0} items.`);
+
             if (response && response.images && response.images.length > 0) {
-                this.renderGrid(response.images);
+                currentImages = response.images;
+                this.renderGrid(currentImages);
             } else {
-                const displayPath = response?.path || galleryPath;
                 container.innerHTML = `
                     <div class="col-12 text-center text-muted py-5">
                         <i class="bi bi-images fs-1 mb-3"></i>
-                        <p>No se encontraron imágenes en la carpeta:</p>
-                        <code class="d-block mb-3">${displayPath}</code>
-                        <div class="alert alert-info d-inline-block small">
-                            <i class="bi bi-info-circle me-2"></i>Verifica que la carpeta exista y contenga archivos .jpg, .png o .webp
-                        </div>
+                        <p class="mb-2">No se encontraron archivos en las rutas configuradas.</p>
                     </div>`;
             }
 
         } catch (error) {
             console.error('Error loading gallery:', error);
-            container.innerHTML = `<div class="col-12 text-center text-danger py-5"><i class="bi bi-exclamation-triangle fs-1 mb-3"></i><p>Error al cargar la galería: ${error.message}</p></div>`;
+            container.innerHTML = `<div class="col-12 text-center text-danger py-5"><i class="bi bi-exclamation-triangle fs-1 mb-3"></i><p>Error de conexión: ${error.message}</p></div>`;
+        }
+    },
+
+    updateFolderFilterUI(mainPath, folders) {
+        const select = document.getElementById('galleryFolderFilter');
+        if (!select) return;
+        
+        const currentVal = select.value;
+        select.innerHTML = '<option value="all">Todas las Carpetas</option>';
+        
+        const normalize = (p) => p.trim().replace(/\\/g, '/').toLowerCase();
+        const normalizedMain = normalize(mainPath);
+
+        const optMain = document.createElement('option');
+        optMain.value = mainPath.trim();
+        optMain.textContent = `[Principal] ${mainPath}`;
+        select.appendChild(optMain);
+        
+        folders.forEach(f => {
+            const normalizedPath = normalize(f.path);
+            if (normalizedPath === normalizedMain) return;
+            const opt = document.createElement('option');
+            opt.value = f.path.trim();
+            opt.textContent = f.label || f.path;
+            select.appendChild(opt);
+        });
+
+        if ([...select.options].some(o => o.value === currentVal)) {
+            select.value = currentVal;
         }
     },
 
     renderGrid(images) {
-        currentImages = images; // Store for navigation
         const container = document.getElementById('gallery-grid');
-        container.innerHTML = '';
+        if (!container) return;
+        
+        // Limpiar de forma segura
+        while (container.firstChild) container.removeChild(container.firstChild);
 
-        if (images.length === 0) {
-            container.innerHTML = '<div class="col-12 text-center text-muted py-5">Carpeta vacía.</div>';
+        const normalize = (p) => (p || '').trim().replace(/\\/g, '/').toLowerCase();
+        const normFilterFolder = normalize(currentFolderFilter);
+        const searchVal = currentSearchQuery.toLowerCase().trim();
+
+        // 1. Aplicar filtros
+        let filtered = images.filter(img => {
+            const matchesType = currentTypeFilter === 'all' || img.type === currentTypeFilter;
+            const matchesFolder = currentFolderFilter === 'all' || normalize(img.folder) === normFilterFolder;
+            const matchesSearch = searchVal === '' || img.name.toLowerCase().includes(searchVal);
+            const matchesFavorite = !showOnlyFavorites || favorites.includes(img.url);
+            return matchesType && matchesFolder && matchesSearch && matchesFavorite;
+        });
+
+        // 2. Ordenaci\u00F3n mejorada por tiempo real
+        filtered.sort((a, b) => {
+            const isFavA = favorites.includes(a.url);
+            const isFavB = favorites.includes(b.url);
+            if (isFavA && !isFavB) return -1;
+            if (!isFavA && isFavB) return 1;
+            
+            if (currentSort === 'mtime_desc') return new Date(b.mtime).getTime() - new Date(a.mtime).getTime();
+            if (currentSort === 'mtime_asc') return new Date(a.mtime).getTime() - new Date(b.mtime).getTime();
+            if (currentSort === 'name_asc') return a.name.localeCompare(b.name, undefined, {sensitivity: 'base', numeric: true});
+            return 0;
+        });
+
+        if (filtered.length === 0) {
+            container.innerHTML = `<div class="col-12 text-center text-muted py-5">${images.length > 0 ? 'No hay archivos que coincidan con los filtros.' : 'No hay archivos en la galer\u00EDa.'}</div>`;
             return;
         }
 
-        images.forEach(img => {
-            const col = document.createElement('div');
-            col.className = 'col-6 col-md-4 col-lg-3 gallery-item-col';
-            col.dataset.name = img.name.toLowerCase();
+        // 3. Lazy Loading Setup (IntersectionObserver)
+        const observerOptions = { root: null, rootMargin: '200px', threshold: 0.01 };
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    this.loadCardContent(entry.target);
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, observerOptions);
 
+        // 4. Batch Rendering con DocumentFragment
+        const fragment = document.createDocumentFragment();
+        filtered.forEach(img => {
+            const col = document.createElement('div');
+            col.className = 'col-6 col-md-4 col-lg-3 gallery-item-col mb-4';
+            col.dataset.url = img.url;
+            col.dataset.name = img.name;
+            col.dataset.type = img.type;
+
+            // Simple placeholder
             col.innerHTML = `
-                <div class="card h-100 shadow-sm border-0 gallery-card" onclick="Gallery.openViewer('${img.url}', '${img.name}')">
-                    <div class="card-img-wrapper" style="height: 200px; overflow: hidden; position: relative;">
-                        <img src="${img.url}" class="card-img-top" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s;">
+                <div class="card h-100 shadow-sm border-0 gallery-card-placeholder bg-light" style="min-height: 250px;">
+                    <div class="d-flex align-items-center justify-content-center h-100 opacity-25">
+                        <i class="bi bi-image fs-1"></i>
                     </div>
-                    <div class="card-body p-2 text-center">
-                        <small class="fw-bold text-secondary text-truncate d-block">${img.name}</small>
-                    </div>
-                </div>
-            `;
-            container.appendChild(col);
+                </div>`;
+            
+            fragment.appendChild(col);
+            observer.observe(col);
         });
+
+        container.appendChild(fragment);
+    },
+
+    loadCardContent(col) {
+        const { url, name, type } = col.dataset;
+        const isPdf = type === 'pdf';
+        const isFav = favorites.includes(url);
+        const isSelected = selectedItems.includes(url);
+        const thumbId = `thumb-${Math.random().toString(36).substr(2, 9)}`;
+
+        let iconHtml = isPdf 
+            ? `<div class="d-flex flex-column align-items-center justify-content-center h-100 bg-light text-danger overflow-hidden" id="${thumbId}">
+                <i class="bi bi-file-earmark-pdf fs-1"></i>
+                <span class="small mt-2 text-center" style="font-size: 0.6rem;">Generando vista...</span>
+               </div>`
+            : `<img src="${url}" class="card-img-top" loading="lazy" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s;">`;
+
+        col.innerHTML = `
+            <div class="card h-100 shadow-sm border-0 gallery-card overflow-hidden ${isSelected ? 'selected' : ''} ${selectionMode ? 'selection-active' : ''} animate__animated animate__fadeIn" 
+                 data-url="${url}"
+                 onclick="${selectionMode ? `Gallery.toggleSelection('${url}', event)` : `Gallery.openViewer('${url}', '${name.replace(/'/g, "\\'")}', '${type}')`}">
+                 
+                ${selectionMode ? `<input type="checkbox" class="selection-checkbox" ${isSelected ? 'checked' : ''} onclick="Gallery.toggleSelection('${url}', event)">` : ''}
+                
+                <div class="favorite-btn ${isFav ? 'active' : ''}" onclick="Gallery.toggleFavorite('${url}', event)">
+                    <i class="bi ${isFav ? 'bi-star-fill' : 'bi-star'}"></i>
+                </div>
+                
+                <div class="card-img-wrapper" style="height: 180px; overflow: hidden; position: relative; cursor: pointer;">
+                    ${iconHtml}
+                </div>
+                
+                <div class="card-body p-2 bg-white text-center">
+                    <div class="text-truncate small fw-bold" title="${name}">${name}</div>
+                    <div class="text-muted" style="font-size: 0.6rem;">${isPdf ? 'Documento PDF' : 'Imagen'}</div>
+                </div>
+            </div>`;
+
+        if (isPdf) {
+            setTimeout(() => this.generatePdfThumbnail(url, thumbId), 50);
+        }
+    },
+
+    async generatePdfThumbnail(url, elementId) {
+        if (pdfThumbnailsCache[url]) {
+            setTimeout(() => this.applyThumbnailToElement(elementId, pdfThumbnailsCache[url]), 10);
+            return;
+        }
+
+        try {
+            if (typeof pdfjsLib === 'undefined') return;
+            
+            const loadingTask = pdfjsLib.getDocument(url);
+            const pdf = await loadingTask.promise;
+            const page = await pdf.getPage(1);
+            
+            const viewport = page.getViewport({ scale: 0.5 });
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+
+            await page.render({ canvasContext: context, viewport: viewport }).promise;
+            
+            const dataUrl = canvas.toDataURL();
+            pdfThumbnailsCache[url] = dataUrl;
+            this.applyThumbnailToElement(elementId, dataUrl);
+            
+        } catch (e) {
+            console.warn("[Gallery] PDF preview failed:", e.message);
+            const el = document.getElementById(elementId);
+            if (el) el.innerHTML = '<i class="bi bi-file-earmark-pdf fs-1"></i><span class="small mt-2">PDF</span>';
+        }
+    },
+
+    applyThumbnailToElement(elementId, dataUrl) {
+        const el = document.getElementById(elementId);
+        if (el) {
+            el.innerHTML = `<img src="${dataUrl}" style="width:100%; height:100%; object-fit:cover;">`;
+            el.classList.remove('bg-light', 'text-danger');
+        }
     },
 
     filterImages(query) {
-        const term = query.toLowerCase();
-        const items = document.querySelectorAll('.gallery-item-col');
-        
-        items.forEach(item => {
-            const name = item.dataset.name;
-            if (name.includes(term)) {
-                item.classList.remove('d-none');
-            } else {
-                item.classList.add('d-none');
-            }
-        });
+        currentSearchQuery = query;
+        this.renderGrid(currentImages);
     },
 
-    openViewer(url, title) {
+    openViewer(url, title, type = 'image') {
         const modalEl = document.getElementById('galleryModal');
         const img = document.getElementById('galleryViewerImage');
+        const pdf = document.getElementById('galleryViewerPdf');
         const titleEl = document.getElementById('galleryViewerTitle');
+        const controls = document.getElementById('galleryViewerControls');
         
-        if (!modalEl || !img) return;
+        if (!modalEl || !img || !pdf) return;
 
-        // Set index for navigation
         currentIndex = currentImages.findIndex(i => i.url === url);
-
-        img.src = url;
         titleEl.textContent = title;
         
-        // Reset transform state
-        this.resetView();
+        if (type === 'pdf') {
+            img.classList.add('d-none');
+            pdf.classList.remove('d-none');
+            pdf.src = url;
+            if (controls) controls.classList.add('d-none'); 
+        } else {
+            pdf.classList.add('d-none');
+            img.classList.remove('d-none');
+            img.src = url;
+            if (controls) controls.classList.remove('d-none');
+            this.resetView();
+        }
 
         const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
         modal.show();
@@ -141,17 +555,8 @@ export const Gallery = {
     syncViewer() {
         const item = currentImages[currentIndex];
         if (!item) return;
-
-        const img = document.getElementById('galleryViewerImage');
-        const titleEl = document.getElementById('galleryViewerTitle');
-        
-        if (img) img.src = item.url;
-        if (titleEl) titleEl.textContent = item.name;
-
-        this.resetView();
+        this.openViewer(item.url, item.name, item.type);
     },
-
-    // --- ZOOM & PAN LOGIC ---
 
     resetView() {
         currentScale = 1;
@@ -182,20 +587,16 @@ export const Gallery = {
 
     setupModalEvents() {
         const imgContainer = document.getElementById('galleryViewerContainer');
-        const img = document.getElementById('galleryViewerImage');
-
         if (!imgContainer) return;
 
-        // Wheel Zoom
         imgContainer.addEventListener('wheel', (e) => {
             e.preventDefault();
             const delta = e.deltaY > 0 ? -0.1 : 0.1;
             this.adjustZoom(delta);
         });
 
-        // Mouse Drag to Pan
         imgContainer.addEventListener('mousedown', (e) => {
-            if (currentScale <= 1) return; // Only pan if zoomed in
+            if (currentScale <= 1) return; 
             isDragging = true;
             startX = e.clientX - translateX;
             startY = e.clientY - translateY;
@@ -215,40 +616,25 @@ export const Gallery = {
             this.updateTransform();
         });
 
-        // --- BUTTONS ---
         document.getElementById('galleryRotateLeft')?.addEventListener('click', (e) => { e.stopPropagation(); this.rotateImage(-90); });
         document.getElementById('galleryRotateRight')?.addEventListener('click', (e) => { e.stopPropagation(); this.rotateImage(90); });
         document.getElementById('galleryZoomIn')?.addEventListener('click', (e) => { e.stopPropagation(); this.adjustZoom(0.2); });
         document.getElementById('galleryZoomOut')?.addEventListener('click', (e) => { e.stopPropagation(); this.adjustZoom(-0.2); });
         document.getElementById('galleryResetView')?.addEventListener('click', (e) => { e.stopPropagation(); this.resetView(); });
 
-        // Navigation
-        document.getElementById('galleryPrevBtn')?.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.prevImage();
-        });
-        document.getElementById('galleryNextBtn')?.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.nextImage();
-        });
+        document.getElementById('galleryPrevBtn')?.addEventListener('click', (e) => { e.stopPropagation(); this.prevImage(); });
+        document.getElementById('galleryNextBtn')?.addEventListener('click', (e) => { e.stopPropagation(); this.nextImage(); });
 
-        // Keyboard Support (Only once)
         if (!window._galleryKeyHandler) {
             window._galleryKeyHandler = true;
             window.addEventListener('keydown', (e) => {
                 const modal = document.getElementById('galleryModal');
                 if (!modal?.classList.contains('show')) return;
-
                 if (e.key === 'ArrowRight') this.nextImage();
                 if (e.key === 'ArrowLeft') this.prevImage();
-                if (e.key === 'Escape') {
-                    const bModal = bootstrap.Modal.getInstance(modal);
-                    bModal?.hide();
-                }
             });
         }
     }
 };
 
-// Global Exposure
 window.Gallery = Gallery;

@@ -111,6 +111,17 @@ export class BaseService {
     }
 
     /**
+     * RECARGAR DATOS FORZOSAMENTE
+     * Ignora la caché y vuelve a leer del almacenamiento/servidor.
+     * @returns {Promise<any>}
+     */
+    async reload() {
+        this._initialized = false;
+        this.cache = null;
+        return this.init();
+    }
+
+    /**
      * OBTENER TODOS LOS DATOS
      * Retorna los datos actualmente en caché. Si la caché está vacía, los carga desde
      * LocalStorage y activa una sincronización con el servidor.

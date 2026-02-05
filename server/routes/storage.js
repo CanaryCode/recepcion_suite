@@ -64,6 +64,9 @@ router.post('/upload', async (req, res) => {
             return res.status(400).json({ error: 'Missing fileName or fileData' });
         }
 
+        logToFile(`[Storage] Received data length: ${fileData.length}`);
+        logToFile(`[Storage] Data start: ${fileData.substring(0, 70)}...`);
+
         const mediaDir = path.join(STORAGE_DIR, 'media', folder);
         console.log(`[Storage] Target directory: ${mediaDir}`);
         
@@ -76,8 +79,8 @@ router.post('/upload', async (req, res) => {
 
         const filePath = path.join(mediaDir, fileName);
         
-        // Remove Base64 prefix if present
-        const base64Data = fileData.replace(/^data:image\/\w+;base64,/, "");
+        // Remove Base64 prefix if present (handle both raw b64 and data URIs)
+        const base64Data = fileData.includes(',') ? fileData.split(',')[1] : fileData;
         const buffer = Buffer.from(base64Data, 'base64');
 
         await fs.writeFile(filePath, buffer);

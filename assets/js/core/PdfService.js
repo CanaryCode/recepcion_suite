@@ -18,7 +18,7 @@ export const PdfService = {
      * @param {string} options.filename - Nombre de archivo sugerido (.pdf)
      * @param {Object} [options.metadata] - Datos adicionales para la cabecera (Fecha, Turno, etc.)
      */
-    async generateReport({ title, author, htmlContent, filename, metadata = {} }) {
+    async generateReport({ title, author, htmlContent, element, filename, metadata = {}, outputType = 'save' }) {
         if (typeof html2pdf === 'undefined') {
             console.error("html2pdf.js no está cargado.");
             return;
@@ -28,73 +28,73 @@ export const PdfService = {
         const dateStr = now.toLocaleDateString() + ' ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         const hotelName = APP_CONFIG.HOTEL?.NOMBRE || "HOTEL GAROÉ";
 
-        // 1. Crear el contenedor base del reporte
-        const container = document.createElement('div');
-        container.classList.add('pdf-report-container');
-        container.style.cssText = `
-            font-family: Arial, sans-serif;
-            color: #333;
-            background: white;
-            padding: 20px;
+        // 1. Construir el HTML completo como STRING (Evita fugas de CSS y PDFs en blanco)
+        // Eliminamos la cabecera genérica de PdfService porque Caja ya trae su propio header profesional
+        // Reducimos el padding general al mínimo (0 10mm) para aprovechar el folio
+        const baseStyles = `
+            <style>
+                .pdf-root { font-family: Arial, sans-serif; color: #333; padding: 0mm; margin: 0; }
+                .pdf-report-body { padding: 0; margin: 0; }
+            </style>
         `;
 
-        // 2. Cabecera Estandarizada
-        const headerHtml = `
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0d6efd; padding-bottom: 10px; margin-bottom: 20px;">
-                <div>
-                    <h2 style="margin: 0; color: #0d6efd; font-size: 22pt;">${hotelName}</h2>
-                    <h4 style="margin: 5px 0 0 0; color: #666; font-size: 14pt;">${title}</h4>
-                </div>
-                <div style="text-align: right; font-size: 10pt; color: #777;">
-                    <div><b>Fecha:</b> ${dateStr}</div>
-                    <div><b>Autor:</b> ${author}</div>
-                    ${Object.entries(metadata).map(([k, v]) => `<div><b>${k}:</b> ${v}</div>`).join('')}
-                </div>
-            </div>
-        `;
-
-        // 3. Pie de Página
         const footerHtml = `
-            <div style="margin-top: 30px; padding-top: 10px; border-top: 1px solid #ccc; font-size: 8pt; color: #999; display: flex; justify-content: space-between;">
-                <span>Generado por Recepción Suite v5.0</span>
-                <span>Página 1 de 1</span>
+                <div style="margin-top: 20px; padding-top: 5px; border-top: 1px solid #eee; font-size: 7pt; color: #bbb; display: flex; justify-content: space-between; font-family: sans-serif;">
+                    <span>Generado por Recepción Suite v5.0</span>
+                    <span>Página 1 de 1</span>
+                </div>
             </div>
         `;
 
-        // 4. Inyectar contenido
-        container.innerHTML = `
-            ${headerHtml}
-            <div class="pdf-report-body">
-                ${htmlContent}
-            </div>
-            ${footerHtml}
-        `;
+        let finalBodyHtml = "";
+        if (element) {
+            const clone = element.cloneNode(true);
+            clone.classList.remove('d-none', 'd-print-none', 'd-print-block', 'fade');
+            clone.style.display = 'block';
+            clone.style.visibility = 'visible';
+            finalBodyHtml = clone.outerHTML;
+        } else {
+            finalBodyHtml = htmlContent || "";
+        }
 
-        // 5. Configuración de html2pdf
+        const unifiedHtml = `<div class="pdf-root">${baseStyles}<div class="pdf-report-body">${finalBodyHtml}</div>${footerHtml}`;
+
+        // 2. Configuración de html2pdf
         const opt = {
-            margin: [10, 10, 10, 10],
+            margin: [5, 10, 10, 10], // Reducimos margen superior de 10 a 5mm
             filename: filename || `${title.replace(/\s+/g, '_')}_${Utils.getTodayISO()}.pdf`,
             image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2, useCORS: true },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            html2canvas: { 
+                scale: 2, 
+                useCORS: true,
+                letterRendering: false, // Desactivado para mayor compatibilidad
+                logging: false,
+                backgroundColor: '#ffffff'
+            },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true }
         };
 
-        // 6. Ejecutar generación
+        // 3. Ejecutar generación directamente desde STRING
         try {
-            // Si el navegador soporta File System Access API
-            if (window.showSaveFilePicker) {
-                const handle = await window.showSaveFilePicker({
-                    suggestedName: opt.filename,
-                    types: [{ description: 'PDF Document', accept: { 'application/pdf': ['.pdf'] } }]
-                });
+            const worker = html2pdf().set(opt).from(unifiedHtml);
+
+            if (outputType === 'blob' || outputType === 'base64') {
+                const pdfBlob = await worker.output('blob');
                 
-                const pdfBlob = await html2pdf().set(opt).from(container).output('blob');
-                const writable = await handle.createWritable();
-                await writable.write(pdfBlob);
-                await writable.close();
-            } else {
-                await html2pdf().set(opt).from(container).save();
+                if (outputType === 'blob') return pdfBlob;
+
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        const base64 = reader.result.split(',')[1];
+                        resolve(base64);
+                    };
+                    reader.onerror = reject;
+                    reader.readAsDataURL(pdfBlob);
+                });
             }
+
+            await worker.save();
             return true;
         } catch (err) {
             console.error("Error al generar PDF:", err);

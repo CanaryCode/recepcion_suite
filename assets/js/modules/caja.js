@@ -3,6 +3,7 @@ import { Utils } from "../core/Utils.js";
 import { Ui } from "../core/Ui.js";
 import { sessionService } from "../services/SessionService.js";
 import { cajaService } from "../services/CajaService.js";
+import { valesService } from "../services/ValesService.js";
 import { Modal } from "../core/Modal.js";
 import { PdfService } from "../core/PdfService.js";
 
@@ -26,36 +27,53 @@ let fondoCajaValue = (APP_CONFIG.CAJA?.FONDO !== undefined) ? APP_CONFIG.CAJA.FO
  * y que se resta de la recaudación final.
  */
 
-window.abrirModalVales = () => {
+window.abrirModalVales = async () => {
+  await importarValesAutorizados();
   const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById("modalVales"));
   renderVales();
   modal.show();
-  setTimeout(() => document.getElementById("vale_concepto")?.focus(), 500);
+  setTimeout(() => document.getElementById("vale_receptor")?.focus(), 500);
 };
 
-window.agregarVale = (e) => {
+window.agregarVale = async (e) => {
   e.preventDefault();
+
+  const usuario = Utils.validateUser();
+  if (!usuario) return;
+
+  const receptorIn = document.getElementById("vale_receptor");
   const conceptoIn = document.getElementById("vale_concepto");
+  const comentarioIn = document.getElementById("vale_comentario");
   const importeIn = document.getElementById("vale_importe");
 
+  const receptor = receptorIn?.value?.trim() || "Recepción (Caja)";
   const concepto = conceptoIn.value.trim();
+  const comentario = comentarioIn?.value?.trim() || "";
   const importe = parseFloat(importeIn.value);
 
   if (concepto && importe > 0) {
-    listaVales.push({
-      id: Date.now(),
-      concepto,
-      importe,
+    // 1. Crear el vale REAL en el servicio central
+    await valesService.createVale({
+      receptor: receptor,
+      concepto: concepto,
+      comentario: comentario,
+      importe: importe,
+      usuario: usuario,
+      estado: "Pendiente",
+      firmado: true
     });
 
-    cajaService.saveVales(listaVales);
-
+    // 2. Limpiar formulario
+    if (receptorIn) receptorIn.value = "";
     conceptoIn.value = "";
+    if (comentarioIn) comentarioIn.value = "";
     importeIn.value = "";
-    conceptoIn.focus();
+    if (receptorIn) receptorIn.focus(); else conceptoIn.focus();
 
-    renderVales();
-    calcularCaja();
+    // 3. Sincronizar automáticamente la lista de caja para incluir el nuevo vale
+    await importarValesAutorizados();
+
+    Ui.showToast("Vale registrado y sincronizado.", "success");
   }
 };
 
@@ -66,16 +84,74 @@ window.eliminarVale = (id) => {
   calcularCaja();
 };
 
+/**
+ * IMPORTAR VALES DESDE EL MÓDULO DE VALES
+ * Busca vales con estado 'Pendiente' y que estén 'Firmados' (Autorizados).
+ */
+async function importarValesAutorizados() {
+  try {
+    // ASEGURAR QUE EL SERVICIO ESTÉ INICIALIZADO Y SINCRONIZADO (FRESH DATA)
+    await valesService.reload();
+
+    const todosLosVales = valesService.getAll();
+    if (!todosLosVales || todosLosVales.length === 0) {
+       listaVales = listaVales.filter(v => v.origin !== 'vales_module');
+       renderVales();
+       return;
+    }
+
+    // Filtrar autorizados (Firmados) y que NO estén contabilizados aún
+    const autorizados = todosLosVales.filter(v => 
+      v.estado !== 'Contabilizado' && v.firmado === true
+    );
+
+    let huboCambios = false;
+
+    // FILTRAR LOGICA DE IMPORTACIÓN: Limpiar los vales que vienen del módulo para evitar duplicados e inconsistencias
+    // Mantenemos los vales creados 'a mano' en esta sesión si los hubiera (aunque ahora todos deberían ir al servicio)
+    listaVales = listaVales.filter(v => v.origin !== 'vales_module');
+
+    autorizados.forEach(v => {
+      listaVales.push({
+        id: Date.now() + Math.random(), // ID local para la lista de caja
+        moduloId: v.id,                 // Referencia al vale original
+        receptor: v.receptor,           // Guardar receptor para el modal
+        comentario: v.comentario,       // Guardar comentario para el modal
+        concepto: `[VALE] ${v.receptor}: ${v.concepto}`,
+        importe: v.importe,
+        origin: 'vales_module'
+      });
+      huboCambios = true;
+    });
+
+    if (huboCambios) {
+      cajaService.saveVales(listaVales);
+      renderVales();
+      calcularCaja();
+      console.log(`[Caja] Se han importado ${autorizados.length} vales autorizados.`);
+    }
+  } catch (error) {
+    console.error("Error al importar vales autorizados:", error);
+  }
+}
+
 function renderVales() {
   // 1. Render en Modal
   const total = listaVales.reduce((sum, v) => sum + v.importe, 0);
   const totalLabel = document.getElementById("modalValesTotal");
   if (totalLabel) totalLabel.innerText = Utils.formatCurrency(total);
 
-  Ui.renderTable('listaVales', listaVales, (v) => `
+  const container = document.getElementById('listaVales');
+  if (container) {
+    if (listaVales.length === 0) {
+      container.innerHTML = `<div class="text-center py-3 text-muted small">No hay vales registrados</div>`;
+    } else {
+      container.innerHTML = listaVales.map(v => `
         <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
             <div class="d-flex flex-column" style="min-width: 0;">
                 <span class="fw-bold text-dark small text-break" style="word-wrap: break-word;">${v.concepto}</span>
+                <span class="text-muted x-small">Receptor: <span class="fw-bold text-dark">${v.receptor || 'No especificado'}</span></span>
+                ${v.comentario ? `<span class="text-muted x-small italic">Obs: ${v.comentario}</span>` : ''}
             </div>
             <div class="d-flex align-items-center flex-shrink-0 ms-2">
                 <span class="fw-bold text-primary me-3">${Utils.formatCurrency(v.importe)}</span>
@@ -84,7 +160,9 @@ function renderVales() {
                 </button>
             </div>
         </div>
-    `, 'No hay vales registrados.');
+      `).join('');
+    }
+  }
 
   // 3. Render para IMPRESIÓN / PDF (Compact Grid - Ancho Completo)
   const printContainer = document.getElementById("print-vales-details");
@@ -171,7 +249,12 @@ function renderDesembolsos() {
   const totalLabel = document.getElementById("modalDesembolsosTotal");
   if (totalLabel) totalLabel.innerText = Utils.formatCurrency(total);
 
-  Ui.renderTable('listaDesembolsos', listaDesembolsos, (d) => `
+  const container = document.getElementById('listaDesembolsos');
+  if (container) {
+    if (listaDesembolsos.length === 0) {
+      container.innerHTML = `<div class="text-center py-3 text-muted small">No hay desembolsos registrados</div>`;
+    } else {
+      container.innerHTML = listaDesembolsos.map(d => `
         <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
             <div class="d-flex flex-column" style="min-width: 0;">
                 <span class="fw-bold text-dark small text-break" style="word-wrap: break-word;">${d.concepto}</span>
@@ -183,7 +266,9 @@ function renderDesembolsos() {
                 </button>
             </div>
         </div>
-    `, 'No hay desembolsos registrados.');
+      `).join('');
+    }
+  }
 
   // 3. Render para IMPRESIÓN / PDF (Compact Grid - Ancho Completo)
   // Para impresión, mantenemos un toque distintivo pero sutil, o lo unificamos también?
@@ -244,13 +329,14 @@ export async function inicializarCaja() {
 
   renderVales();
   renderDesembolsos();
+  await importarValesAutorizados();
   calcularCaja();
 }
 
 /**
  * Abre la sección de caja y asegura que esté actualizada.
  */
-function abrirCaja() {
+async function abrirCaja() {
   const triggerEl = document.getElementById("tab-caja-content");
   if (window.navegarA) {
     window.navegarA("caja-content");
@@ -259,6 +345,7 @@ function abrirCaja() {
   }
   generarInterfazCaja();
   actualizarDatosAutomaticosCaja(); // Force update on open
+  await importarValesAutorizados();
   calcularCaja();
 }
 
@@ -482,12 +569,16 @@ function calcularCaja() {
   // Sincronizar Conceptos Dinámicos (+ Concepto)
   sincronizarConceptosDinamicosImpresion();
 
-  // Persistir metadatos (fecha, turno, comentarios)
-  cajaService.saveMetadata({
-    fecha: document.getElementById("caja_fecha")?.value,
-    turno: document.getElementById("caja_turno")?.value,
-    comentarios: document.getElementById("caja_comentarios_cierre")?.value
-  });
+  // Persistir metadatos (Debounced para evitar escritura en cada tecla - FIX PERFORMANCE)
+  if (saveTimeout) clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(() => {
+      cajaService.saveMetadata({
+        fecha: document.getElementById("caja_fecha")?.value,
+        turno: document.getElementById("caja_turno")?.value,
+        comentarios: document.getElementById("caja_comentarios_cierre")?.value
+      });
+      console.log("[Caja] Metadatos guardados (Debounced).");
+  }, 2000);
 }
 
 function sincronizarConceptosDinamicosImpresion() {
@@ -506,10 +597,13 @@ function sincronizarConceptosDinamicosImpresion() {
   target.innerHTML = html;
 }
 
+// Variable para debounce de guardado
+let saveTimeout = null;
+
 function generarResumenDineroImpresion(sourceContainerId, targetContainerId, mostrarTodos = false) {
   const target = document.getElementById(targetContainerId);
   if (!target) return;
-
+  
   let html = '<div style="font-size: 8.5pt; color: #333;">';
   const icon = sourceContainerId.includes('billetes') ? 'bi-cash' : 'bi-coin';
   
@@ -556,12 +650,8 @@ function updateUIValue(id, val) {
 // ACCIONES
 // ============================================================================
 
-async function resetearCaja() {
-  if (
-    await Ui.showConfirm(
-      "¿Estás seguro de borrar todos los datos de la caja?",
-    )
-  ) {
+async function resetearCaja(silent = false) {
+  if (silent || await Ui.showConfirm("¿Estás seguro de borrar todos los datos de la caja?")) {
     const inputs = document.querySelectorAll("#caja-content input");
     inputs.forEach((i) => {
       if (i.type === "number" || i.type === "text") i.value = "";
@@ -577,27 +667,125 @@ async function resetearCaja() {
     renderDesembolsos();
 
     actualizarDatosAutomaticosCaja();
-    Utils.setVal("caja_sellos_precio", "1.50");
+    const sellosPrecio = APP_CONFIG.CAJA?.SELLOS_PRECIO || "2.00";
+    Utils.setVal("caja_sellos_precio", sellosPrecio);
     Utils.setVal("input_fondo_arqueo", "-2000.00");
-
     calcularCaja();
+    if (!silent) Ui.showToast("Caja reiniciada.", "info");
   }
 }
 
-function imprimirCierreCaja() {
-  const user = sessionService.getUser();
-  if (!user) {
-    Ui.showToast("⚠️ No hay usuario seleccionado. Selecciona tu nombre en el menú superior.", "warning");
-    return;
-  }
 
-  // Lógica de Impresión Atómica - ESTABILIZACIÓN NUCLEAR V2
-  const appLayout = document.getElementById('app-layout');
-  const navbar = document.getElementById('navbar-container');
-  const interactiveView = document.getElementById('caja-web-interactive-view');
-  const reportView = document.getElementById('caja-print-report-view');
-  
-  // 1. Preparar metadatos en la vista de reporte
+
+async function cerrarCajaDefinitivo() {
+    if (!await Ui.showConfirm("¿Estás seguro de CERRAR LA CAJA definitivamente?\n- Se imprimirá el reporte.\n- Se guardará una copia PDF en el servidor.\n- Los vales se marcarán como contabilizados.", "question")) {
+        return;
+    }
+
+    // 1. Asegurar que los datos están calculados en el DOM antes de capturar
+    calcularCaja();
+
+    // 2. Generar y Subir PDF al servidor (USANDO STRING LITERAL PARA EVITAR PROBLEMAS DE VISIBILIDAD)
+    try {
+        Ui.showToast("Generando y archivando PDF...", "info");
+
+        // Construir metadatos y contenido MANUALMENTE para asegurar que no sale blanco
+        // ni afecta al layout visual
+        const reportView = document.getElementById('caja-print-report-view');
+        if (!reportView) throw new Error("No se encontró 'caja-print-report-view'");
+        
+        // Antes de pillar el HTML, sincronizamos los datos del DOM de impresion
+        sincronizarMetadatosReporte();
+
+        // Extraemos el HTML interno, pero nos aseguramos que se vea bien
+        // SCOPED STYLES: Usamos selectores descendentes para NO afectar al resto de la página
+        // SCOPED STYLES: Usamos selectores descendentes para NO afectar al resto de la página
+        // COPIED FROM guardarCajaPDF for consistency
+        const htmlContent = `
+            <style>
+                .pdf-content { font-size: 10pt; line-height: 1.4; font-family: Arial, sans-serif; color: #000; }
+                .pdf-section { margin-bottom: 20px; border: 1px solid #eee; padding: 10px; border-radius: 5px; }
+                .pdf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+                .pdf-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                .pdf-table td { padding: 4px; border-bottom: 1px solid #f0f0f0; }
+                .pdf-total-row { font-weight: bold; background: #f8f9fa; }
+                .text-success { color: #155724 !important; }
+                .text-danger { color: #721c24 !important; }
+                h2, h4, h5, h6 { color: #000; margin: 0; }
+                /* Robustez para elementos ocultos */
+                .d-print-block { display: block !important; visibility: visible !important; }
+            </style>
+            <div class="pdf-content">
+                ${reportView.innerHTML}
+            </div>
+        `;
+
+        const title = `Cierre Caja ${document.getElementById("caja_turno")?.value || 'S/T'}`;
+        const author = sessionService.getUser() || 'Sistema';
+
+        // LLAMADA PURA POR STRING
+        const pdfBase64 = await PdfService.generateReport({
+            title,
+            author,
+            htmlContent: htmlContent, // <--- STRING PURO
+            filename: `Cierre_${Utils.getTodayISO()}.pdf`,
+            outputType: 'base64'
+        });
+
+        if (pdfBase64) {
+            const rawFilename = `Cierre_${Utils.getTodayISO()}_${document.getElementById("caja_turno")?.value || 'Shift'}-cierre.pdf`;
+            const filename = rawFilename.replace(/[^a-z0-9._-]/gi, '_');
+
+            await import('../core/Api.js').then(async ({ Api }) => {
+                await Api.post('storage/upload', {
+                    fileName: filename,
+                    fileData: pdfBase64,
+                    folder: 'caja_cierres'
+                });
+            });
+            console.log("[Caja] PDF archivado correctamente en el servidor.");
+            if (window.systemModal) window.systemModal.hide();
+        }
+    } catch (pdfErr) {
+        console.error("Error al archivar PDF:", pdfErr);
+        if (window.systemModal) window.systemModal.hide();
+        Ui.showToast("No se pudo archivar el PDF, pero el cierre continuará.", "warning");
+    }
+
+    // 4. Imprimir el listado (Vista Reporte)
+    imprimirCierreCaja();
+
+    // 3. Procesar vales (Marcar como Contabilizados)
+    let contador = 0;
+    for (const valeLocale of listaVales) {
+        if (valeLocale.origin === 'vales_module' && valeLocale.moduloId) {
+            try {
+                await valesService.updateEstado(valeLocale.moduloId, 'Contabilizado');
+                contador++;
+            } catch (error) {
+                console.error(`Error al actualizar vale ${valeLocale.moduloId}:`, error);
+            }
+        }
+    }
+
+    // 4. Limpiar datos de la sesión actual (Silent para no pedir confirmación doble)
+    await resetearCaja(true);
+
+    // 5. Notificar éxito
+    if (contador > 0) {
+        Ui.showToast(`Caja cerrada y archivada. ${contador} vales procesados.`, "success");
+    } else {
+        Ui.showToast("Caja cerrada y archivada correctamente.", "success");
+    }
+}
+
+function sincronizarMetadatosReporte() {
+  const user = sessionService.getUser();
+  if (!user) return false;
+
+  // Asegurar que los datos están calculados
+  calcularCaja();
+
   const now = new Date();
   const dateStr = now.toLocaleDateString() + ' ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   
@@ -606,40 +794,24 @@ function imprimirCierreCaja() {
   if (pDate) pDate.textContent = dateStr;
   if (pName) pName.textContent = user;
 
-  // 2. Ocultar el layout principal y la vista interactiva
-  if (appLayout) appLayout.classList.add('d-none', 'd-print-none');
-  if (navbar) navbar.classList.add('d-none', 'd-print-none');
-  if (interactiveView) interactiveView.classList.add('d-none', 'd-print-none');
-  
-  // 3. Forzar que el reporte sea lo ÚNICO en la página
-  if (reportView) {
-      reportView.classList.remove('d-none');
-      reportView.classList.add('d-print-block');
-      reportView.style.setProperty('display', 'block', 'important');
-      reportView.style.setProperty('visibility', 'visible', 'important');
-      reportView.style.setProperty('position', 'absolute', 'important');
-      reportView.style.setProperty('top', '0', 'important');
-      reportView.style.setProperty('left', '0', 'important');
-      reportView.style.setProperty('width', '100%', 'important');
+  const btnCerrar = document.getElementById('btn-caja-cerrar-definitivo');
+  if (btnCerrar) btnCerrar.disabled = true;
+
+  return true;
+}
+
+function imprimirCierreCaja() {
+  if (!sincronizarMetadatosReporte()) {
+    Ui.showToast("⚠️ No hay usuario seleccionado. Selecciona tu nombre en el menú superior.", "warning");
+    return;
   }
 
+  // Lógica de Impresión Simplificada y Robusta
+  // Confiamos en las clases CSS d-print-none y d-print-block que ya están en el HTML.
+  // No tocamos el DOM activo para evitar "apretrujamientos" o reflows raros.
+  
+  // Solo aseguramos que el reporte tenga los datos frescos (ya hecho en sincronizarMetadatosReporte)
   window.print();
-
-  // 4. Restaurar para visualización en pantalla
-  if (appLayout) appLayout.classList.remove('d-none', 'd-print-none');
-  if (navbar) navbar.classList.remove('d-none', 'd-print-none');
-  if (interactiveView) interactiveView.classList.remove('d-none', 'd-print-none');
-  
-  if (reportView) {
-      reportView.classList.add('d-none');
-      reportView.classList.remove('d-print-block');
-      reportView.style.display = '';
-      reportView.style.visibility = '';
-      reportView.style.position = '';
-      reportView.style.top = '';
-      reportView.style.left = '';
-      reportView.style.width = '';
-  }
 }
 
 /**
@@ -662,7 +834,7 @@ async function guardarCajaPDF() {
   // Limpiar y formatear nombre de archivo
   const fechaPartes = fechaVal.split("-");
   const fechaFormateada = fechaPartes.length === 3 ? `${fechaPartes[2]}-${fechaPartes[1]}-${fechaPartes[0]}` : fechaVal;
-  const filename = `ARQUEO_${fechaFormateada}_${turnoVal}.pdf`;
+  const filename = `ARQUEO_${fechaFormateada}_${turnoVal}.pdf`.replace(/[^a-z0-9._-]/gi, '_');
 
   // Obtener el HTML de la vista de impresión
   const sourceView = document.getElementById("caja-print-report-view");
@@ -674,14 +846,15 @@ async function guardarCajaPDF() {
   // Preparar contenido para el servicio de PDF
   const htmlContent = `
     <style>
-        .pdf-content { font-size: 10pt; line-height: 1.4; }
+        .pdf-content { font-size: 10pt; line-height: 1.4; font-family: Arial, sans-serif; color: #000; }
         .pdf-section { margin-bottom: 20px; border: 1px solid #eee; padding: 10px; border-radius: 5px; }
         .pdf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .pdf-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         .pdf-table td { padding: 4px; border-bottom: 1px solid #f0f0f0; }
         .pdf-total-row { font-weight: bold; background: #f8f9fa; }
-        .text-success { color: #155724; }
-        .text-danger { color: #721c24; }
+        .text-success { color: #155724 !important; }
+        .text-danger { color: #721c24 !important; }
+        h2, h4, h5, h6 { color: #000; margin: 0; }
     </style>
     <div class="pdf-content">
         ${sourceView.innerHTML}
@@ -691,20 +864,40 @@ async function guardarCajaPDF() {
   // Notificar inicio
   Ui.showToast("Generando reporte PDF profesional...", "info");
 
-  const exito = await PdfService.generateReport({
-      title: "ARQUEO DE CAJA - CIERRE DE TURNO",
-      author: user,
-      htmlContent: htmlContent,
-      filename: filename,
-      metadata: {
-          "Turno": turnoVal,
-          "Fecha": fechaFormateada
-      }
-  });
+  try {
+      // 1. Generar Base64 para subir al servidor
+      const pdfBase64 = await PdfService.generateReport({
+          title: "ARQUEO DE CAJA - CIERRE DE TURNO",
+          author: user,
+          htmlContent: htmlContent,
+          filename: filename,
+          metadata: {
+              "Turno": turnoVal,
+              "Fecha": fechaFormateada
+          },
+          outputType: 'base64'
+      });
 
-  if (exito) {
-      Ui.showToast("Reporte guardado correctamente.", "success");
-  } else {
+      if (pdfBase64) {
+          // 2. Subir al servidor (Misma ruta que cierre de caja)
+          await import('../core/Api.js').then(async ({ Api }) => {
+              await Api.post('storage/upload', {
+                  fileName: filename,
+                  fileData: pdfBase64,
+                  folder: 'caja_cierres'
+              });
+          });
+
+          // 3. Trigger manual download (para el usuario)
+          const link = document.createElement('a');
+          link.href = `data:application/pdf;base64,${pdfBase64}`;
+          link.download = filename;
+          link.click();
+
+          Ui.showToast("Reporte guardado y archivado en servidor.", "success");
+      }
+  } catch (err) {
+      console.error("Error al exportar/archivar PDF:", err);
       Ui.showToast("Error al generar el PDF.", "danger");
   }
 }
@@ -1006,6 +1199,7 @@ window.calcularCaja = calcularCaja;
 window.agregarNuevoConcepto = agregarNuevoConcepto;
 window.guardarCajaPDF = guardarCajaPDF;
 window.enviarCajaEmail = enviarCajaEmail;
+window.cerrarCajaDefinitivo = cerrarCajaDefinitivo;
 
 window.toggleLockCaja = (inputId, btn) => {
   const input = document.getElementById(inputId);

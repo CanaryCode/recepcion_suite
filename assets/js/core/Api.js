@@ -53,7 +53,12 @@ export const Api = {
             const url = `${this.baseUrl}/${cleanEndpoint}`;
             const response = await fetch(url, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache',
+                    'Expires': '0'
+                },
                 body: JSON.stringify(data)
             });
             if (!response.ok) throw new Error(`API Error: ${response.statusText}`);

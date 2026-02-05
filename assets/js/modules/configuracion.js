@@ -44,6 +44,7 @@ export const Configurator = {
         Utils.setVal('conf_caja_fondo', tempConfig.CAJA?.FONDO !== undefined ? tempConfig.CAJA.FONDO : -2000.00);
         Utils.setVal('conf_gallery_path', tempConfig.SYSTEM?.GALLERY_PATH || 'assets/gallery');
         Utils.setVal('conf_sync_interval', tempConfig.SYSTEM?.SYNC_INTERVAL || 10000);
+        Utils.setVal('configSpotifyUrl', tempConfig.HOTEL?.SPOTIFY_URL || '');
 
         // Listas dinámicas
         this.renderRecepcionistas();
@@ -126,7 +127,10 @@ export const Configurator = {
                             <div class="fw-bold small text-truncate">
                                 ${l.type === 'folder' 
                                     ? '<span class="badge bg-warning-subtle text-warning border-warning border-opacity-25 me-1" style="font-size: 0.5rem;">CARPETA</span>' 
-                                    : (l.type === 'url' ? '<span class="badge bg-success-subtle text-success border-success border-opacity-25 me-1" style="font-size: 0.5rem;">WEB</span>' : '<span class="badge bg-info-subtle text-info border-info border-opacity-25 me-1" style="font-size: 0.5rem;">APP / ARCHIVO</span>')}
+                                    : (l.type === 'url' ? '<span class="badge bg-success-subtle text-success border-success border-opacity-25 me-1" style="font-size: 0.5rem;">WEB</span>' 
+                                    : (l.type === 'maps' ? '<span class="badge bg-danger-subtle text-danger border-danger border-opacity-25 me-1" style="font-size: 0.5rem;">MAPAS</span>'
+                                    : (l.type === 'documentos' ? '<span class="badge bg-info-subtle text-info border-info border-opacity-25 me-1" style="font-size: 0.5rem;">DOCS</span>' 
+                                    : '<span class="badge bg-info-subtle text-info border-info border-opacity-25 me-1" style="font-size: 0.5rem;">APP / ARCHIVO</span>')))}
                                 ${l.label}
                             </div>
                             <div class="text-muted text-truncate" style="font-size: 0.6rem;">${l.path}</div>
@@ -406,14 +410,24 @@ export const Configurator = {
         const label = labelFn.value.trim();
         const path = pathFn.value.trim();
         const type = typeFn ? typeFn.value : 'app';
-        const icon = iconFn.value.trim() || (type === 'folder' ? 'folder2-open' : (type === 'url' ? 'globe-americas' : 'box-arrow-up-right'));
+        let defaultIcon = 'box-arrow-up-right';
+        if (type === 'folder') defaultIcon = 'folder2-open';
+        else if (type === 'url') defaultIcon = 'globe-americas';
+        else if (type === 'video') defaultIcon = 'play-btn';
+        else if (type === 'maps') defaultIcon = 'geo-alt';
+        else if (type === 'documentos') defaultIcon = 'file-earmark-text';
+
+        const embeddedFn = document.getElementById('newLauncherEmbedded');
+        const embedded = embeddedFn ? embeddedFn.checked : false;
+
+        const icon = iconFn.value.trim() || defaultIcon;
 
         if (!label || !path) {
             if (!silent) Ui.showToast("Nombre y Ruta son obligatorios.", "warning");
             return;
         }
         
-        tempConfig.SYSTEM.LAUNCHERS.push({ label, path, icon, type });
+        tempConfig.SYSTEM.LAUNCHERS.push({ label, path, icon, type, embedded });
         this.renderAppLaunchers();
         
         labelFn.value = '';
@@ -428,17 +442,34 @@ export const Configurator = {
         const pathInput = document.getElementById('newLauncherPath');
         const pickBtn = pathInput?.nextElementSibling?.querySelector('button') || document.querySelector('button[onclick="pickLauncherFile()"]');
         
-        if (type === 'folder') {
-            if (label) label.textContent = 'Ruta de Carpeta';
-            if (pathInput) pathInput.placeholder = 'Ej: C:\\Mis Documentos';
-            if (pickBtn) pickBtn.style.display = 'block';
-        } else if (type === 'url') {
-            if (label) label.textContent = 'Dirección Web (URL)';
-            if (pathInput) pathInput.placeholder = 'Ej: https://google.com';
-            if (pickBtn) pickBtn.style.display = 'none'; // No file picker for URLs
+
+        const wrapperEmbedded = document.getElementById('wrapperLauncherEmbedded');
+        const embeddedCheckbox = document.getElementById('newLauncherEmbedded');
+
+        if (type === 'url' || type === 'maps' || type === 'video') {
+            if (wrapperEmbedded) wrapperEmbedded.classList.remove('d-none');
+            if (embeddedCheckbox && type === 'video') {
+                embeddedCheckbox.checked = true; // Default true for media types
+            }
+            
+            let labelText = 'Dirección Web (URL)';
+            let placeholder = 'Ej: https://google.com';
+
+            if (type === 'maps') {
+                labelText = 'URL de Google Maps';
+                placeholder = 'Ej: https://www.google.com/maps/...';
+            } else if (type === 'video') {
+                labelText = 'Enlace de YouTube';
+                placeholder = 'Ej: https://www.youtube.com/watch?v=...';
+            }
+
+            if (label) label.textContent = labelText;
+            if (pathInput) pathInput.placeholder = placeholder;
+            if (pickBtn) pickBtn.style.display = 'none';
         } else {
-            if (label) label.textContent = 'Ruta de App o Archivo';
-            if (pathInput) pathInput.placeholder = 'Ej: C:\\Docs\\Informe.docx o .exe';
+            if (wrapperEmbedded) wrapperEmbedded.classList.add('d-none');
+            if (label) label.textContent = type === 'documentos' ? 'Ruta del Documento (PDF/Word/Excel)' : 'Ruta de App o Archivo';
+            if (pathInput) pathInput.placeholder = type === 'documentos' ? 'Ej: C:\\Docs\\Procedimientos.pdf' : 'Ej: C:\\Docs\\Informe.docx o .exe';
             if (pickBtn) pickBtn.style.display = 'block';
         }
     },
@@ -452,8 +483,12 @@ export const Configurator = {
 
     async pickLauncherFile() {
         const type = document.getElementById('newLauncherType')?.value || 'app';
+        let fileType = 'executable';
+        if (type === 'folder') fileType = 'folder';
+        if (type === 'documentos') fileType = 'documentos';
+
         MediaPicker.pickFile({
-            fileType: type === 'folder' ? 'folder' : 'executable',
+            fileType: fileType,
             startPath: 'C:\\',
             onSelect: (path) => {
                 document.getElementById('newLauncherPath').value = path;
@@ -665,6 +700,7 @@ export const Configurator = {
             tempConfig.SYSTEM.GALLERY_PATH = document.getElementById('conf_gallery_path').value || 'assets/gallery';
             // Note: GALLERY_FOLDERS is already managed in tempConfig by its add/remove methods
             tempConfig.SYSTEM.SYNC_INTERVAL = parseInt(document.getElementById('conf_sync_interval').value) || 10000;
+            tempConfig.HOTEL.SPOTIFY_URL = document.getElementById('configSpotifyUrl').value;
             
             await configService.saveConfig(tempConfig);
             Ui.showToast("Configuración guardada correctamente.", "success");

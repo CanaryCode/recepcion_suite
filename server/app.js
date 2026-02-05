@@ -1,4 +1,4 @@
-const express = require('express');
+const express = require('express'); // Force restart 2
 const path = require('path');
 const cors = require('cors');
 const fsSync = require('fs');
@@ -36,7 +36,7 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Logging middleware (opcional, para depuración)
 app.use((req, res, next) => {
-    console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+    logToFile(`${req.method} ${req.url}`);
     next();
 });
 

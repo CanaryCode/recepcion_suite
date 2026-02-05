@@ -84,4 +84,57 @@
         pointer-events: none !important;
         transition: opacity 0.2s ease;
     }
+
+    /* SPOTIFY FOOTER PLAYER */
+    .spotify-footer-player {
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        z-index: 99999 !important;
+        background: #191414 !important;
+        border-top: 1px solid #1DB954 !important;
+        box-shadow: 0 -4px 12px rgba(0,0,0,0.5) !important;
+        display: block !important;
+        /* Removed transform transition */
+    }
+
+    .spotify-footer-player.minimized .spotify-player-body {
+        height: 0 !important;
+        padding: 0 !important;
+    }
+
+    .spotify-footer-toggle {
+        width: 100%;
+        background: #1DB954;
+        color: white;
+        border: none;
+        padding: 1px 12px;
+        font-size: 0.6rem;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+    }
+
+    .spotify-footer-toggle:hover {
+        background: #1ed760;
+    }
+
+    .spotify-player-body {
+        height: 152px;
+        background: #191414 !important;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 5px 12px;
+        overflow: hidden;
+        transition: height 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), padding 0.4s ease;
+    }
+
+    /* Ajuste para que el app-layout no quede tapado por el footer (solo barra) */
+    body {
+        padding-bottom: 22px; 
+    }
 }

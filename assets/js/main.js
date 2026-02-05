@@ -33,6 +33,7 @@ import { IconSelector } from './core/IconSelector.js';
 
 // --- SISTEMAS CORE (NÚCLEO) ---
 import { APP_CONFIG, Config } from './core/Config.js'; // Cargador de configuración
+import { Api } from './core/Api.js';
 import { Modal } from './core/Modal.js';              // Gestor de ventanas modales
 import { Router } from './core/Router.js';            // Gestor de navegación entre pestañas
 import { CompLoader } from './core/CompLoader.js';    // Cargador dinámico de plantillas HTML
@@ -46,134 +47,180 @@ import { RoomDetailModal } from './core/RoomDetailModal.js'; // Modal Global de 
 window.Utils = Utils;
 
 /**
+ * SPOTIFY FOOTER PLAYER LOGIC
+ */
+window.initFooterSpotify = () => {
+    let url = APP_CONFIG.HOTEL?.SPOTIFY_URL;
+    const container = document.getElementById('spotify-footer-player');
+    const iframe = document.getElementById('spotify-footer-iframe');
+    const playerBody = container ? container.querySelector('.spotify-player-body') : null;
+    
+    // 1. Limpiar y validar
+    if (!url || typeof url !== 'string') {
+        url = "https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM3M"; // Fallback: Relaxing Music
+    }
+    url = url.trim();
+
+    // 2. Extraer ID y Tipo de forma robusta
+    let embedUrl = url;
+    // Regex mejorada para capturar IDs con guiones o más complejos
+    const match = url.match(/(playlist|album|track)\/([a-zA-Z0-9\-_]{15,})/);
+    
+    if (match) {
+        const type = match[1];
+        const id = match[2];
+        embedUrl = `https://open.spotify.com/embed/${type}/${id}?utm_source=generator`;
+    } else if (!url.includes('/embed/')) {
+        // Si no detectamos el patrón pero no es embed, intentamos un parche básico
+        embedUrl = url.replace('spotify.com/', 'spotify.com/embed/');
+    }
+
+    if (iframe) {
+        // Atributos críticos ANTES del src para evitar bloqueos de DRM
+        iframe.setAttribute('allow', 'autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture');
+        iframe.setAttribute('loading', 'lazy');
+        iframe.style.borderRadius = '12px';
+        
+        // Construcción limpia
+        iframe.src = embedUrl;
+        console.info("Spotify Player: Cargando URL ->", embedUrl);
+    }
+
+};
+
+window.toggleSpotifyFooter = () => {
+    const container = document.getElementById('spotify-footer-player');
+    const icon = document.getElementById('spotify-toggle-icon');
+    
+    if (container) {
+        container.classList.toggle('minimized');
+        if (icon) {
+            icon.classList.toggle('bi-chevron-up');
+            icon.classList.toggle('bi-chevron-down');
+        }
+    }
+};
+
+/**
  * PUNTO DE ENTRADA PRINCIPAL (DOMContentLoaded)
  * Se ejecuta cuando el navegador termina de cargar el HTML básico.
  */
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-    // FIX: Desactivar autocompletado globalmente para prevenir "basura" en los inputs
-    try {
-        document.querySelectorAll('form, input').forEach(el => el.setAttribute('autocomplete', 'off'));
-    } catch(e) { console.warn("No se pudo desactivar autocompletado", e); }
+        // 0. Limpieza UI Base
+        try {
+            document.querySelectorAll('form, input').forEach(el => el.setAttribute('autocomplete', 'off'));
+        } catch(e) { console.warn("No se pudo desactivar autocompletado", e); }
 
-    // 0. CARGAR CONFIGURACIÓN (CRÍTICO)
-    // El sistema no puede arrancar sin saber la URL de la API o la configuración del hotel.
-    const configLoaded = await Config.loadConfig();
-    if (!configLoaded) {
-        document.body.innerHTML = '<div style="color:red; padding:20px; text-align:center;"><h1>Error Crítico</h1><p>No se ha podido cargar la configuración (config.json).</p></div>';
-        return;
-    }
+        // 1. CARGAR CONFIGURACIÓN (CRÍTICO)
+        const configLoaded = await Config.loadConfig();
+        if (!configLoaded) {
+            document.body.innerHTML = '<div style="color:red; padding:20px; text-align:center;"><h1>Error Crítico</h1><p>No se ha podido cargar la configuración (config.json).</p></div>';
+            return;
+        }
 
-    // Diagnóstico de Almacenamiento Local (Evita fallos silenciosos en navegadores bloqueados)
-    try {
-        const testKey = '__test_storage__';
-        localStorage.setItem(testKey, testKey);
-        localStorage.removeItem(testKey);
-    } catch (e) {
-        console.error("Critical Storage Error:", e);
-        alert("⚠️ ERROR CRÍTICO: El sistema no puede guardar datos locales.");
-    }
+        // --- 2. MULTIMEDIA INIT (Spotify) ---
+        window.initFooterSpotify();
 
-    // 1. Inicializar Sistemas Base
-    console.log("Initializing App...");
+        // Diagnóstico de Almacenamiento Local
+        try {
+            const testKey = '__test_storage__';
+            localStorage.setItem(testKey, testKey);
+            localStorage.removeItem(testKey);
+        } catch (e) {
+            console.error("Critical Storage Error:", e);
+            alert("⚠️ ERROR CRÍTICO: El sistema no puede guardar datos locales.");
+        }
 
-    // 1. Initialize UI Helpers (Toasts, etc.)
-    Ui.init();
+        // 3. Inicializar Sistemas Base
+        console.log("Initializing App Systems...");
+        Ui.init();
+        clock.init();
+        Modal.init();  
+        Router.init(); 
+        Search.init(); 
 
+        // 4. Cargar Plantillas
+        const componentes = [
+            { id: 'riu-content', path: 'assets/templates/riu.html' },
+            { id: 'agenda-content', path: 'assets/templates/agenda.html' },
+            { id: 'cobro-content', path: 'assets/templates/cobro.html' },
+            { id: 'caja-content', path: 'assets/templates/caja.html' },
+            { id: 'safe-content', path: 'assets/templates/safe.html' },
+            { id: 'despertadores-content', path: 'assets/templates/despertadores.html' },
+            { id: 'desayuno-content', path: 'assets/templates/desayuno.html' },
+            { id: 'estancia-content', path: 'assets/templates/estancia.html' },
+            { id: 'novedades-content', path: 'assets/templates/novedades.html' },
+            { id: 'cena-fria-content', path: 'assets/templates/cena_fria.html' },
+            { id: 'atenciones-content', path: 'assets/templates/atenciones.html' },
+            { id: 'ayuda-content', path: 'assets/templates/ayuda.html' },
+            { id: 'transfers-content', path: 'assets/templates/transfers.html' },
+            { id: 'lost-found-content', path: 'assets/templates/lost_found.html' },
+            { id: 'notas-content', path: 'assets/templates/notas_permanentes.html' },
+            { id: 'precios-content', path: 'assets/templates/precios.html' },
+            { id: 'system-alarms-content', path: 'assets/templates/system_alarms.html' },
+            { id: 'rack-content', path: 'assets/templates/rack.html' },
+            { id: 'excursiones-content', path: 'assets/templates/excursiones.html' },
+            { id: 'reservas-instalaciones-content', path: 'assets/templates/reservas_instalaciones.html' },
+            { id: 'configuracion-content', path: 'assets/templates/configuracion.html' }
+        ];
 
+        await CompLoader.loadAll(componentes);
 
-    // 3. Initialize Clock
-    clock.init();
-    Modal.init();  // Activa el soporte para ventanas modales personalizadas
-    Router.init(); // Activa la detección de cambios en las pestañas
-    Search.init(); // Activa el buscador de módulos
+        // 5. Inicialización de Módulos (Escalonada)
+        const modulosPrioritarios = [
+            { nombre: 'Despertadores', init: inicializarDespertadores },
+            { nombre: 'Novedades', init: inicializarNovedades },
+            { nombre: 'Cena Fría', init: inicializarCenaFria },
+            { nombre: 'Desayuno', init: inicializarDesayuno },
+            { nombre: 'SystemAlarms', init: inicializarSystemAlarms },
+            { nombre: 'SystemAlarmsUI', init: inicializarSystemAlarmsUI }
+        ];
 
-    // 2. Definir componentes a cargar
-    const componentes = [
-        { id: 'riu-content', path: 'assets/templates/riu.html' },
-        { id: 'agenda-content', path: 'assets/templates/agenda.html' },
-        { id: 'cobro-content', path: 'assets/templates/cobro.html' },
-        { id: 'caja-content', path: 'assets/templates/caja.html' },
-        { id: 'safe-content', path: 'assets/templates/safe.html' },
-        { id: 'despertadores-content', path: 'assets/templates/despertadores.html' },
-        { id: 'desayuno-content', path: 'assets/templates/desayuno.html' },
-        { id: 'estancia-content', path: 'assets/templates/estancia.html' },
-        { id: 'novedades-content', path: 'assets/templates/novedades.html' },
-        { id: 'cena-fria-content', path: 'assets/templates/cena_fria.html' },
-        { id: 'atenciones-content', path: 'assets/templates/atenciones.html' },
-        { id: 'ayuda-content', path: 'assets/templates/ayuda.html' },
-        { id: 'transfers-content', path: 'assets/templates/transfers.html' },
-        { id: 'lost-found-content', path: 'assets/templates/lost_found.html' },
-        { id: 'notas-content', path: 'assets/templates/notas_permanentes.html' },
-        { id: 'precios-content', path: 'assets/templates/precios.html' },
-        { id: 'system-alarms-content', path: 'assets/templates/system_alarms.html' },
-        { id: 'rack-content', path: 'assets/templates/rack.html' },
-        { id: 'excursiones-content', path: 'assets/templates/excursiones.html' },
-        { id: 'reservas-instalaciones-content', path: 'assets/templates/reservas_instalaciones.html' },
-        { id: 'configuracion-content', path: 'assets/templates/configuracion.html' }
-    ];
+        const modulosSecundarios = [
+            { nombre: 'Agenda', init: inicializarAgenda },
+            { nombre: 'Caja', init: inicializarCaja },
+            { nombre: 'Cobro', init: inicializarCobro },
+            { nombre: 'Safe', init: inicializarSafe },
+            { nombre: 'Estancia', init: inicializarEstancia },
+            { nombre: 'Atenciones', init: inicializarAtenciones },
+            { nombre: 'Transfers', init: inicializarTransfers },
+            { nombre: 'Riu', init: inicializarRiu },
+            { nombre: 'Ayuda', init: inicializarAyuda },
+            { nombre: 'Notas Permanentes', init: inicializarNotasPermanentes },
+            { nombre: 'Precios', init: inicializarPrecios },
+            { nombre: 'Rack', init: inicializarRack },
+            { nombre: 'Lost & Found', init: inicializarLostFound },
+            { nombre: 'Excursiones', init: () => Excursiones.init() },
+            { nombre: 'Reservas Instalaciones', init: () => ReservasInstalaciones.init() },
+            { nombre: 'Configuración', init: inicializarConfiguracion },
+            { nombre: 'Galería', init: () => Gallery.inicializar() }
+        ];
 
-    // 3. Cargar plantillas
-    await CompLoader.loadAll(componentes);
-
-    // 4. Configurar Fechas por defecto (Delegado a los módulos)
-    // Se ha movido la lógica específica a los módulos correspondientes (Estancia, RIU, etc)
-    // para mantener main.js limpio y agnóstico.
-
-    // 5. Inicialización Escalonada para mayor velocidad percibida
-    // Cargamos lo más urgente (Alarmas, Despertadores) primero.
-    const modulosPrioritarios = [
-        { nombre: 'Despertadores', init: inicializarDespertadores },
-        { nombre: 'Novedades', init: inicializarNovedades },
-        { nombre: 'Cena Fría', init: inicializarCenaFria },
-        { nombre: 'Desayuno', init: inicializarDesayuno },
-        { nombre: 'SystemAlarms', init: inicializarSystemAlarms },
-        { nombre: 'SystemAlarmsUI', init: inicializarSystemAlarmsUI }
-    ];
-
-    const modulosSecundarios = [
-        { nombre: 'Agenda', init: inicializarAgenda },
-        { nombre: 'Caja', init: inicializarCaja },
-        { nombre: 'Cobro', init: inicializarCobro },
-        { nombre: 'Safe', init: inicializarSafe },
-        { nombre: 'Estancia', init: inicializarEstancia },
-        { nombre: 'Atenciones', init: inicializarAtenciones },
-        { nombre: 'Transfers', init: inicializarTransfers },
-        { nombre: 'Riu', init: inicializarRiu },
-        { nombre: 'Ayuda', init: inicializarAyuda },
-        { nombre: 'Notas Permanentes', init: inicializarNotasPermanentes },
-        { nombre: 'Precios', init: inicializarPrecios },
-        { nombre: 'Rack', init: inicializarRack },
-        { nombre: 'Lost & Found', init: inicializarLostFound },
-        { nombre: 'Excursiones', init: () => Excursiones.init() },
-        { nombre: 'Reservas Instalaciones', init: () => ReservasInstalaciones.init() },
-        { nombre: 'Configuración', init: inicializarConfiguracion },
-        { nombre: 'Galería', init: () => Gallery.inicializar() }
-    ];
-
-    // Cargar prioritarios inmediatamente
-    modulosPrioritarios.forEach(m => {
-        try { m.init(); } catch (e) { console.error(`Error en ${m.nombre}:`, e); }
-    });
-
-    // Cargar secundarios después de 100ms para no bloquear el navegador
-    setTimeout(() => {
-        modulosSecundarios.forEach(m => {
+        modulosPrioritarios.forEach(m => {
             try { m.init(); } catch (e) { console.error(`Error en ${m.nombre}:`, e); }
         });
-        
-        inicializarSesionGlobal(); // Inicia el selector de usuario (Recepción)
-        
-        // --- 6. Tooltips (After everything is rendered) ---
-        initGlobalTooltips();
-        
-        // --- REACTIVIDAD AUTOMÁTICA ---
-        // Si los datos llegan del servidor después de pintar la pantalla, repintamos.
-        window.addEventListener('service-synced', (e) => {
-            // console.log("Datos actualizados: ", e.detail.endpoint);
-            const currentHash = window.location.hash;
+
+        setTimeout(() => {
+            modulosSecundarios.forEach(m => {
+                try { m.init(); } catch (e) { console.error(`Error en ${m.nombre}:`, e); }
+            });
             
-            // Refrescar módulo activo según endpoint
+            inicializarSesionGlobal(); 
+            initGlobalTooltips();
+            window.renderLaunchPad('', 'all', 'tab');
+            
+            const ytModal = document.getElementById('youtubePlayerModal');
+            if (ytModal) ytModal.addEventListener('hidden.bs.modal', window.stopYouTubeVideo);
+            const webModal = document.getElementById('webViewerModal');
+            if (webModal) webModal.addEventListener('hidden.bs.modal', window.stopWebViewer);
+
+            console.log("Sistema completamente inicializado.");
+        }, 100);
+
+        // 6. Reactividad
+        window.addEventListener('service-synced', (e) => {
+            const currentHash = window.location.hash;
             if (e.detail.endpoint === 'riu_transfers' && (!currentHash || currentHash === '#transfers-content')) {
                 import('./modules/transfers.js').then(m => m.mostrarTransfers && m.mostrarTransfers());
             }
@@ -185,68 +232,45 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-        console.log("Sistema completamente inicializado.");
-
-        // --- HEARTBEAT PARA AUTO-CIERRE ROBUSTO ---
-        // Mantiene vivo el servidor (24h timeout). Si falla, informa al usuario sin bloquear la consola.
+        // 7. Heartbeat
         let heartbeatFailures = 0;
         const maxFailures = 5;
-
         setInterval(() => {
-            fetch('/api/heartbeat').then(() => {
-                heartbeatFailures = 0; // Reset si hay éxito
+            fetch('/api/heartbeat').then(response => {
+                if (response.ok) {
+                    heartbeatFailures = 0;
+                    const overlay = document.getElementById('server-lost-overlay');
+                    if (overlay) overlay.remove();
+                }
             }).catch(() => {
                 heartbeatFailures++;
-                if (heartbeatFailures < maxFailures) {
-                    console.warn(`Server unreachable (Attempt ${heartbeatFailures}/${maxFailures})`);
-                } else if (heartbeatFailures === maxFailures) {
-                    console.error("Connection to server lost permanently. Stopping heartbeat.");
-                    
-                    // MOSTRAR PANTALLA DE RECUPERACIÓN (Overlay Bloqueante)
-                    // No podemos reiniciar el exe desde aquí (seguridad del navegador),
-                    // pero podemos guiar al usuario para que lo haga y recargue.
-                    const overlay = document.createElement('div');
-                    overlay.id = 'server-lost-overlay';
-                    overlay.innerHTML = `
-                        <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-                                    background: rgba(0,0,0,0.85); z-index: 10000; 
+                if (heartbeatFailures >= maxFailures) {
+                    if (!document.getElementById('server-lost-overlay')) {
+                        const overlay = document.createElement('div');
+                        overlay.id = 'server-lost-overlay';
+                        overlay.innerHTML = `<div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+                                    background: rgba(0,0,0,0.85); z-index: 30000; 
                                     display: flex; flex-direction: column; align-items: center; justify-content: center; 
-                                    color: white; font-family: 'Segoe UI', system-ui, sans-serif; text-align: center;">
-                                <div style="font-size: 4rem; color: #dc3545; margin-bottom: 20px;">
-                                <i class="bi bi-wifi-off"></i>
-                            </div>
-                            <h1 style="font-size: 2rem; margin-bottom: 10px;">¡Conexión Perdida!</h1>
-                            <p style="font-size: 1.2rem; max-width: 600px; margin-bottom: 30px; opacity: 0.9;">
-                                El servidor de la aplicación se ha detenido o no responde.<br>
-                                Esto puede ocurrir si el PC entró en suspensión profunda o se cerró el programa.
-                            </p>
-                            
-                            <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; margin-bottom: 30px; border: 1px solid rgba(255,255,255,0.2);">
-                                <strong style="display: block; margin-bottom: 10px; color: #ffc107;">PASO 1:</strong>
-                                Ejecuta de nuevo el icono <strong>"Recepcion Suite"</strong> en el escritorio.
-                            </div>
-
-                            <button onclick="location.reload()" 
-                                    style="padding: 12px 30px; font-size: 1.1rem; background: #0d6efd; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: background 0.2s;">
-                                <i class="bi bi-arrow-clockwise me-2"></i>PASO 2: Reconectar
-                            </button>
-                        </div>`;
-                    document.body.appendChild(overlay);
+                                    color: white; font-family: sans-serif; text-align: center;">
+                                <div style="font-size: 4rem; color: #dc3545; margin-bottom: 20px;"><i class="bi bi-wifi-off"></i></div>
+                                <h1 style="font-size: 2rem; margin-bottom: 10px;">¡Conexión Perdida!</h1>
+                                <p style="font-size: 1.1rem; max-width: 500px; margin-bottom: 30px; opacity: 0.9;">El servidor se ha detenido. Reinicia la aplicación Reception Suite para continuar.</p>
+                                <button onclick="location.reload()" style="padding: 12px 30px; background: #0d6efd; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">RECONECTAR</button>
+                            </div>`;
+                        document.body.appendChild(overlay);
+                    }
                 }
             });
-        }, 2000);
-
-    }, 100);
+        }, 10000);
 
     } catch (criticalError) {
         console.error("CRITICAL BOOT ERROR:", criticalError);
         const errorBox = document.getElementById('global-error-box');
         if (errorBox) {
             errorBox.classList.remove('d-none');
-            const content = document.getElementById('error-list-content');
-            if (content) content.innerHTML += `<div><strong>BOOT ERROR:</strong> ${criticalError.message}</div>`;
+            const list = document.getElementById('error-list-content');
+            if (list) list.innerHTML += `<div><strong>ERROR DE ARRANQUE:</strong> ${criticalError.message}</div>`;
         }
-        alert(`FALLO ARRANQUE: ${criticalError.message}\nVer consola para más detalles.`);
     }
 });
 
@@ -255,33 +279,38 @@ document.addEventListener('DOMContentLoaded', async () => {
 /**
  * LANZADOR DE APLICACIONES (LaunchPad)
  */
-window._currentLaunchPadFilter = 'all';
+window._currentLaunchPadFilter = 'app';
 
 window.openLaunchPad = () => {
     const searchInput = document.getElementById('launchPadSearch');
     if (searchInput) searchInput.value = '';
-    window._currentLaunchPadFilter = 'all';
+    window._currentLaunchPadFilter = 'app';
     
     // Update filter buttons UI
     document.querySelectorAll('[id^="btnFilterLaunch"]').forEach(btn => btn.classList.remove('active', 'btn-primary'));
-    document.getElementById('btnFilterLaunchAll')?.classList.add('active', 'btn-primary');
+    document.getElementById('btnFilterLaunchApps')?.classList.add('active', 'btn-primary');
 
-    window.renderLaunchPad('', 'all');
+    window.renderLaunchPad('', 'app', 'modal');
 
     const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('launchPadModal'));
     modal.show();
 };
 
-window.filterLaunchPad = (filter) => {
-    window._currentLaunchPadFilter = filter;
+window.filterLaunchPad = (filter, target = 'modal') => {
+    window._launchPadOffset = 0; // Reset offset on filter change
+    window._currentLaunchPadFilter = filter; // Update global filter state
     
     // UI Update
+    const prefix = target === 'tab' ? '_Tab' : '';
     const btnMap = { 
-        'all': 'btnFilterLaunchAll', 
-        'app': 'btnFilterLaunchApps', 
-        'folder': 'btnFilterLaunchFolders',
-        'url': 'btnFilterLaunchUrls'
+        'all': 'btnFilterLaunchAll' + prefix, 
+        'app': 'btnFilterLaunchApps' + prefix, 
+        'folder': 'btnFilterLaunchFolders' + prefix,
+        'url': 'btnFilterLaunchUrls' + prefix,
+        'maps': 'btnFilterLaunchMaps' + prefix,
+        'documentos': 'btnFilterLaunchDocs' + prefix
     };
+
     Object.values(btnMap).forEach(id => {
         const btn = document.getElementById(id);
         if (btn) {
@@ -290,72 +319,206 @@ window.filterLaunchPad = (filter) => {
         }
     });
 
-    const query = document.getElementById('launchPadSearch')?.value || '';
-    window.renderLaunchPad(query, filter);
+    const searchId = target === 'tab' ? 'launchPadSearch_Tab' : 'launchPadSearch';
+    const query = document.getElementById(searchId)?.value || '';
+    window.renderLaunchPad(query, filter, target);
 };
 
-window.renderLaunchPad = (query = '', filter = 'all') => {
-    const container = document.getElementById('launchPadGrid');
+window.renderLaunchPad = async (query = '', filter = 'app', target = 'modal') => {
+    const gridId = target === 'tab' ? 'launchPadGrid_Tab' : 'launchPadGrid';
+    const container = document.getElementById(gridId);
     if (!container) return;
     
-    container.innerHTML = '';
-    let apps = APP_CONFIG.SYSTEM?.LAUNCHERS || [];
+    window._currentLaunchPadFilter = filter;
+    window._launchPadOffset = 0; // Reiniciar paginación
+
+    let baseApps = APP_CONFIG.SYSTEM?.LAUNCHERS || [];
+    console.log("DEBUG: renderLaunchPad started. Filter:", filter, "BaseApps full config:", baseApps);
     
-    // 1. Filtrar por texto
-    if (query) {
-        const q = query.toLowerCase().trim();
-        apps = apps.filter(a => a.label.toLowerCase().includes(q) || a.path.toLowerCase().includes(q));
-    }
-
-    // 2. Filtrar por tipo
+    // 1. Filtrar Lanzadores Base por Categoría
+    let filteredLaunchers = baseApps;
     if (filter !== 'all') {
-        apps = apps.filter(a => (a.type || 'app') === filter);
-    }
-
-    if (apps.length === 0) {
-        container.innerHTML = `
-            <div class="col-12 text-center py-5">
-                <i class="bi bi-search fs-1 text-muted mb-2 d-block"></i>
-                <div class="text-muted">No se encontraron resultados para "${query || 'esta categoría'}".</div>
-            </div>`;
-    } else {
-        apps.forEach(app => {
-            const isImage = app.icon && (app.icon.startsWith('data:') || app.icon.includes('.') || app.icon.includes('/'));
-            const isFolder = app.type === 'folder';
-            const isUrl = app.type === 'url';
+        filteredLaunchers = baseApps.filter(a => {
+            // Inferencia robusta de tipo (Override para corregir configs legacy)
+            let type = a.type;
             
-            let iconColor = 'text-primary';
-            if (isFolder) iconColor = 'text-warning';
-            if (isUrl) iconColor = 'text-success';
+            // Si tiene URL y no es un tipo especial, ES URL (aunque diga app)
+            if (a.url && type !== 'maps' && type !== 'spotify' && type !== 'video') {
+                type = 'url';
+            } 
+            // Si tiene PATH y no es ejecutable, ES CARPETA (aunque diga app)
+            else if (a.path && !a.path.match(/\.(exe|lnk|bat|cmd|msi)$/i) && type !== 'documentos') {
+                type = 'folder';
+            }
+            
+            // Si no tiene nada definido, es app por descarte
+            if (!type) type = 'app';
 
-            const iconHtml = isImage 
-                ? `<img src="${app.icon}" style="width: 70px; height: 70px; object-fit: cover; border-radius: 12px;" class="mb-2 shadow-sm">`
-                : `<div class="mb-2 ${iconColor} text-center"><i class="bi bi-${app.icon || (isFolder ? 'folder-fill' : (isUrl ? 'globe-americas' : 'app'))} fs-1"></i></div>`;
-
-            container.innerHTML += `
-            <div class="col-6 col-md-4 col-lg-3">
-                <div class="card h-100 border-0 shadow-sm hover-scale text-center p-3" 
-                     style="cursor:pointer;" onclick="window.launchExternalApp('${app.path.replace(/\\/g, '\\\\')}', '${app.type || 'app'}')">
-                    <div class="position-absolute top-0 end-0 p-2 opacity-50">
-                        <i class="bi bi-${isFolder ? 'folder-symlink' : (isUrl ? 'globe' : 'cpu-fill')} small"></i>
-                    </div>
-                    <div class="d-flex justify-content-center">${iconHtml}</div>
-                    <div class="fw-bold text-dark small text-truncate mt-1">${app.label}</div>
-                    <div class="text-muted" style="font-size: 0.6rem;">${isFolder ? 'Carpeta' : (isUrl ? 'URL Web' : 'App / Archivo')}</div>
-                </div>
-            </div>
-            `;
+            if (filter === 'documentos') return type === 'documentos';
+            if (filter === 'video') return type === 'video';
+            if (filter === 'spotify') return type === 'spotify';
+            
+            // Mapas se consideran URLs también
+            if (filter === 'url' && type === 'maps') return true;
+            
+            return type === filter;
         });
     }
+    console.log("DEBUG: filteredLaunchers count:", filteredLaunchers.length);
+
+    // 2. LÓGICA ESPECIAL PARA AGREGAR DOCUMENTOS
+    let aggregatedItems = [];
+    if (filter === 'documentos') {
+        const folderLaunchers = filteredLaunchers.filter(a => {
+            const p = (a.path || '').toLowerCase();
+            const docExts = ['.pdf', '.doc', '.docx', '.txt', '.xlsx', '.xls', '.odt', '.rtf'];
+            return !docExts.some(ext => p.endsWith(ext)); 
+        });
+        console.log("DEBUG: folderLaunchers to scan:", folderLaunchers.map(f => f.path));
+
+        const directFiles = filteredLaunchers.filter(a => !folderLaunchers.includes(a));
+        aggregatedItems = [...directFiles];
+
+        if (folderLaunchers.length > 0) {
+            const loaderId = 'docs-loading-indicator-' + target;
+            container.innerHTML = `<div id="${loaderId}" class="col-12 text-center py-5"><div class="spinner-border text-info"></div><div class="mt-2 text-muted">Explorando documentos...</div></div>`;
+            
+            try {
+                const data = await Api.post('/system/list-docs', {
+                    folderPaths: folderLaunchers.map(f => f.path)
+                });
+                
+                console.log("DEBUG: list-docs response data:", data);
+                if (data && data.documents) {
+                    aggregatedItems = [...aggregatedItems, ...data.documents];
+                    console.log("DEBUG: Total items after scan:", aggregatedItems.length);
+                }
+            } catch (err) { 
+                console.error("Error scan:", err); 
+                Ui.showToast("Error al explorar documentos", "danger");
+            }
+        }
+    } else {
+        aggregatedItems = filteredLaunchers;
+    }
+
+    // 3. Filtrar por Búsqueda
+    if (query) {
+        const q = query.toLowerCase().trim();
+        aggregatedItems = aggregatedItems.filter(a => 
+            (a.label || '').toLowerCase().includes(q) || 
+            (a.path && a.path.toLowerCase().includes(q))
+        );
+    }
+
+    window._launchPadCurrentItems = aggregatedItems;
+    window._launchPadOffset = window._launchPadLimit;
+    
+    container.innerHTML = '';
+    renderGridItems(container, aggregatedItems.slice(0, window._launchPadLimit), query);
+
+    // Añadir botón "Cargar más" si hay más items
+    if (aggregatedItems.length > window._launchPadLimit) {
+        container.insertAdjacentHTML('afterend', `<div id="load-more-btn-container" class="col-12 text-center py-3"><button class="btn btn-sm btn-outline-secondary" onclick="loadMoreLaunchPad('${gridId}')">Cargar más resultados...</button></div>`);
+    } else {
+        document.getElementById('load-more-btn-container')?.remove();
+    }
 };
+
+window.loadMoreLaunchPad = (gridId) => {
+    const container = document.getElementById(gridId);
+    const nextItems = window._launchPadCurrentItems.slice(window._launchPadOffset, window._launchPadOffset + window._launchPadLimit);
+    if (nextItems.length > 0) {
+        renderGridItems(container, nextItems, '', true);
+        window._launchPadOffset += window._launchPadLimit;
+    }
+    if (window._launchPadOffset >= window._launchPadCurrentItems.length) {
+        document.getElementById('load-more-btn-container')?.remove();
+    }
+};
+
+// Helper interno para renderizar los items en el grid
+function renderGridItems(container, items, query = '', append = false) {
+    if (!append) {
+        container.innerHTML = '';
+        document.getElementById('load-more-btn-container')?.remove();
+    }
+
+    if (items.length === 0 && !append) {
+        container.innerHTML = `<div class="col-12 text-center py-5"><i class="bi bi-search fs-1 text-muted mb-2 d-block"></i><div class="text-muted">No hay resultados.</div></div>`;
+        return;
+    }
+
+    items.forEach(app => {
+        const isImage = app.icon && (app.icon.startsWith('data:') || app.icon.includes('.') || app.icon.includes('/'));
+        const isFolder = app.type === 'folder';
+        const isUrl = app.type === 'url' || app.type === 'maps';
+        const isDoc = app.type === 'documentos';
+        const isVideo = app.type === 'video';
+        const isSpotify = app.type === 'spotify';
+        const isEmbedded = app.embedded === true || app.embedded === 'true'; // Handle potential string from config
+        const pathStr = (app.path || '').replace(/\\/g, '\\\\');
+        
+        let iconColor = 'text-primary';
+        if (isFolder) iconColor = 'text-warning';
+        if (app.type === 'maps') iconColor = 'text-danger';
+        if (isUrl && app.type !== 'maps') iconColor = 'text-success';
+        if (isDoc) iconColor = 'text-info';
+        if (isVideo) iconColor = 'text-danger';
+        if (isSpotify) iconColor = 'text-success';
+
+        const defaultIcon = isFolder ? 'folder-fill' : (app.type === 'maps' ? 'geo-alt-fill' : (isUrl ? 'globe-americas' : (isDoc ? 'file-earmark-text' : (isSpotify ? 'spotify' : 'app'))));
+
+        let specificIcon = app.icon || defaultIcon;
+        if (isDoc && app.path && !app.icon) {
+            const ext = app.path.split('.').pop().toLowerCase();
+            if (ext === 'pdf') specificIcon = 'file-earmark-pdf';
+            if (ext === 'doc' || ext === 'docx' || ext === 'odt') specificIcon = 'file-earmark-word';
+            if (ext === 'xls' || ext === 'xlsx') specificIcon = 'file-earmark-excel';
+            if (ext === 'txt' || ext === 'rtf') specificIcon = 'file-earmark-font';
+        }
+
+        let thumbnailHtml = '';
+        if (isVideo) {
+            const ytId = window.getYouTubeId(app.path);
+            if (ytId) {
+                thumbnailHtml = `<img src="https://img.youtube.com/vi/${ytId}/mqdefault.jpg" style="width: 100%; height: 100px; object-fit: cover; border-radius: 8px;" class="mb-2 shadow-sm">`;
+            }
+        }
+
+        const iconHtml = thumbnailHtml || (isImage 
+            ? `<img src="${app.icon}" style="width: 64px; height: 64px; object-fit: cover; border-radius: 12px;" class="mb-2 shadow-sm">`
+            : `<div class="mb-2 ${iconColor} text-center"><i class="bi bi-${specificIcon} fs-1"></i></div>`);
+
+        let clickHandler = `window.launchExternalApp('${pathStr}', '${app.type || 'app'}', '${app.label.replace(/'/g, "\\'")}', ${isEmbedded})`;
+        if (isVideo && isEmbedded) clickHandler = `window.playVideo('${pathStr}', '${app.label.replace(/'/g, "\\'")}')`;
+
+        container.insertAdjacentHTML('beforeend', `
+        <div class="col-6 col-md-4 col-lg-2 animate__animated animate__fadeIn">
+            <div class="card h-100 border-0 shadow-sm hover-scale text-center p-3" 
+                 style="cursor:pointer;" onclick="${clickHandler}">
+                <div class="position-absolute top-0 end-0 p-2 opacity-50">
+                    <i class="bi bi-${isFolder ? 'folder-symlink' : (isUrl ? 'globe' : (isDoc ? 'file-earmark' : (isVideo ? 'play-circle' : (isSpotify ? 'spotify' : 'cpu-fill'))))} small"></i>
+                </div>
+                <div class="d-flex justify-content-center w-100">${iconHtml}</div>
+                <div class="fw-bold text-dark small text-truncate mt-1">${app.label}</div>
+                <div class="text-muted" style="font-size: 0.6rem;">${isFolder ? 'Carpeta' : (app.type === 'maps' ? 'Mapas' : (isUrl ? 'URL Web' : (isDoc ? 'Archivo' : (isVideo ? 'Video YouTube' : (isSpotify ? 'Spotify' : 'App')))))}</div>
+            </div>
+        </div>`);
+    });
+}
 
 /**
  * EJECUTAR APP EXTERNA O ABRIR URL
  */
-window.launchExternalApp = async (command, type = 'app') => {
-    // Si es una URL o el comando parece una URL, abrir en nueva pestaña
-    if (type === 'url' || command.startsWith('http')) {
-        window.open(command, '_blank');
+window.launchExternalApp = async (command, type = 'app', label = '', embedded = false) => {
+    // Si es una URL o el comando parece una URL
+    if (type === 'url' || type === 'maps' || type === 'video' || type === 'spotify' || command.startsWith('http')) {
+        if (embedded) {
+            window.openWebViewer(command, label || 'Acceso Externo');
+        } else {
+            window.open(command, '_blank');
+        }
         return;
     }
 
@@ -525,4 +688,63 @@ window.checkDailySummaryVisibility = () => {
     
     // Opcional: Podríamos mostrar un mensaje de "Todo al día" aquí si quisiéramos,
     // pero por ahora solo aseguramos que la sección y su título permanezcan visibles.
+    section.classList.remove('d-none');
 };
+
+/**
+ * YOUTUBE HELPERS
+ */
+window.getYouTubeId = (url) => {
+    if (!url) return null;
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+};
+
+window.playVideo = (url, title) => {
+    const videoId = window.getYouTubeId(url);
+    if (!videoId) {
+        Ui.showToast("No se pudo identificar el ID del video de YouTube", "warning");
+        return;
+    }
+
+    const iframe = document.getElementById('youtubeIframe');
+    const titleEl = document.getElementById('youtubePlayerTitle');
+    
+    if (iframe) iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+    if (titleEl) titleEl.textContent = title;
+
+    const modal = new bootstrap.Modal(document.getElementById('youtubePlayerModal'));
+    modal.show();
+};
+
+window.stopYouTubeVideo = () => {
+    const iframe = document.getElementById('youtubeIframe');
+    if (iframe) iframe.src = '';
+};
+
+/**
+ * WEB VIEWER HELPERS
+ */
+window.openWebViewer = (url, title) => {
+    const iframe = document.getElementById('webViewerIframe');
+    const titleEl = document.getElementById('webViewerTitle');
+    
+    if (iframe) iframe.src = url;
+    if (titleEl) titleEl.textContent = title;
+
+    const modal = new bootstrap.Modal(document.getElementById('webViewerModal'));
+    modal.show();
+};
+
+window.stopWebViewer = () => {
+    const iframe = document.getElementById('webViewerIframe');
+    if (iframe) iframe.src = '';
+};
+
+window.stopWebViewer = () => {
+    const iframe = document.getElementById('webViewerIframe');
+    if (iframe) iframe.src = '';
+};
+
+

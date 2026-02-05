@@ -43,9 +43,9 @@ export const MediaPicker = {
         } else if (fileType === 'image') {
             titleEl.innerHTML = '<i class="bi bi-image me-2"></i>Seleccionar Imagen';
             helpEl.textContent = 'Selecciona una imagen (jpg, png, webp).';
-        } else if (fileType === 'folder') {
-            titleEl.innerHTML = '<i class="bi bi-folder-check me-2"></i>Seleccionar Carpeta';
-            helpEl.textContent = 'Navega y pulsa "Seleccionar esta carpeta".';
+        } else if (fileType === 'folder' || fileType === 'documentos') {
+            titleEl.innerHTML = fileType === 'folder' ? '<i class="bi bi-folder-check me-2"></i>Seleccionar Carpeta' : '<i class="bi bi-file-earmark-medical me-2"></i>Documentos (Archivo o Carpeta)';
+            helpEl.textContent = fileType === 'folder' ? 'Navega y pulsa "Seleccionar esta carpeta".' : 'Selecciona un archivo o pulsa "Seleccionar esta carpeta" para listar su contenido.';
         } else {
             titleEl.innerHTML = '<i class="bi bi-folder2-open me-2"></i>Explorador de Archivos';
             helpEl.textContent = 'Navega por el servidor local.';
@@ -58,7 +58,7 @@ export const MediaPicker = {
         // Show/Hide "Select Folder" button
         const selectFolderBtn = modalEl.querySelector('#btn-mp-select-folder');
         if (selectFolderBtn) {
-            selectFolderBtn.classList.toggle('d-none', fileType !== 'folder');
+            selectFolderBtn.classList.toggle('d-none', fileType !== 'folder' && fileType !== 'documentos');
             // Remove old listeners to avoid duplicates
             const newBtn = selectFolderBtn.cloneNode(true);
             selectFolderBtn.parentNode.replaceChild(newBtn, selectFolderBtn);

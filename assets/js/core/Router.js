@@ -78,7 +78,14 @@ export const Router = {
             return;
         }
 
-        // 1. CLEANUP UI (Dropdowns, Tooltips, Backdrops)
+        // 1. CLEANUP UI (Modals, Dropdowns, Tooltips, Backdrops)
+        // Close all open Bootstrap modals
+        const openModals = document.querySelectorAll('.modal.show');
+        openModals.forEach(modalEl => {
+            const modalInstance = bootstrap.Modal.getInstance(modalEl);
+            if (modalInstance) modalInstance.hide();
+        });
+
         document.querySelectorAll('.dropdown-menu.show').forEach(el => {
             el.classList.remove('show');
             const toggle = el.parentElement.querySelector('.dropdown-toggle');

@@ -264,4 +264,89 @@ router.post('/copy-to-clipboard', async (req, res) => {
     }
 });
 
+/**
+ * Helper: Escanea una carpeta recursivamente buscando documentos.
+ */
+async function scanDirectoryRecursive(dirPath, extensions, maxDepth = 5, currentDepth = 0) {
+    if (currentDepth > maxDepth) return [];
+    
+    let results = [];
+    try {
+        const dirents = await fs.readdir(dirPath, { withFileTypes: true });
+        
+        for (const dirent of dirents) {
+            const fullPath = path.join(dirPath, dirent.name);
+            
+            if (dirent.isDirectory()) {
+                // Recursión
+                const subResults = await scanDirectoryRecursive(fullPath, extensions, maxDepth, currentDepth + 1);
+                results = results.concat(subResults);
+            } else if (dirent.isFile() || dirent.isSymbolicLink()) {
+                const ext = path.extname(dirent.name).toLowerCase();
+                if (extensions.includes(ext)) {
+                    results.push({
+                        label: dirent.name,
+                        path: fullPath,
+                        type: 'documentos',
+                        icon: 'file-earmark-text'
+                    });
+                }
+            }
+        }
+    } catch (err) {
+        // Ignorar errores de acceso a carpetas específicas
+        logToFile(`[System Routes] Skip recursive folder ${dirPath}: ${err.message}`);
+    }
+    return results;
+}
+
+/**
+ * POST /api/system/list-docs
+ * Lists document files in specific directories (Recursively).
+ */
+router.post('/list-docs', async (req, res) => {
+    try {
+        const { folderPaths } = req.body;
+        logToFile(`[System Routes] list-docs (recursive) received for: ${JSON.stringify(folderPaths)}`);
+
+        if (!folderPaths || !Array.isArray(folderPaths)) {
+            return res.status(400).json({ error: 'No folderPaths provided' });
+        }
+
+        const allDocs = [];
+        const extensions = ['.pdf', '.doc', '.docx', '.txt', '.xlsx', '.xls', '.odt', '.rtf'];
+
+        for (let targetPath of folderPaths) {
+            try {
+                let absolutePath = targetPath;
+                const isWindowsAbsolute = /^[a-zA-Z]:[\\/]/.test(targetPath);
+                
+                if (isWindowsAbsolute) {
+                    absolutePath = path.resolve(targetPath);
+                } else if (path.isAbsolute(targetPath)) {
+                    // Ya es absoluta
+                } else {
+                    absolutePath = path.join(__dirname, '../../', targetPath);
+                }
+
+                const fsPath = path.normalize(absolutePath);
+                logToFile(`[System Routes] Scanning recursive folder: ${fsPath}`);
+
+                await fs.access(fsPath);
+                const docItems = await scanDirectoryRecursive(fsPath, extensions);
+                
+                logToFile(`[System Routes] Found ${docItems.length} documents recursively in ${fsPath}`);
+                allDocs.push(...docItems);
+            } catch (err) {
+                logToFile(`[System Routes] ERROR scanning folder ${targetPath}: ${err.message}`);
+            }
+        }
+
+        res.json({ documents: allDocs });
+    } catch (error) {
+        logToFile(`[System Routes] CRITICAL ERROR in list-docs: ${error.message}`);
+        res.status(500).json({ error: 'Error listing documents', details: error.message });
+    }
+});
+
 module.exports = router;

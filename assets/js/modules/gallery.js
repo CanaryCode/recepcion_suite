@@ -260,39 +260,35 @@ export const Gallery = {
             document.exitFullscreen();
         }
     },
-
     async loadImages(resetFilters = false) {
         console.log("[Gallery] loadImages - Starting load...");
         const container = document.getElementById('gallery-grid');
         if (!container) return;
 
-        // Reset filtros si se solicita (Manual Sync o Cambio de Módulo)
-        if (resetFilters) {
-            currentSearchQuery = '';
-            currentTypeFilter = 'all';
-            currentFolderFilter = 'all';
-            showOnlyFavorites = false;
-            
-            // Sincronizar UI
-            const searchInput = document.getElementById('gallerySearch');
-            if (searchInput) searchInput.value = '';
-            
-            const typeSelect = document.getElementById('galleryTypeFilter');
-            if (typeSelect) typeSelect.value = 'all';
-            
-            const folderSelect = document.getElementById('galleryFolderFilter');
-            if (folderSelect) folderSelect.value = 'all';
-
-            const favCheck = document.getElementById('galleryFavoriteFilter');
-            if (favCheck) favCheck.checked = false;
-        }
-
-        container.innerHTML = '<div class="col-12 text-center py-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-2 text-muted px-4">Recuperando archivos y miniaturas...</p></div>';
-
         try {
             const mainPath = (APP_CONFIG.SYSTEM?.GALLERY_PATH || 'assets/gallery').trim();
             const configFolders = APP_CONFIG.SYSTEM?.GALLERY_FOLDERS || [];
-            
+
+            // Reset filtros si se solicita (Manual Sync o Cambio de Módulo)
+            if (resetFilters || currentFolderFilter === 'all') {
+                currentSearchQuery = '';
+                currentTypeFilter = 'all';
+                currentFolderFilter = mainPath;
+                showOnlyFavorites = false;
+                
+                // Sincronizar UI
+                const searchInput = document.getElementById('gallerySearch');
+                if (searchInput) searchInput.value = '';
+                
+                const typeSelect = document.getElementById('galleryTypeFilter');
+                if (typeSelect) typeSelect.value = 'all';
+                
+                const favCheck = document.getElementById('galleryFavoriteFilter');
+                if (favCheck) favCheck.checked = false;
+            }
+
+            container.innerHTML = '<div class="col-12 text-center py-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-2 text-muted px-4">Recuperando archivos y miniaturas...</p></div>';
+
             let folderPaths = [mainPath, ...configFolders.map(f => f.path.trim())];
             folderPaths = [...new Set(folderPaths)].filter(p => p !== '');
 
@@ -348,8 +344,8 @@ export const Gallery = {
             select.appendChild(opt);
         });
 
-        if ([...select.options].some(o => o.value === currentVal)) {
-            select.value = currentVal;
+        if ([...select.options].some(o => o.value === currentFolderFilter)) {
+            select.value = currentFolderFilter;
         }
     },
 

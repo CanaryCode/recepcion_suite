@@ -83,6 +83,7 @@
                     </button>
                 </li>
 
+
                 <li class="nav-item dropdown">
                     <button class="nav-link dropdown-toggle btn btn-link" data-bs-toggle="dropdown" type="button">
                         <span data-tooltip="true" data-bs-placement="bottom" data-bs-title="Módulos Operativos">
@@ -246,7 +247,7 @@
                         <h4 class="fw-bold text-secondary mb-2">Accesos Directos</h4>
                     </div>
                     
-                    <!-- Static Shortcuts -->
+                    <!-- Static Shortcuts (Fallback if JS fails) -->
                     <div class="col-6 col-md">
                         <a href="#" onclick="navegarA('#cobro-content')" class="btn-shortcut shortcut-success"
                         data-bs-toggle="tooltip" data-bs-title="Registrar Cobro">
@@ -285,7 +286,7 @@
                     </div>
 
                     <div class="col-6 col-md">
-                        <a href="#" onclick="openLaunchPad()" class="btn-shortcut shortcut-dark"
+                        <a href="#" onclick="navegarA('#aplicaciones-content')" class="btn-shortcut shortcut-dark"
                         data-bs-toggle="tooltip" data-bs-title="Abrir Lanzador de Aplicaciones">
                             <i class="bi bi-grid-3x3-gap-fill"></i>
                             <span>Apps & Herramientas</span>
@@ -293,7 +294,6 @@
                     </div>
                 </div>
 
-                <!-- Sección de Resumen del Día Centrada -->
                 <!-- Sección de Resumen del Día Centrada -->
                 <div class="row g-3 justify-content-center mt-2" id="dashboard-resumen-seccion">
                     <div class="col-md-12">
@@ -411,8 +411,31 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Nueva pestaña de Aplicaciones -->
+            <div class="tab-pane fade" id="aplicaciones-content" role="tabpanel">
+                <div class="mt-3">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div id="tabsFilterContainer" class="btn-group btn-group-sm shadow-sm">
+                            <button class="btn btn-outline-primary" id="btnFilterLaunchAll_Tab" onclick="filterLaunchPad('all', 'tab')">Todos</button>
+                            <button class="btn btn-outline-primary active" id="btnFilterLaunchApps_Tab" onclick="filterLaunchPad('app', 'tab')">Apps</button>
+                            <button class="btn btn-outline-primary" id="btnFilterLaunchFolders_Tab" onclick="filterLaunchPad('folder', 'tab')">Carpetas</button>
+                            <button class="btn btn-outline-primary" id="btnFilterLaunchMaps_Tab" onclick="filterLaunchPad('maps', 'tab')">Mapas</button>
+                            <button class="btn btn-outline-primary" id="btnFilterLaunchDocs_Tab" onclick="filterLaunchPad('documentos', 'tab')">Documentos</button>
+                            <button class="btn btn-outline-primary" id="btnFilterLaunchVideos_Tab" onclick="filterLaunchPad('video', 'tab')">Videos</button>
+                            <button class="btn btn-outline-primary" id="btnFilterLaunchUrls_Tab" onclick="filterLaunchPad('url', 'tab')">Webs</button>
+                        </div>
+                        <div style="max-width: 300px;" class="input-group input-group-sm">
+                            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                            <input type="text" id="launchPadSearch_Tab" class="form-control border-start-0" placeholder="Buscar..." onkeyup="renderLaunchPad(this.value, window._currentLaunchPadFilter, 'tab')">
+                        </div>
+                    </div>
+                    <div id="launchPadGrid_Tab" class="row g-3 py-2">
+                        <!-- Se llena vía JS -->
+                    </div>
                 </div>
             </div>
+
             <!-- NUEVO MÓDULO VALES -->
             <div class="tab-pane fade" id="vales-content" role="tabpanel">
                 <div class="text-center p-5">
@@ -3267,6 +3290,7 @@
                                 <button type="button" class="btn btn-white border px-3 active" id="btnFilterLaunchAll" onclick="window.filterLaunchPad('all')">Todos los Accesos</button>
                                 <button type="button" class="btn btn-white border px-3" id="btnFilterLaunchApps" onclick="window.filterLaunchPad('app')">Aplicaciones</button>
                                 <button type="button" class="btn btn-white border px-3" id="btnFilterLaunchFolders" onclick="window.filterLaunchPad('folder')">Carpetas Locales</button>
+                                <button type="button" class="btn btn-white border px-3" id="btnFilterLaunchVideos" onclick="window.filterLaunchPad('video')">Videos</button>
                                 <button type="button" class="btn btn-white border px-3" id="btnFilterLaunchUrls" onclick="window.filterLaunchPad('url')">Recursos Web</button>
                             </div>
                         </div>
@@ -3314,7 +3338,52 @@
             // Opcional: Mostrar toast de "Cargando sistema..."
         };
     </script>
+    <!-- YouTube Player Modal -->
+    <div class="modal fade" id="youtubePlayerModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
+            <div class="modal-content bg-black border-0 shadow-lg">
+                <div class="modal-header border-0 pb-0">
+                    <h6 class="modal-title text-white fw-bold" id="youtubePlayerTitle">Reproductor de Video</h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="window.stopYouTubeVideo()"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div class="ratio ratio-16x9">
+                        <iframe id="youtubeIframe" src="" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Web Viewer Modal -->
+    <div class="modal fade" id="webViewerModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-fullscreen">
+            <div class="modal-content border-0">
+                <div class="modal-header bg-dark text-white py-2">
+                    <h6 class="modal-title fw-bold" id="webViewerTitle">Visor Web</h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="window.stopWebViewer()"></button>
+                </div>
+                <div class="modal-body p-0 overflow-hidden">
+                    <iframe id="webViewerIframe" src="" class="w-100 h-100 border-0"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
     <script type="module" src="assets/js/main.js?v=V11_PRINT_MASTER"></script>
+
+    <!-- Spotify Footer Player (Minimizable) -->
+    <div id="spotify-footer-player" class="spotify-footer-player no-print">
+        <div class="spotify-player-body">
+            <iframe id="spotify-footer-iframe" src="" width="100%" height="152" frameborder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" style="border-radius:12px"></iframe>
+        </div>
+        <button class="spotify-footer-toggle" onclick="toggleSpotifyFooter()">
+            <i class="bi bi-spotify me-2"></i> <span id="spotify-toggle-text">Spotify</span>
+            <i class="bi bi-chevron-down ms-auto" id="spotify-toggle-icon"></i>
+        </button>
+    </div>
 
 </body>
 

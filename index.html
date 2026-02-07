@@ -36,6 +36,8 @@
     <link rel="stylesheet" href="assets/css/print.css" media="print">
     <!-- FIX FINAL LAYOUT: Carga forzada al final -->
     <link rel="stylesheet" href="assets/css/layout_fix.css?v=FINAL_FIX_V2">
+    <!-- MÓDULO DE IMPRESIÓN -->
+    <link rel="stylesheet" href="assets/css/modules/impresion.css?v=V125_FIX">
     <script>
         console.log("INDEX.HTML LOADED - V.FINAL_FIX");
     </script>
@@ -114,6 +116,10 @@
                         </button></li>
                         <li><button class="dropdown-item" data-bs-toggle="tab" data-bs-target="#reservas-instalaciones-content">
                             <span data-tooltip="true" data-bs-placement="right" data-bs-title="Reservas de pistas de tenis, gimnasio, etc."><i class="bi bi-calendar-check me-2"></i>Reservas Instalaciones</span>
+                        </button></li>
+                        <!-- Nuevo Módulo Impresión -->
+                        <li><button class="dropdown-item" id="nav-impresion-tab" data-bs-toggle="tab" data-bs-target="#impresion-content" onclick="import('./assets/js/modules/Impresion.js?v=V131_FINAL').then(m => m.inicializarImpresion())">
+                            <span data-tooltip="true" data-bs-placement="right" data-bs-title="Impresión de documentos operativos (Tarjetero, etc.)"><i class="bi bi-printer me-2"></i>Impresión Documentos</span>
                         </button></li>
                         <!-- Nuevo Módulo Vales -->
                         <li><button class="dropdown-item" id="nav-vales-tab" data-bs-toggle="tab" data-bs-target="#vales-content" onclick="import('./assets/js/modules/vales.js').then(m => m.initVales())">
@@ -435,6 +441,7 @@
                     </div>
                 </div>
             </div>
+
 
             <!-- NUEVO MÓDULO VALES -->
             <div class="tab-pane fade" id="vales-content" role="tabpanel">
@@ -1768,7 +1775,6 @@
 </div>
 
 <h4 class="module-title-discrete"><i class="bi bi-gift-fill"></i>Registro de Atenciones</h4>
-
 <div class="module-toolbar no-print">
     <div class="btn-group" role="group">
         <button type="button" class="btn btn-outline-primary active" id="btnVistaTrabajo"
@@ -2314,7 +2320,6 @@
 </div>
 
 <h4 class="module-title-discrete"><i class="bi bi-tags-fill"></i>Lista de Precios</h4>
-
 <div class="module-toolbar no-print d-flex justify-content-end">
 
     <div class="btn-print-wrapper">
@@ -2436,6 +2441,52 @@
         </div>
     </div>
 </div>
+            </div>
+            <div class="tab-pane fade" id="impresion-content" role="tabpanel">
+                <h4 class="module-title-discrete no-print"><i class="bi bi-printer-fill"></i> Módulo de Impresión Dinámica <span class="badge bg-success" style="font-size: 0.5rem;">v1.34 - PRECISION CALIBRATION</span></h4>
+
+                <div class="module-toolbar no-print mb-3">
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-outline-primary active" id="btnImpresionTrabajo">
+                            <i class="bi bi-pencil-square me-2"></i>Preparar Datos
+                        </button>
+                        <button class="btn btn-outline-primary" id="btnImpresionVista">
+                            <i class="bi bi-eye me-2"></i>Vista Previa Tarjetero
+                        </button>
+                        <button class="btn btn-outline-primary" id="btnImpresionConfig">
+                            <i class="bi bi-gear-fill me-2"></i>Calibrar Campos
+                        </button>
+                    </div>
+
+                    <div class="calibration-controls d-flex gap-2 ms-3 align-items-center">
+                        <label class="small fw-bold text-muted">Ajuste (mm):</label>
+                        <div class="input-group input-group-sm" style="width: 100px;">
+                            <span class="input-group-text">X</span>
+                            <input type="number" id="nudgeX" class="form-control" value="0" step="0.5">
+                        </div>
+                        <div class="input-group input-group-sm" style="width: 100px;">
+                            <span class="input-group-text">Y</span>
+                            <input type="number" id="nudgeY" class="form-control" value="0" step="0.5">
+                        </div>
+                        <button class="btn btn-outline-secondary btn-sm" id="btnToggleGuide">
+                            <i class="bi bi-eye me-1"></i>Guía Visual
+                        </button>
+                    </div>
+
+                    <div class="btn-print-wrapper ms-auto">
+                        <button class="btn btn-primary fw-bold shadow-sm" onclick="ejecutarImpresionIframe()">
+                            <i class="bi bi-printer me-2"></i>Imprimir Todo
+                        </button>
+                    </div>
+                </div>
+
+                <div id="impresion-v120-root">
+                    <!-- Dinámicamente cargado por Impresion.js -->
+                    <div class="p-5 text-center text-muted">
+                        <div class="spinner-border spinner-border-sm me-2"></div>
+                        Cargando motor de precisión...
+                    </div>
+                </div>
             </div>
             <div class="tab-pane fade" id="system-alarms-content" role="tabpanel">
 <h4 class="module-title-discrete"><i class="bi bi-broadcast"></i>Alarmas del Sistema</h4>
@@ -3372,16 +3423,16 @@
 
 
 
-    <script type="module" src="assets/js/main.js?v=V11_PRINT_MASTER"></script>
+    <script type="module" src="assets/js/main.js?v=V134_PRECISION_FIX"></script>
 
     <!-- Spotify Footer Player (Minimizable) -->
-    <div id="spotify-footer-player" class="spotify-footer-player no-print">
+    <div id="spotify-footer-player" class="spotify-footer-player no-print minimized">
         <div class="spotify-player-body">
             <iframe id="spotify-footer-iframe" src="" width="100%" height="152" frameborder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" style="border-radius:12px"></iframe>
         </div>
         <button class="spotify-footer-toggle" onclick="toggleSpotifyFooter()">
             <i class="bi bi-spotify me-2"></i> <span id="spotify-toggle-text">Spotify</span>
-            <i class="bi bi-chevron-down ms-auto" id="spotify-toggle-icon"></i>
+            <i class="bi bi-chevron-up ms-auto" id="spotify-toggle-icon"></i>
         </button>
     </div>
 

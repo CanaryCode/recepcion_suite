@@ -37,7 +37,7 @@ export const CompLoader = {
             */
 
             // Realizar la petición web para obtener el archivo con cache-busting
-            const response = await fetch(`${path}?v=FIX_FINAL_V2_1`);
+            const response = await fetch(`${path}?v=V112`);
             if (!response.ok) throw new Error(`No se pudo cargar el archivo: ${path}`);
             
             // Convertir la respuesta a texto puro (HTML)

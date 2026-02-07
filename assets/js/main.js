@@ -208,7 +208,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             inicializarSesionGlobal(); 
             initGlobalTooltips();
-            window.renderLaunchPad('', 'all', 'tab');
+            window.renderLaunchPad('', 'app', 'tab');
             
             const ytModal = document.getElementById('youtubePlayerModal');
             if (ytModal) ytModal.addEventListener('hidden.bs.modal', window.stopYouTubeVideo);
@@ -342,24 +342,27 @@ window.renderLaunchPad = async (query = '', filter = 'app', target = 'modal') =>
             // Inferencia robusta de tipo (Override para corregir configs legacy)
             let type = a.type;
             
-            // Si tiene URL y no es un tipo especial, ES URL (aunque diga app)
-            if (a.url && type !== 'maps' && type !== 'spotify' && type !== 'video') {
+            // 1. Detección de URL (robusta)
+            const isHttp = (a.url && a.url.startsWith('http')) || (a.path && a.path.startsWith('http'));
+            
+            if (isHttp && type !== 'maps' && type !== 'spotify' && type !== 'video') {
                 type = 'url';
             } 
-            // Si tiene PATH y no es ejecutable, ES CARPETA (aunque diga app)
-            else if (a.path && !a.path.match(/\.(exe|lnk|bat|cmd|msi)$/i) && type !== 'documentos') {
+            // 2. Detección de Carpeta (solo si no es URL ni ejecutable)
+            else if (a.path && !isHttp && !a.path.match(/\.(exe|lnk|bat|cmd|msi)$/i) && type !== 'documentos' && type !== 'maps' && type !== 'video') {
                 type = 'folder';
             }
             
-            // Si no tiene nada definido, es app por descarte
+            // Si no tiene nada definido y no es carpeta/url, es app por descarte
             if (!type) type = 'app';
 
             if (filter === 'documentos') return type === 'documentos';
             if (filter === 'video') return type === 'video';
             if (filter === 'spotify') return type === 'spotify';
+            if (filter === 'maps') return type === 'maps';
             
-            // Mapas se consideran URLs también
-            if (filter === 'url' && type === 'maps') return true;
+            // Mapas NO deben incluirse en URL si queremos que tengan su propia pestaña
+            if (filter === 'url' && type === 'maps') return false; 
             
             return type === filter;
         });

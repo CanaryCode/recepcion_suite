@@ -123,14 +123,14 @@
 
     .spotify-player-body {
         height: 152px;
-        background: #191414 !important;
+        background: transparent !important;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        padding: 5px 12px;
+        padding: 0 !important;
         overflow: hidden;
-        transition: height 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), padding 0.4s ease;
+        transition: height 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
     }
 
     /* Ajuste para que el app-layout no quede tapado por el footer (solo barra) */

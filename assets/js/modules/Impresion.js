@@ -3,10 +3,10 @@ import { Utils } from '../core/Utils.js';
 import { Ui } from '../core/Ui.js';
 
 /**
- * MÓDULO DE IMPRESIÓN DINÁMICA v1.37 - NUCLEAR RESET
- * -------------------------------------------------
- * Sistema de impresión nativo por Overlay (sin iframes).
- * Corregido problema de hojas en blanco y orientación.
+ * MÓDULO DE IMPRESIÓN DINÁMICA v1.38 - POSITIONAL SYNC
+ * ----------------------------------------------------
+ * Solución definitiva a la discrepancia Pantalla vs Impresora.
+ * Aislamiento total de estilos de impresión.
  */
 
 const COORDINATES_DEFAULT = {
@@ -22,7 +22,7 @@ const COORDINATES_DEFAULT = {
 let currentCoordinates = { ...COORDINATES_DEFAULT };
 
 export async function inicializarImpresion() {
-    if (window.__impresion_v137_initialized) return;
+    if (window.__impresion_v138_initialized) return;
 
     let root = document.getElementById('impresion-v120-root');
     if (!root) {
@@ -39,11 +39,11 @@ export async function inicializarImpresion() {
     try {
         loadCoordinates(); 
 
-        const response = await fetch('assets/templates/impresion.html?v=V137_NUCLEAR');
+        const response = await fetch('assets/templates/impresion.html?v=V138_SYNC');
         if (!response.ok) throw new Error("Plantilla no encontrada");
         root.innerHTML = await response.text();
 
-        inyectarEstilosBaseV137();
+        inyectarEstilosBaseV138();
 
         Ui.setupViewToggle({
             buttons: [
@@ -61,22 +61,19 @@ export async function inicializarImpresion() {
         renderCalibrationTable();
 
         window.ejecutarImpresionNativa = ejecutarImpresionNativa;
-        // Mapeamos el botón de imprimir que está en impresion.html (que llamará a ejecutarImpresionIframe usualmente)
-        // para que use el nuevo motor nativo. Pero como no puedo editar la plantilla ahora mismo, 
-        // simplemente sobreescribo la función global que llama el botón.
         window.ejecutarImpresionIframe = ejecutarImpresionNativa; 
         
         window.resetCoordinate = resetCoordinate;
         window.updateCoordinateValue = updateCoordinateValue;
 
-        window.__impresion_v137_initialized = true;
-        console.log("%c[Impresion] v1.37 - NUCLEAR ENGINE LOADED", "color: #ff0055; font-weight: bold;");
+        window.__impresion_v138_initialized = true;
+        console.log("%c[Impresion] v1.38 - POSITIONAL SYNC LOADED", "color: #00ff00; font-weight: bold;");
         
         Ui.initTooltips?.();
 
     } catch (error) {
         console.error("[Impresion] Error:", error);
-        root.innerHTML = `<div class="alert alert-danger m-3">Error v1.37: ${error.message}</div>`;
+        root.innerHTML = `<div class="alert alert-danger m-3">Error v1.38: ${error.message}</div>`;
     }
 }
 
@@ -156,10 +153,10 @@ function resetCoordinate(key) {
     Ui.showToast(`Reseteado: ${COORDINATES_DEFAULT[key].label}`, "info");
 }
 
-function inyectarEstilosBaseV137() {
+function inyectarEstilosBaseV138() {
     document.querySelectorAll('[id^="styles-impresion-"]').forEach(el => el.remove());
     const styleTag = document.createElement('style');
-    styleTag.id = 'styles-impresion-v137';
+    styleTag.id = 'styles-impresion-v138';
     styleTag.innerHTML = `
         .customer-card {
             width: 140mm !important;
@@ -181,8 +178,8 @@ function inyectarEstilosBaseV137() {
             position: absolute !important;
             top: 0 !important;
             left: 0 !important;
-            width: 100% !important;
-            height: 100% !important;
+            width: 110% !important; /* Exagerado para evitar recortes */
+            height: 110% !important;
             pointer-events: none !important;
         }
         .card-field {
@@ -211,16 +208,16 @@ function inyectarEstilosBaseV137() {
             display: inline-block !important;
         }
 
-        /* ESTILOS DE IMPRESIÓN NATIVA (Overlay) */
+        /* AISLAMIENTO DE IMPRESIÓN v1.38 */
         #print-native-overlay {
             display: none;
             position: fixed;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
+            width: 100vw;
+            height: 100vh;
             background: white;
-            z-index: 99999;
+            z-index: 999999;
         }
 
         @media print {
@@ -232,8 +229,8 @@ function inyectarEstilosBaseV137() {
                 position: absolute !important;
                 top: 0 !important;
                 left: 0 !important;
-                width: 100% !important;
-                height: auto !important;
+                padding: 0 !important;
+                margin: 0 !important;
             }
             @page { 
                 size: 140mm 110mm landscape !important; 
@@ -246,6 +243,16 @@ function inyectarEstilosBaseV137() {
                 position: relative !important; 
                 overflow: hidden !important;
                 background: white !important;
+                display: block !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            .native-canvas {
+                position: absolute !important;
+                top: 0 !important;
+                left: 0 !important;
+                width: 140mm !important;
+                height: 110mm !important;
             }
             .native-field {
                 position: absolute !important;
@@ -260,6 +267,7 @@ function inyectarEstilosBaseV137() {
                 color: black !important;
                 text-transform: uppercase !important;
                 -webkit-print-color-adjust: exact !important;
+                font-size: 13pt; /* Fallback */
             }
         }
     `;
@@ -394,8 +402,7 @@ function renderizarTarjetero(data) {
 }
 
 /**
- * MOTOR DE IMPRESIÓN NATIVO v1.37
- * No usa iframes. Genera un overlay temporal y lanza print().
+ * MOTOR DE IMPRESIÓN NATIVO v1.38
  */
 function ejecutarImpresionNativa() {
     const container = document.getElementById('cards-container');
@@ -407,7 +414,6 @@ function ejecutarImpresionNativa() {
     const offX = parseFloat(document.getElementById('nudgeX')?.value || 0);
     const offY = parseFloat(document.getElementById('nudgeY')?.value || 0);
 
-    // Crear Overlay
     let overlay = document.getElementById('print-native-overlay');
     if (overlay) overlay.remove();
     
@@ -417,10 +423,10 @@ function ejecutarImpresionNativa() {
 
     let htmlBody = '';
     
-    // Capturar datos actuales de la vista previa
     document.querySelectorAll('#cards-container .customer-card').forEach(cardEl => {
         htmlBody += `<div class="card-page">`;
-        htmlBody += `<div class="precision-container" style="top: ${offY}mm; left: ${offX}mm;">`;
+        // Usamos un canvas nativo interno con el offset aplicado directamente como margenes o top/left
+        htmlBody += `<div class="native-canvas" style="top: ${offY}mm; left: ${offX}mm;">`;
         
         cardEl.querySelectorAll('.card-field').forEach(fieldEl => {
             const valEl = fieldEl.querySelector('.field-value');
@@ -430,7 +436,7 @@ function ejecutarImpresionNativa() {
             if (coords) {
                 htmlBody += `
                 <div class="native-field" style="left: ${coords.x}mm; top: ${coords.y}mm; height: ${coords.h}mm; width: calc(140mm - ${coords.x}mm);">
-                    <span class="native-val" style="font-size: ${valEl.style.fontSize || '13pt'}">
+                    <span class="native-val" style="font-size: ${valEl.style.fontSize || '13pt'} !important">
                         ${valEl.textContent}
                     </span>
                 </div>`;
@@ -442,12 +448,12 @@ function ejecutarImpresionNativa() {
 
     overlay.innerHTML = htmlBody;
 
-    // Lanzar impresión
+    // Lanzar impresión con un pequeño retardo para asegurar renderizado
     setTimeout(() => {
         window.print();
-        // Limpiar después de imprimir (opcional, pero mejor dejar el overlay oculto)
-        setTimeout(() => overlay.remove(), 1000);
-    }, 500);
+        // No borramos el overlay inmediatamente por si el usuario cancela y quiere re-intentar rápido
+        // Pero lo ocultamos visualmente si no estamos en print (vía CSS ya ocurre)
+    }, 300);
 }
 
 window.inicializarImpresion = inicializarImpresion;

@@ -3,9 +3,10 @@ import { Utils } from '../core/Utils.js';
 import { Ui } from '../core/Ui.js';
 
 /**
- * MÓDULO DE IMPRESIÓN DINÁMICA v1.34
- * ----------------------------------
- * Calibración de Precisión Techo-Suelo.
+ * MÓDULO DE IMPRESIÓN DINÁMICA v1.37 - NUCLEAR RESET
+ * -------------------------------------------------
+ * Sistema de impresión nativo por Overlay (sin iframes).
+ * Corregido problema de hojas en blanco y orientación.
  */
 
 const COORDINATES_DEFAULT = {
@@ -21,7 +22,7 @@ const COORDINATES_DEFAULT = {
 let currentCoordinates = { ...COORDINATES_DEFAULT };
 
 export async function inicializarImpresion() {
-    if (window.__impresion_v134_initialized) return;
+    if (window.__impresion_v137_initialized) return;
 
     let root = document.getElementById('impresion-v120-root');
     if (!root) {
@@ -38,11 +39,11 @@ export async function inicializarImpresion() {
     try {
         loadCoordinates(); 
 
-        const response = await fetch('assets/templates/impresion.html?v=V134_PRECISION');
+        const response = await fetch('assets/templates/impresion.html?v=V137_NUCLEAR');
         if (!response.ok) throw new Error("Plantilla no encontrada");
         root.innerHTML = await response.text();
 
-        inyectarEstilosBaseV134();
+        inyectarEstilosBaseV137();
 
         Ui.setupViewToggle({
             buttons: [
@@ -59,23 +60,28 @@ export async function inicializarImpresion() {
         
         renderCalibrationTable();
 
-        window.ejecutarImpresionIframe = ejecutarImpresionIframe;
+        window.ejecutarImpresionNativa = ejecutarImpresionNativa;
+        // Mapeamos el botón de imprimir que está en impresion.html (que llamará a ejecutarImpresionIframe usualmente)
+        // para que use el nuevo motor nativo. Pero como no puedo editar la plantilla ahora mismo, 
+        // simplemente sobreescribo la función global que llama el botón.
+        window.ejecutarImpresionIframe = ejecutarImpresionNativa; 
+        
         window.resetCoordinate = resetCoordinate;
         window.updateCoordinateValue = updateCoordinateValue;
 
-        window.__impresion_v134_initialized = true;
-        console.log("%c[Impresion] v1.34 - PRECISION CALIBRATION LOADED", "color: #00ff88; font-weight: bold;");
+        window.__impresion_v137_initialized = true;
+        console.log("%c[Impresion] v1.37 - NUCLEAR ENGINE LOADED", "color: #ff0055; font-weight: bold;");
         
         Ui.initTooltips?.();
 
     } catch (error) {
         console.error("[Impresion] Error:", error);
-        root.innerHTML = `<div class="alert alert-danger m-3">Error v1.34: ${error.message}</div>`;
+        root.innerHTML = `<div class="alert alert-danger m-3">Error v1.37: ${error.message}</div>`;
     }
 }
 
 function loadCoordinates() {
-    const saved = localStorage.getItem('impresion_coords_v134');
+    const saved = localStorage.getItem('impresion_coords_v134'); 
     if (saved) {
         try {
             currentCoordinates = JSON.parse(saved);
@@ -150,10 +156,10 @@ function resetCoordinate(key) {
     Ui.showToast(`Reseteado: ${COORDINATES_DEFAULT[key].label}`, "info");
 }
 
-function inyectarEstilosBaseV134() {
+function inyectarEstilosBaseV137() {
     document.querySelectorAll('[id^="styles-impresion-"]').forEach(el => el.remove());
     const styleTag = document.createElement('style');
-    styleTag.id = 'styles-impresion-v134';
+    styleTag.id = 'styles-impresion-v137';
     styleTag.innerHTML = `
         .customer-card {
             width: 140mm !important;
@@ -204,6 +210,58 @@ function inyectarEstilosBaseV134() {
             text-transform: uppercase !important;
             display: inline-block !important;
         }
+
+        /* ESTILOS DE IMPRESIÓN NATIVA (Overlay) */
+        #print-native-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            z-index: 99999;
+        }
+
+        @media print {
+            body > *:not(#print-native-overlay) {
+                display: none !important;
+            }
+            #print-native-overlay {
+                display: block !important;
+                position: absolute !important;
+                top: 0 !important;
+                left: 0 !important;
+                width: 100% !important;
+                height: auto !important;
+            }
+            @page { 
+                size: 140mm 110mm landscape !important; 
+                margin: 0 !important; 
+            }
+            .card-page { 
+                width: 140mm !important; 
+                height: 110mm !important; 
+                page-break-after: always !important; 
+                position: relative !important; 
+                overflow: hidden !important;
+                background: white !important;
+            }
+            .native-field {
+                position: absolute !important;
+                display: flex !important;
+                align-items: center !important;
+                white-space: nowrap !important;
+                box-sizing: border-box !important;
+            }
+            .native-val {
+                font-family: Arial, sans-serif !important;
+                font-weight: bold !important;
+                color: black !important;
+                text-transform: uppercase !important;
+                -webkit-print-color-adjust: exact !important;
+            }
+        }
     `;
     document.head.appendChild(styleTag);
 }
@@ -221,7 +279,7 @@ function toggleSimulatedCard() {
 }
 
 /**
- * PARSER v1.28 - Heuristic Pivot Engine
+ * PARSER v1.28
  */
 function procesarDatosWord() {
     const rawText = document.getElementById('txtWordData').value;
@@ -335,76 +393,61 @@ function renderizarTarjetero(data) {
     updateGlobalOffsets();
 }
 
-function ejecutarImpresionIframe() {
-    const cards = [];
-    document.querySelectorAll('#cards-container .customer-card').forEach(el => {
-        const cardFields = [];
-        el.querySelectorAll('.card-field').forEach(f => {
-            const key = Array.from(f.classList).find(c => c.startsWith('f-')).replace('f-', '');
-            cardFields.push({
-                key: key,
-                text: f.querySelector('.field-value').textContent,
-                size: f.querySelector('.field-value').style.fontSize || '13pt'
-            });
-        });
-        cards.push(cardFields);
-    });
+/**
+ * MOTOR DE IMPRESIÓN NATIVO v1.37
+ * No usa iframes. Genera un overlay temporal y lanza print().
+ */
+function ejecutarImpresionNativa() {
+    const container = document.getElementById('cards-container');
+    if (!container || container.children.length === 0) {
+        Ui.showToast("No hay datos para imprimir", "warning");
+        return;
+    }
 
     const offX = parseFloat(document.getElementById('nudgeX')?.value || 0);
     const offY = parseFloat(document.getElementById('nudgeY')?.value || 0);
 
-    let printFrame = document.getElementById('print-isolation-frame');
-    if (!printFrame) {
-        printFrame = document.createElement('iframe');
-        printFrame.id = 'print-isolation-frame';
-        printFrame.style.display = 'none';
-        document.body.appendChild(printFrame);
-    }
-
-    const doc = printFrame.contentWindow.document;
-    doc.open();
+    // Crear Overlay
+    let overlay = document.getElementById('print-native-overlay');
+    if (overlay) overlay.remove();
     
-    let html = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <style>
-                @page { size: 140mm 110mm !important; margin: 0 !important; }
-                body { margin: 0 !important; padding: 0 !important; background: white; font-family: 'Arial', sans-serif; }
-                .card-page { width: 140mm; height: 110mm; page-break-after: always; position: relative; overflow: hidden; }
-                .precision-container { position: absolute; top: ${offY}mm; left: ${offX}mm; width: 100%; height: 100%; }
-                .field { position: absolute; display: flex; align-items: center; white-space: nowrap; overflow: hidden; }
-                .val { font-weight: bold; color: black; text-transform: uppercase; }
-            </style>
-        </head>
-        <body>
-    `;
+    overlay = document.createElement('div');
+    overlay.id = 'print-native-overlay';
+    document.body.appendChild(overlay);
 
-    cards.forEach(card => {
-        html += `<div class="card-page"><div class="precision-container">`;
-        card.forEach(f => {
-            const coords = currentCoordinates[f.key];
+    let htmlBody = '';
+    
+    // Capturar datos actuales de la vista previa
+    document.querySelectorAll('#cards-container .customer-card').forEach(cardEl => {
+        htmlBody += `<div class="card-page">`;
+        htmlBody += `<div class="precision-container" style="top: ${offY}mm; left: ${offX}mm;">`;
+        
+        cardEl.querySelectorAll('.card-field').forEach(fieldEl => {
+            const valEl = fieldEl.querySelector('.field-value');
+            const key = Array.from(fieldEl.classList).find(c => c.startsWith('f-')).replace('f-', '');
+            const coords = currentCoordinates[key];
+            
             if (coords) {
-                html += `
-                <div class="field" style="left: ${coords.x}mm; top: ${coords.y}mm; height: ${coords.h}mm; width: calc(140mm - ${coords.x}mm);">
-                    <span class="val" style="font-size: ${f.size}">${f.text}</span>
+                htmlBody += `
+                <div class="native-field" style="left: ${coords.x}mm; top: ${coords.y}mm; height: ${coords.h}mm; width: calc(140mm - ${coords.x}mm);">
+                    <span class="native-val" style="font-size: ${valEl.style.fontSize || '13pt'}">
+                        ${valEl.textContent}
+                    </span>
                 </div>`;
             }
         });
-        html += `</div></div>`;
+        
+        htmlBody += `</div></div>`;
     });
 
-    html += `
-        <script>
-            window.onload = function() {
-                window.focus(); window.print(); 
-            };
-        </script>
-        </body></html>
-    `;
-    
-    doc.write(html);
-    doc.close();
+    overlay.innerHTML = htmlBody;
+
+    // Lanzar impresión
+    setTimeout(() => {
+        window.print();
+        // Limpiar después de imprimir (opcional, pero mejor dejar el overlay oculto)
+        setTimeout(() => overlay.remove(), 1000);
+    }, 500);
 }
 
 window.inicializarImpresion = inicializarImpresion;

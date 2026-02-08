@@ -72,7 +72,7 @@ export async function inicializarImpresion() {
         if (!response.ok) throw new Error("Plantilla no encontrada");
         root.innerHTML = await response.text();
 
-        inyectarEstilosBaseV140();
+        inyectarEstilosBase();
 
         Ui.setupViewToggle({
             buttons: [
@@ -123,7 +123,7 @@ export async function inicializarImpresion() {
 }
 
 function loadCoordinates() {
-    const storageKey = `impresion_coords_v140_${currentTemplateId}`;
+    const storageKey = `impresion_coords_${currentTemplateId}`;
     const saved = localStorage.getItem(storageKey); 
     if (saved) {
         try {
@@ -137,7 +137,7 @@ function loadCoordinates() {
 }
 
 function saveCoordinates() {
-    const storageKey = `impresion_coords_v140_${currentTemplateId}`;
+    const storageKey = `impresion_coords_${currentTemplateId}`;
     localStorage.setItem(storageKey, JSON.stringify(currentCoordinates));
 }
 
@@ -322,10 +322,10 @@ function resetCoordinate(key) {
     Ui.showToast(`Reseteado: ${TEMPLATE_CONFIGS[currentTemplateId].coordinates[key].label}`, "info");
 }
 
-function inyectarEstilosBaseV140() {
+function inyectarEstilosBase() {
     document.querySelectorAll('[id^="styles-impresion-"]').forEach(el => el.remove());
     const styleTag = document.createElement('style');
-    styleTag.id = 'styles-impresion-v140';
+    styleTag.id = 'styles-impresion';
     styleTag.innerHTML = `
         .customer-card {
             width: var(--card-width, 140mm) !important;

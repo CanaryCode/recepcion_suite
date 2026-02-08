@@ -2,20 +2,39 @@
     <!-- VISTA 1: PREPARACIÓN -->
     <div id="impresion-trabajo" class="view-pane">
         <div class="card shadow-sm border-0">
-            <div class="card-header py-3">
+            <div class="card-header py-3 d-flex justify-content-between align-items-center">
                 <h6 class="mb-0 fw-bold text-primary">
-                    <i class="bi bi-clipboard-data me-2"></i>Importar desde Word
+                    <i class="bi bi-clipboard-data me-2"></i>Pasos 1 y 2: Selección y Carga
                 </h6>
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-primary active template-btn" data-type="tarjetero" onclick="window.setTemplateType('tarjetero')">Tarjetero Cliente</button>
+                    <button class="btn btn-outline-primary template-btn" data-type="cocktail" onclick="window.setTemplateType('cocktail')">Invitación Cocktail</button>
+                </div>
             </div>
             <div class="card-body">
+                <!-- Cocktail Specific Metadata -->
+                <div id="cocktail-metadata-section" class="row g-3 mb-4 d-none p-3 bg-light rounded border">
+                    <div class="col-md-4">
+                        <label class="small fw-bold text-muted">Fecha del Cocktail</label>
+                        <input type="date" id="cocktail-fecha" class="form-control">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="small fw-bold text-muted">Hora</label>
+                        <input type="time" id="cocktail-hora" class="form-control">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="small fw-bold text-muted">Lugar de Celebración</label>
+                        <input type="text" id="cocktail-lugar" class="form-control" placeholder="P Ej: Pool Bar o Salón Gala">
+                    </div>
+                </div>
+
                 <p class="small text-muted mb-3">
-                    Pega aquí las filas copiadas directamente de la tabla de Word. El sistema extraerá automáticamente: 
-                    Habitación, Pax, Nombre, Agencia, Fechas y Régimen.
+                    Pega aquí las filas copiadas directamente de la tabla de Word.
                 </p>
                 <textarea id="txtWordData" class="form-control mb-3" rows="12" placeholder="Pega aquí los datos..."></textarea>
                 <div class="d-flex justify-content-end">
                     <button class="btn btn-success fw-bold" id="btnProcesarWord">
-                        <i class="bi bi-magic me-2"></i>Generar Tarjetero
+                        <i class="bi bi-magic me-2"></i>Generar Tarjetas
                     </button>
                 </div>
             </div>
@@ -24,9 +43,44 @@
 
     <!-- VISTA 2: RENDERIZADO TARJETERO -->
     <div id="impresion-tarjetero" class="view-pane d-none">
-        <div class="alert alert-info no-print mb-4 shadow-sm border-0">
-            <i class="bi bi-info-circle-fill me-2"></i>
-            Se han generado <strong id="lblTotalCards">0</strong> tarjetas. Cada una se imprimirá en una hoja independiente.
+        <div class="alert alert-info no-print mb-4 shadow-sm border-0 d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-3">
+                <div>
+                    <i class="bi bi-info-circle-fill me-2"></i>
+                    <strong id="lblTotalCards">0</strong> tarjetas generadas.
+                </div>
+                <div class="vr mx-2"></div>
+                <div id="calibration-bar" class="d-flex align-items-center gap-2 opacity-50" style="pointer-events: none;">
+                    <span class="small fw-bold text-uppercase me-1" id="calib-field-name">Campo: ---</span>
+                    <div class="input-group input-group-sm" style="width: 90px;">
+                        <span class="input-group-text bg-light">X</span>
+                        <input type="number" id="calib-x" class="form-control" step="0.5" oninput="window.updateActiveFieldCoord('x', this.value)">
+                    </div>
+                    <div class="input-group input-group-sm" style="width: 90px;">
+                        <span class="input-group-text bg-light">Y</span>
+                        <input type="number" id="calib-y" class="form-control" step="0.5" oninput="window.updateActiveFieldCoord('y', this.value)">
+                    </div>
+                    <div class="input-group input-group-sm" style="width: 90px;">
+                        <span class="input-group-text bg-light">H</span>
+                        <input type="number" id="calib-h" class="form-control" step="0.5" oninput="window.updateActiveFieldCoord('h', this.value)">
+                    </div>
+                    <div class="input-group input-group-sm" style="width: 90px;">
+                        <span class="input-group-text bg-light">W</span>
+                        <input type="number" id="calib-w" class="form-control" step="0.5" oninput="window.updateActiveFieldCoord('w', this.value)">
+                    </div>
+                    <button class="btn btn-sm btn-light border h-100" onclick="window.resetActiveField()">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </button>
+                </div>
+            </div>
+            <div>
+                <span class="badge bg-light text-dark border me-1">
+                    <i class="bi bi-arrows-move"></i> Arrastra
+                </span>
+                <span class="badge bg-light text-dark border">
+                    <i class="bi bi-pencil"></i> Edita
+                </span>
+            </div>
         </div>
         
         <div id="cards-container" class="print-cards-grid">
@@ -34,49 +88,6 @@
             <div class="text-center p-5 text-muted">
                 <i class="bi bi-printer fs-1 opacity-25 d-block mb-3"></i>
                 <p>No hay tarjetas generadas. Pega los datos en la vista anterior.</p>
-            </div>
-        </div>
-    </div>
-    <!-- VISTA 3: CONFIGURACIÓN DE CAMPOS -->
-    <div id="impresion-config" class="view-pane d-none">
-        <div class="card shadow-sm border-0">
-            <div class="card-header py-3 bg-white">
-                <h6 class="mb-0 fw-bold text-info">
-                    <i class="bi bi-sliders me-2"></i>Calibración Individual de Campos
-                </h6>
-            </div>
-            <div class="card-body">
-                <p class="small text-muted mb-4">
-                    Ajusta la posición exacta (en milímetros) de cada elemento en la tarjeta. 
-                    Los cambios se guardan automáticamente y se aplican a la vista previa y a la impresión.
-                </p>
-                
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle border-top">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Campo</th>
-                                <th style="width: 150px;">Posición X (mm)</th>
-                                <th style="width: 150px;">Posición Y (mm)</th>
-                                <th style="width: 150px;">Altura (mm)</th>
-                                <th class="text-center">Reset</th>
-                            </tr>
-                        </thead>
-                        <tbody id="calib-fields-body">
-                            <!-- JS Render: Filas para nombre, habitacion, pax, regime, entrada, salida, agencia -->
-                        </tbody>
-                    </table>
-                </div>
-
-                <div class="alert alert-light border mt-3 mb-0">
-                    <div class="d-flex align-items-center">
-                        <i class="bi bi-lightbulb-fill text-warning me-3 fs-3"></i>
-                        <div class="small">
-                            <strong>Tip:</strong> El punto (0, 0) es la esquina superior izquierda de la tarjeta. 
-                            Las coordenadas estándar son X=75mm para el bloque derecho.
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
     </div>

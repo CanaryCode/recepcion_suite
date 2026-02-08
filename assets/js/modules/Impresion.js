@@ -9,17 +9,46 @@ import { Ui } from '../core/Ui.js';
  * el renderizado y la orientación horizontal (Landscape) de 14x11cm.
  */
 
-const COORDINATES_DEFAULT = {
-    nombre: { x: 75, y: 12, h: 10, label: "Nombre" },
-    habitacion: { x: 75, y: 25, h: 10, label: "Habitación" },
-    pax: { x: 75, y: 38, h: 10, label: "Reservas" },
-    regime: { x: 75, y: 51, h: 10, label: "Régimen" },
-    entrada: { x: 75, y: 65, h: 10, label: "Llegadas" },
-    salida: { x: 75, y: 78, h: 10, label: "Salida" },
-    agencia: { x: 75, y: 91, h: 5, label: "Agencia" }
+const TEMPLATE_CONFIGS = {
+    tarjetero: {
+        id: 'tarjetero',
+        label: 'Tarjetero Cliente',
+        width: 140,
+        height: 110,
+        coordinates: {
+            nombre: { x: 75, y: 12, h: 10, w: 60, label: "Nombre" },
+            habitacion: { x: 75, y: 25, h: 10, w: 60, label: "Habitación" },
+            pax: { x: 75, y: 38, h: 10, w: 60, label: "Reservas" },
+            regime: { x: 75, y: 51, h: 10, w: 60, label: "Régimen" },
+            entrada: { x: 75, y: 65, h: 10, w: 60, label: "Llegadas" },
+            salida: { x: 75, y: 78, h: 10, w: 60, label: "Salida" },
+            agencia: { x: 75, y: 91, h: 5, w: 60, label: "Agencia" }
+        }
+    },
+    cocktail: {
+        id: 'cocktail',
+        label: 'Invitación Cocktail',
+        width: 165,
+        height: 100,
+        coordinates: {
+            nombre_invitado: { x: 15, y: 40, h: 12, w: 145, label: "Nombre" },
+            hora_cocktail: { x: 74, y: 52, h: 10, w: 15, label: "Hora" },
+            fecha_cocktail: { x: 89, y: 52, h: 10, w: 16, label: "Fecha" },
+            lugar_cocktail: { x: 110, y: 52, h: 10, w: 53, label: "Lugar" }
+        }
+    }
 };
 
-let currentCoordinates = { ...COORDINATES_DEFAULT };
+let currentTemplateId = localStorage.getItem('impresion_current_template_v140') || 'tarjetero';
+let currentCoordinates = { ...TEMPLATE_CONFIGS[currentTemplateId].coordinates };
+let cocktailMetadata = {
+    fecha: '',
+    hora: '',
+    lugar: ''
+};
+let lastParsedData = []; // Store data for session editing
+let dragSubject = null;  // { key, startX, startY, initialX, initialY }
+let activeFieldKey = null; 
 
 export async function inicializarImpresion() {
     if (window.__impresion_v140_initialized) return;
@@ -39,7 +68,7 @@ export async function inicializarImpresion() {
     try {
         loadCoordinates(); 
 
-        const response = await fetch('assets/templates/impresion.html?v=V140_ISOLATED');
+        const response = await fetch(`assets/templates/impresion.html?v=${Date.now()}`);
         if (!response.ok) throw new Error("Plantilla no encontrada");
         root.innerHTML = await response.text();
 
@@ -48,8 +77,7 @@ export async function inicializarImpresion() {
         Ui.setupViewToggle({
             buttons: [
                 { id: 'btnImpresionTrabajo', viewId: 'impresion-trabajo' },
-                { id: 'btnImpresionVista', viewId: 'impresion-tarjetero' },
-                { id: 'btnImpresionConfig', viewId: 'impresion-config' }
+                { id: 'btnImpresionVista', viewId: 'impresion-tarjetero' }
             ]
         });
 
@@ -58,13 +86,33 @@ export async function inicializarImpresion() {
         document.getElementById('nudgeY')?.addEventListener('input', updateGlobalOffsets);
         document.getElementById('btnToggleGuide')?.addEventListener('click', () => toggleSimulatedCard());
         
-        renderCalibrationTable();
+        // Listeners para cocktail metadata
+        document.getElementById('cocktail-fecha')?.addEventListener('input', (e) => { cocktailMetadata.fecha = e.target.value; syncCocktailMetadata(); });
+        document.getElementById('cocktail-hora')?.addEventListener('input', (e) => { cocktailMetadata.hora = e.target.value; syncCocktailMetadata(); });
+        document.getElementById('cocktail-lugar')?.addEventListener('input', (e) => { cocktailMetadata.lugar = e.target.value; syncCocktailMetadata(); });
+        // Initial Metadata from Config
+        const cocktailConfig = APP_CONFIG.HOTEL?.COCKTAIL_CONFIG || { DIA: 5, HORA: '19:00', LUGAR: 'Salón la paz' };
+        cocktailMetadata.hora = cocktailConfig.HORA;
+        cocktailMetadata.lugar = cocktailConfig.LUGAR || 'Salón la paz';
+        // La fecha se calculará dinámicamente al procesar datos
 
-        // Mapeo definitivo al motor de ventana aislada
+        // Initial state
+        syncCocktailMetadata();
+        setTemplateType(currentTemplateId, true);
+
         window.ejecutarImpresionIframe = ejecutarImpresionAislada; 
         
         window.resetCoordinate = resetCoordinate;
         window.updateCoordinateValue = updateCoordinateValue;
+        window.updateActiveFieldCoord = updateActiveFieldCoord;
+        window.resetActiveField = resetActiveField;
+        window.setTemplateType = setTemplateType;
+        window.updateNacionalidad = updateNacionalidad;
+        window.imprimirLote = imprimirLote;
+
+        // Global mouse events for dragging
+        document.addEventListener('mousemove', handleFieldMouseMove);
+        document.addEventListener('mouseup', handleFieldMouseUp);
 
         window.__impresion_v140_initialized = true;
         console.log("%c[Impresion] v1.40 - ISOLATED WINDOW ENGINE LOADED", "color: #ff00ff; font-weight: bold;");
@@ -78,52 +126,22 @@ export async function inicializarImpresion() {
 }
 
 function loadCoordinates() {
-    const saved = localStorage.getItem('impresion_coords_v134'); 
+    const storageKey = `impresion_coords_v140_${currentTemplateId}`;
+    const saved = localStorage.getItem(storageKey); 
     if (saved) {
         try {
             currentCoordinates = JSON.parse(saved);
         } catch (e) {
-            currentCoordinates = JSON.parse(JSON.stringify(COORDINATES_DEFAULT));
+            currentCoordinates = JSON.parse(JSON.stringify(TEMPLATE_CONFIGS[currentTemplateId].coordinates));
         }
     } else {
-        currentCoordinates = JSON.parse(JSON.stringify(COORDINATES_DEFAULT));
+        currentCoordinates = JSON.parse(JSON.stringify(TEMPLATE_CONFIGS[currentTemplateId].coordinates));
     }
 }
 
 function saveCoordinates() {
-    localStorage.setItem('impresion_coords_v134', JSON.stringify(currentCoordinates));
-}
-
-function renderCalibrationTable() {
-    const body = document.getElementById('calib-fields-body');
-    if (!body) return;
-
-    body.innerHTML = '';
-    Object.keys(currentCoordinates).forEach(key => {
-        const field = currentCoordinates[key];
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td class="fw-bold">${field.label}</td>
-            <td>
-                <input type="number" class="form-control form-control-sm" value="${field.x}" step="0.5" 
-                    oninput="window.updateCoordinateValue('${key}', 'x', this.value)">
-            </td>
-            <td>
-                <input type="number" class="form-control form-control-sm" value="${field.y}" step="0.5" 
-                    oninput="window.updateCoordinateValue('${key}', 'y', this.value)">
-            </td>
-            <td>
-                <input type="number" class="form-control form-control-sm" value="${field.h}" step="0.5" 
-                    oninput="window.updateCoordinateValue('${key}', 'h', this.value)">
-            </td>
-            <td class="text-center">
-                <button class="btn btn-sm btn-light border" onclick="window.resetCoordinate('${key}')">
-                    <i class="bi bi-arrow-counterclockwise"></i>
-                </button>
-            </td>
-        `;
-        body.appendChild(tr);
-    });
+    const storageKey = `impresion_coords_v140_${currentTemplateId}`;
+    localStorage.setItem(storageKey, JSON.stringify(currentCoordinates));
 }
 
 function updateCoordinateValue(key, axis, value) {
@@ -135,13 +153,161 @@ function updateCoordinateValue(key, axis, value) {
         if (axis === 'x') el.style.left = value + 'mm';
         if (axis === 'y') el.style.top = value + 'mm';
         if (axis === 'h') el.style.height = value + 'mm';
+        if (axis === 'w') el.style.width = value + 'mm';
     });
+
+    // Sincronizar con la barra de calibración si es el campo activo
+    if (activeFieldKey === key) {
+        const input = document.getElementById(`calib-${axis}`);
+        if (input && document.activeElement !== input) {
+            input.value = currentCoordinates[key][axis];
+        }
+    }
+}
+
+function updateActiveFieldCoord(axis, value) {
+    if (!activeFieldKey) return;
+    updateCoordinateValue(activeFieldKey, axis, value);
+}
+
+function resetActiveField() {
+    if (!activeFieldKey) return;
+    resetCoordinate(activeFieldKey);
+    seleccionarCampo(activeFieldKey); // Refrescar UI
+}
+
+function seleccionarCampo(key) {
+    activeFieldKey = key;
+    const bar = document.getElementById('calibration-bar');
+    const label = document.getElementById('calib-field-name');
+    const inputX = document.getElementById('calib-x');
+    const inputY = document.getElementById('calib-y');
+    const inputH = document.getElementById('calib-h');
+    const inputW = document.getElementById('calib-w');
+
+    if (!bar || !label) return;
+
+    if (key) {
+        bar.classList.remove('opacity-50');
+        bar.style.pointerEvents = 'auto';
+        label.textContent = `Campo: ${currentCoordinates[key].label}`;
+        inputX.value = currentCoordinates[key].x;
+        inputY.value = currentCoordinates[key].y;
+        inputH.value = currentCoordinates[key].h;
+        inputW.value = currentCoordinates[key].w || 50;
+
+        // Resaltar visualmente en el tarjetero
+        document.querySelectorAll('.card-field').forEach(el => el.classList.remove('active-field'));
+        document.querySelectorAll(`.f-${key}`).forEach(el => el.classList.add('active-field'));
+    } else {
+        bar.classList.add('opacity-50');
+        bar.style.pointerEvents = 'none';
+        label.textContent = 'Campo: ---';
+        inputX.value = '';
+        inputY.value = '';
+        inputH.value = '';
+        inputW.value = '';
+        document.querySelectorAll('.card-field').forEach(el => el.classList.remove('active-field'));
+    }
+}
+
+function handleFieldMouseDown(e, key) {
+    const fieldEl = e.currentTarget;
+    const rect = fieldEl.getBoundingClientRect();
+    
+    dragSubject = {
+        key: key,
+        startX: e.clientX,
+        startY: e.clientY,
+        initialX: currentCoordinates[key].x,
+        initialY: currentCoordinates[key].y
+    };
+    
+    seleccionarCampo(key);
+    
+    document.body.style.cursor = 'grabbing';
+    fieldEl.classList.add('dragging');
+    e.preventDefault();
+}
+
+function handleFieldMouseMove(e) {
+    if (!dragSubject) return;
+
+    // Calcular escala real: 140mm es el ancho de la tarjeta
+    const card = document.querySelector('.customer-card');
+    if (!card) return;
+    const pxToMm = TEMPLATE_CONFIGS[currentTemplateId].width / card.offsetWidth;
+
+    const deltaX = (e.clientX - dragSubject.startX) * pxToMm;
+    const deltaY = (e.clientY - dragSubject.startY) * pxToMm;
+
+    const newX = Math.round((dragSubject.initialX + deltaX) * 2) / 2; // 0.5mm step
+    const newY = Math.round((dragSubject.initialY + deltaY) * 2) / 2;
+
+    updateCoordinateValue(dragSubject.key, 'x', newX);
+    updateCoordinateValue(dragSubject.key, 'y', newY);
+}
+
+function handleFieldMouseUp() {
+    if (!dragSubject) return;
+    
+    dragSubject = null;
+    document.body.style.cursor = 'default';
+    document.querySelectorAll('.card-field.dragging').forEach(el => el.classList.remove('dragging'));
+}
+
+function setTemplateType(typeId, silent = false) {
+    if (!TEMPLATE_CONFIGS[typeId]) return;
+    currentTemplateId = typeId;
+    localStorage.setItem('impresion_current_template_v140', typeId);
+    loadCoordinates(); 
+    
+    // UI Updates
+    document.querySelectorAll('.template-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.type === typeId);
+    });
+    
+    // Update CSS Variables for card size
+    const root = document.documentElement;
+    root.style.setProperty('--card-width', `${TEMPLATE_CONFIGS[typeId].width}mm`);
+    root.style.setProperty('--card-height', `${TEMPLATE_CONFIGS[typeId].height}mm`);
+
+    const cocktailSection = document.getElementById('cocktail-metadata-section');
+    if (cocktailSection) {
+        if (typeId === 'cocktail') {
+            cocktailSection.classList.remove('d-none');
+            cocktailSection.style.display = 'flex'; 
+        } else {
+            cocktailSection.classList.add('d-none');
+            cocktailSection.style.display = 'none';
+        }
+    }
+
+    // Mark root with template type for CSS scoping
+    const rootEl = document.getElementById('impresion-v120-root');
+    if (rootEl) rootEl.dataset.template = typeId;
+
+    if (lastParsedData.length > 0) {
+        renderizarTarjetero(lastParsedData);
+    }
+    
+    seleccionarCampo(null);
+    if (!silent) {
+        Ui.showToast(`Cambiado a: ${TEMPLATE_CONFIGS[typeId].label}`);
+    }
+}
+
+
+function updateNacionalidad(index, nac) {
+    if (lastParsedData[index]) {
+        lastParsedData[index].nacionalidad = nac;
+        renderizarTarjetero(lastParsedData); // Re-render for grouping
+    }
 }
 
 function resetCoordinate(key) {
-    currentCoordinates[key] = JSON.parse(JSON.stringify(COORDINATES_DEFAULT[key]));
+    currentCoordinates[key] = JSON.parse(JSON.stringify(TEMPLATE_CONFIGS[currentTemplateId].coordinates[key]));
     saveCoordinates();
-    renderCalibrationTable();
     
     const coords = currentCoordinates[key];
     document.querySelectorAll(`.f-${key}`).forEach(el => {
@@ -150,7 +316,7 @@ function resetCoordinate(key) {
         el.style.height = coords.h + 'mm';
     });
     
-    Ui.showToast(`Reseteado: ${COORDINATES_DEFAULT[key].label}`, "info");
+    Ui.showToast(`Reseteado: ${TEMPLATE_CONFIGS[currentTemplateId].coordinates[key].label}`, "info");
 }
 
 function inyectarEstilosBaseV140() {
@@ -159,35 +325,55 @@ function inyectarEstilosBaseV140() {
     styleTag.id = 'styles-impresion-v140';
     styleTag.innerHTML = `
         .customer-card {
-            width: 140mm !important;
-            height: 110mm !important;
+            width: var(--card-width, 140mm) !important;
+            height: var(--card-height, 110mm) !important;
             background: #ffffff !important;
             border: 1px solid #ddd !important;
             position: relative !important;
             margin: 20px auto !important;
             box-shadow: 0 10px 30px rgba(0,0,0,0.1) !important;
-            font-family: 'Inter', sans-serif !important;
             overflow: hidden !important;
             display: block !important;
         }
         .customer-card.show-guide {
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="140mm" height="110mm"><rect x="0" y="0" width="62mm" height="110mm" fill="%236a9c3b" opacity="0.1"/><line x1="75mm" y1="0" x2="75mm" y2="110mm" stroke="red" opacity="0.2"/></svg>') !important;
-            background-size: cover !important;
+            /* Guía para Tarjetero (Verde a la izquierda) */
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" viewBox="0 0 140 110"><rect x="0" y="0" width="62" height="110" fill="%236a9c3b" opacity="0.1"/><line x1="75" y1="0" x2="75" y2="110" stroke="red" stroke-width="0.5" opacity="0.3"/></svg>') !important;
+            background-size: 100% 100% !important;
+            background-repeat: no-repeat !important;
+        }
+        [data-template="cocktail"] .customer-card.show-guide {
+            /* Guía para Cocktail (Verde abajo) */
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" viewBox="0 0 165 100"><rect x="0" y="80" width="165" height="20" fill="%236a9c3b" opacity="0.1"/><line x1="0" y1="40" x2="165" y2="40" stroke="red" stroke-width="0.2" opacity="0.2"/><line x1="0" y1="52" x2="165" y2="52" stroke="red" stroke-width="0.2" opacity="0.2"/></svg>') !important;
         }
         .precision-container {
-            position: absolute !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100% !important;
-            height: 100% !important;
-            pointer-events: none !important;
+            position: relative;
+            width: 100%;
+            height: 100%;
         }
         .card-field {
-            position: absolute !important;
-            display: flex !important;
-            align-items: center !important;
-            white-space: nowrap !important;
-            overflow: hidden !important;
+            position: absolute;
+            cursor: grab;
+            display: flex;
+            align-items: center;
+            border: 1px dashed transparent;
+            padding: 0 4px;
+            user-select: none;
+            overflow: hidden;
+        }
+        .card-field:hover {
+            border-color: rgba(0,123,255,0.3) !important;
+            background: rgba(0,123,255,0.05) !important;
+        }
+        .card-field.dragging {
+            cursor: grabbing !important;
+            border-color: #007bff !important;
+            background: rgba(0,123,255,0.1) !important;
+            z-index: 100 !important;
+        }
+        .card-field.active-field {
+            border-color: #fbc02d !important;
+            background: rgba(251, 192, 45, 0.1) !important;
+            box-shadow: 0 0 8px rgba(251, 192, 45, 0.3) !important;
         }
         .field-label {
             font-size: 7.5pt !important;
@@ -201,12 +387,50 @@ function inyectarEstilosBaseV140() {
             text-transform: uppercase !important;
         }
         .field-value {
-            font-size: 13pt !important;
+            font-size: 13pt;
             font-weight: 800 !important;
             color: #000 !important;
             text-transform: uppercase !important;
             display: inline-block !important;
+            white-space: nowrap !important;
+            outline: none !important;
+            min-width: 10px !important;
+            cursor: text !important;
+            user-select: text !important;
         }
+        .field-value:focus {
+            background: #fff9c4 !important;
+            box-shadow: 0 0 0 2px #fbc02d !important;
+            border-radius: 2px !important;
+        }
+        .nac-selector {
+            position: absolute !important;
+            top: 5px !important;
+            right: 5px !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 2px !important;
+            z-index: 10 !important;
+        }
+        .nac-btn {
+            padding: 2px 6px !important;
+            font-size: 0.65rem !important;
+            font-weight: bold !important;
+            border: 1px solid #ddd !important;
+            border-radius: 3px !important;
+            background: white !important;
+            cursor: pointer !important;
+            transition: all 0.2s !important;
+            color: #666 !important;
+        }
+        .nac-btn.active {
+            color: white !important;
+            border-color: transparent !important;
+        }
+        .nac-btn[data-nac="ES"].active { background: #dc3545 !important; }
+        .nac-btn[data-nac="DE"].active { background: #ffc107 !important; color: black !important; }
+        .nac-btn[data-nac="UK"].active { background: #0d6efd !important; }
+        .nac-btn[data-nac="FR"].active { background: #0dcaf0 !important; }
     `;
     document.head.appendChild(styleTag);
 }
@@ -247,7 +471,9 @@ function procesarDatosWord() {
                 habitacion: "",
                 pax: "1",
                 regime: "HD",
-                agencia: "DIRECTO"
+                agencia: "DIRECTO",
+                nacionalidad: "UK", // Default UK (Inglesa)
+                nacionalidadCierta: false // Marcar como incierta por defecto
             };
 
             const lastDateIdx = line.lastIndexOf(dates[dates.length - 1]);
@@ -277,7 +503,17 @@ function procesarDatosWord() {
                     entry.nombre = nameCandidates.find(c => c.includes(" ")) || nameCandidates[0];
                 }
                 const agencyCandidate = parts.find(p => p !== entry.nombre && ["EXPEDIA", "BOOKING", "TUI", "JET2", "MTS", "HOTELBEDS", "VECI", "DIR"].some(kw => p.toUpperCase().includes(kw)));
-                if (agencyCandidate) entry.agencia = agencyCandidate.substring(0, 15);
+                if (agencyCandidate) {
+                    const agencyUpper = agencyCandidate.toUpperCase();
+                    entry.agencia = agencyCandidate.substring(0, 15);
+
+                    // Lógica de Nacionalidad automática
+                    const toLists = APP_CONFIG.HOTEL?.TO_LISTS || { ES: [], DE: [], FR: [], UK: [] };
+                    if (toLists.DE.some(kw => agencyUpper.includes(kw))) { entry.nacionalidad = 'DE'; entry.nacionalidadCierta = true; }
+                    else if (toLists.ES.some(kw => agencyUpper.includes(kw))) { entry.nacionalidad = 'ES'; entry.nacionalidadCierta = true; }
+                    else if (toLists.FR.some(kw => agencyUpper.includes(kw))) { entry.nacionalidad = 'FR'; entry.nacionalidadCierta = true; }
+                    else if (toLists.UK.some(kw => agencyUpper.includes(kw))) { entry.nacionalidad = 'UK'; entry.nacionalidadCierta = true; }
+                }
             }
             parsedData.push(entry);
         }
@@ -289,7 +525,57 @@ function procesarDatosWord() {
     }
 
     renderizarTarjetero(parsedData);
+    lastParsedData = parsedData;
+
+    // Si es Cocktail y tenemos fecha de entrada, promediar/determinar la del primer cliente
+    if (currentTemplateId === 'cocktail' && parsedData.length > 0) {
+        autoCalcularFechaCocktail(parsedData[0].entrada);
+    }
+
     document.getElementById('btnImpresionVista')?.click();
+}
+
+function syncCocktailMetadata() {
+    // Si estamos en cocktail, refrescar el tarjetero preview para ver cambios de meta
+    if (currentTemplateId === 'cocktail' && lastParsedData.length > 0) {
+        renderizarTarjetero(lastParsedData);
+    }
+}
+
+function autoCalcularFechaCocktail(fechaEntradaStr) {
+    if (!fechaEntradaStr) return;
+    
+    // Intentar parsear fecha (DD/MM/YYYY o DD.MM.YY)
+    const parts = fechaEntradaStr.split(/[\.\/\-]/);
+    if (parts.length < 2) return;
+    
+    let day = parseInt(parts[0]);
+    let month = parseInt(parts[1]) - 1;
+    let year = parts[2] ? (parts[2].length === 2 ? 2000 + parseInt(parts[2]) : parseInt(parts[2])) : new Date().getFullYear();
+    
+    const fechaBase = new Date(year, month, day);
+    if (isNaN(fechaBase.getTime())) return;
+
+    const cocktailConfig = APP_CONFIG.HOTEL?.COCKTAIL_CONFIG || { DIA: 5, HORA: '19:00' };
+    const proximoDia = calcularProximoDia(fechaBase, cocktailConfig.DIA);
+    
+    // Formato YYYY-MM-DD para el input date
+    const yyyy = proximoDia.getFullYear();
+    const mm = String(proximoDia.getMonth() + 1).padStart(2, '0');
+    const dd = String(proximoDia.getDate()).padStart(2, '0');
+    
+    cocktailMetadata.fecha = `${yyyy}-${mm}-${dd}`;
+    
+    const inputFecha = document.getElementById('cocktail-fecha');
+    if (inputFecha) inputFecha.value = cocktailMetadata.fecha;
+    
+    const inputHora = document.getElementById('cocktail-hora');
+    if (inputHora) inputHora.value = cocktailMetadata.hora;
+    
+    const inputLugar = document.getElementById('cocktail-lugar');
+    if (inputLugar) inputLugar.value = cocktailMetadata.lugar;
+    
+    syncCocktailMetadata();
 }
 
 function renderizarTarjetero(data) {
@@ -300,90 +586,245 @@ function renderizarTarjetero(data) {
     container.innerHTML = '';
     lblTotal.textContent = data.length;
 
-    data.forEach(item => {
+    // Si es Cocktail, mostrar controles de lotes por nacionalidad
+    if (currentTemplateId === 'cocktail') {
+        renderControlesLotes(data);
+    }
+
+    data.forEach((item, index) => {
         const div = document.createElement('div');
         div.className = 'customer-card';
+        div.dataset.index = index;
         
-        let fieldsHtml = '';
-        Object.keys(currentCoordinates).forEach(key => {
-            const coords = currentCoordinates[key];
-            const value = item[key] || '';
-            if (value) {
-                fieldsHtml += `
-                    <div class="card-field f-${key}" style="left: ${coords.x}mm; top: ${coords.y}mm; height: ${coords.h}mm; width: calc(140mm - ${coords.x}mm);">
-                        <span class="field-label">${coords.label}:</span>
-                        <span class="field-value">${value}</span>
-                    </div>
-                `;
+        const precisionContainer = document.createElement('div');
+        precisionContainer.className = 'precision-container';
+
+        // Determinar coordenadas a usar
+        const coordsToUse = TEMPLATE_CONFIGS[currentTemplateId].coordinates;
+
+        Object.keys(coordsToUse).forEach(key => {
+            const coords = coordsToUse[key];
+            let value = item[key] || '';
+            
+            // Valores especiales para cocktail
+            if (currentTemplateId === 'cocktail') {
+                if (key === 'nombre_invitado') value = item.nombre || '';
+                if (key === 'fecha_cocktail') {
+                    const parts = cocktailMetadata.fecha.split('-');
+                    value = parts.length === 3 ? `${parts[2]}/${parts[1]}` : cocktailMetadata.fecha;
+                }
+                if (key === 'hora_cocktail') value = cocktailMetadata.hora;
+                if (key === 'lugar_cocktail') value = `"${cocktailMetadata.lugar}"`;
             }
+
+            const fieldWrapper = document.createElement('div');
+            fieldWrapper.className = `card-field f-${key}`;
+            fieldWrapper.style.left = `${coords.x}mm`;
+            fieldWrapper.style.top = `${coords.y}mm`;
+            fieldWrapper.style.height = `${coords.h}mm`;
+            const widthValue = coords.w || (TEMPLATE_CONFIGS[currentTemplateId].width - coords.x);
+            fieldWrapper.style.width = `${widthValue}mm`;
+
+            fieldWrapper.innerHTML = `
+                <span class="field-label">${coords.label}:</span>
+                <span class="field-value" contenteditable="true" data-key="${key}">${value}</span>
+            `;
+
+            fieldWrapper.addEventListener('mousedown', (e) => {
+                if (e.target.classList.contains('field-value')) return;
+                handleFieldMouseDown(e, key);
+            });
+
+            fieldWrapper.addEventListener('click', (e) => {
+                if (e.target.classList.contains('field-value')) return;
+                seleccionarCampo(key);
+            });
+
+            const valEl = fieldWrapper.querySelector('.field-value');
+            
+            // Auto-ajustar fuente después de inyectar en el DOM
+            setTimeout(() => autoAjustarFuente(valEl), 50);
+
+            valEl.addEventListener('input', (e) => {
+                const newValue = e.target.textContent;
+                
+                // Auto-ajustar mientras se escribe
+                autoAjustarFuente(e.target);
+
+                if (currentTemplateId === 'tarjetero') {
+                    data[index][key] = newValue;
+                } else if (key === 'nombre_invitado') {
+                    data[index].nombre = newValue;
+                }
+                autoAjustarFuente(e.target);
+            });
+
+            precisionContainer.appendChild(fieldWrapper);
         });
 
-        div.innerHTML = `<div class="precision-container">${fieldsHtml}</div>`;
+        // Control de Nacionalidad para Cocktail
+        if (currentTemplateId === 'cocktail') {
+            const nacSelector = document.createElement('div');
+            nacSelector.className = 'nac-selector no-print';
+            
+            const nacs = [
+                { id: 'ES', label: 'ES' },
+                { id: 'DE', label: 'DE' },
+                { id: 'UK', label: 'UK' },
+                { id: 'FR', label: 'FR' }
+            ];
+
+            const agencySpan = document.createElement('span');
+            const colorClass = item.nacionalidadCierta ? 'bg-light text-dark border' : 'bg-warning text-dark border-warning shadow-sm';
+            agencySpan.className = `me-2 badge ${colorClass} fw-normal`;
+            agencySpan.style.fontSize = '0.6rem';
+            agencySpan.textContent = item.agencia || 'DIRECTO';
+            if (!item.nacionalidadCierta) agencySpan.title = "Nacionalidad incierta (por defecto UK). Por favor revisa.";
+            nacSelector.appendChild(agencySpan);
+            
+            nacs.forEach(n => {
+                const btn = document.createElement('button');
+                btn.className = `nac-btn ${item.nacionalidad === n.id ? 'active' : ''}`;
+                btn.dataset.nac = n.id;
+                btn.textContent = n.label;
+                btn.onclick = () => window.updateNacionalidad(index, n.id);
+                nacSelector.appendChild(btn);
+            });
+            div.appendChild(nacSelector);
+        }
+
+        div.appendChild(precisionContainer);
         container.appendChild(div);
 
         setTimeout(() => {
-            div.querySelectorAll('.field-value').forEach(el => {
-                const maxWidth = el.parentElement.offsetWidth - 5;
-                let size = 13;
-                el.style.fontSize = size + 'pt';
-                while (el.scrollWidth > maxWidth && size > 6) {
-                    size -= 0.5;
-                    el.style.fontSize = size + 'pt';
-                }
-            });
+            div.querySelectorAll('.field-value').forEach(el => autoAjustarFuente(el));
         }, 10);
     });
 
-    Ui.showToast(`${data.length} tarjetas generadas.`);
     updateGlobalOffsets();
 }
 
-/**
- * MOTOR DE IMPRESIÓN AISLADA v1.40
- * Abre una nueva ventana para evitar contaminación de CSS de la APP
- * y forzar la orientación horizontal.
- */
-function ejecutarImpresionAislada() {
+function renderControlesLotes(data) {
     const container = document.getElementById('cards-container');
-    if (!container || container.children.length === 0) {
+    const lotesDiv = document.createElement('div');
+    lotesDiv.className = 'w-100 mb-4 no-print d-flex gap-2 justify-content-center p-3 bg-light rounded border';
+    
+    const countNac = (nac) => data.filter(i => i.nacionalidad === nac).length;
+
+    const nacs = [
+        { id: 'ES', label: 'España', btn: 'danger' },
+        { id: 'DE', label: 'Alemania', btn: 'warning' },
+        { id: 'UK', label: 'Inglaterra', btn: 'primary' },
+        { id: 'FR', label: 'Francia', btn: 'info' }
+    ];
+
+    nacs.forEach(n => {
+        const count = countNac(n.id);
+        const btn = document.createElement('button');
+        btn.className = `btn btn-${n.btn} fw-bold`;
+        btn.disabled = count === 0;
+        btn.innerHTML = `<i class="bi bi-printer me-2"></i> ${n.label} (${count})`;
+        btn.onclick = () => imprimirLote(n.id);
+        lotesDiv.appendChild(btn);
+    });
+
+    container.appendChild(lotesDiv);
+}
+
+function imprimirLote(nacId) {
+    const dataToPrint = lastParsedData.filter(i => i.nacionalidad === nacId);
+    if (dataToPrint.length === 0) return;
+    ejecutarImpresionAislada(dataToPrint);
+}
+
+function ejecutarImpresionAislada(forceData = null) {
+    const data = forceData || lastParsedData;
+    if (!data || data.length === 0) {
         Ui.showToast("No hay datos para imprimir", "warning");
         return;
     }
 
     const offX = parseFloat(document.getElementById('nudgeX')?.value || 0);
     const offY = parseFloat(document.getElementById('nudgeY')?.value || 0);
+    const isCenterA4 = document.getElementById('chkCenterA4')?.checked || false;
 
     const cardsHtml = [];
-    document.querySelectorAll('#cards-container .customer-card').forEach(cardEl => {
+    const template = TEMPLATE_CONFIGS[currentTemplateId];
+    const coordsToUse = template.coordinates;
+
+    // A4 Landscape Dimensions
+    const A4_WIDTH = 297;
+    const A4_HEIGHT = 210;
+    
+    // Calculate auto-center offset if enabled
+    let finalOffX = offX;
+    let finalOffY = offY;
+    let finalPageSize = `${template.width}mm ${template.height}mm landscape`;
+    let containerWidth = template.width;
+    let containerHeight = template.height;
+
+    if (isCenterA4) {
+        // Centrar horizontalmente: (Ancho A4 - Ancho Tarjeta) / 2
+        const autoOffX = (A4_WIDTH - template.width) / 2;
+        finalOffX += autoOffX;
+        finalPageSize = "A4 landscape";
+        containerWidth = A4_WIDTH;
+        containerHeight = A4_HEIGHT;
+        console.log(`[Print] Centering Mode Active. AutoX: ${autoOffX}mm + NudgeX: ${offX}mm`);
+    }
+
+    data.forEach(item => {
         let fields = '';
-        cardEl.querySelectorAll('.card-field').forEach(fieldEl => {
-            const valEl = fieldEl.querySelector('.field-value');
-            const key = Array.from(fieldEl.classList).find(c => c.startsWith('f-')).replace('f-', '');
-            const coords = currentCoordinates[key];
+        Object.keys(coordsToUse).forEach(key => {
+            const coords = coordsToUse[key];
+            let value = item[key] || '';
             
-            if (coords) {
-                fields += `
-                <div style="position: absolute; left: ${coords.x}mm; top: ${coords.y}mm; height: ${coords.h}mm; width: calc(140mm - ${coords.x}mm); display: flex; align-items: center; white-space: nowrap; overflow: hidden;">
-                    <span style="font-family: Arial, sans-serif; font-weight: bold; color: black; text-transform: uppercase; font-size: ${valEl.style.fontSize || '13pt'}">
-                        ${valEl.textContent}
+            if (currentTemplateId === 'cocktail') {
+                if (key === 'nombre_invitado') value = item.nombre || '';
+                if (key === 'fecha_cocktail') {
+                    const parts = cocktailMetadata.fecha.split('-');
+                    if (parts.length === 3) {
+                        value = `${parts[2]}/${parts[1]}`;
+                    } else {
+                        value = cocktailMetadata.fecha;
+                    }
+                }
+                if (key === 'hora_cocktail') value = cocktailMetadata.hora;
+                if (key === 'lugar_cocktail') value = `"${cocktailMetadata.lugar}"`;
+            }
+
+            const widthValue = coords.w || (template.width - coords.x);
+            
+            // Estimación de fuente para impresión (since we can't measure scrollWidth easily)
+            // 13pt base. Si el texto > ancho disponible, reducimos.
+            const chars = String(value).length;
+            const estimatedWidthMm = chars * 2.5; // Heurística: 2.5mm por carácter en Arial 13pt Bold
+            let fontSize = 13;
+            if (estimatedWidthMm > widthValue) {
+                fontSize = Math.max(6, Math.floor(13 * (widthValue / estimatedWidthMm)));
+            }
+
+            fields += `
+                <div style="position: absolute; left: ${coords.x}mm; top: ${coords.y}mm; height: ${coords.h}mm; width: ${widthValue}mm; display: flex; align-items: center; white-space: nowrap; overflow: hidden;">
+                    <span style="font-family: Arial, sans-serif; font-weight: bold; color: black; text-transform: uppercase; font-size: ${fontSize}pt; line-height: 1;">
+                        ${value}
                     </span>
                 </div>`;
-            }
         });
         
+        // El contenedor de la tarjeta mantiene su tamaño, pero lo movemos dentro del "papel" final
         cardsHtml.push(`
-            <div style="width: 140mm; height: 110mm; page-break-after: always; position: relative; overflow: hidden; background: white;">
-                <div style="position: absolute; top: ${offY}mm; left: ${offX}mm; width: 140mm; height: 110mm;">
+            <div style="width: ${containerWidth}mm; height: ${containerHeight}mm; page-break-after: always; position: relative; overflow: hidden; background: white;">
+                <div style="position: absolute; top: ${finalOffY}mm; left: ${finalOffX}mm; width: ${template.width}mm; height: ${template.height}mm;">
                     ${fields}
                 </div>
             </div>
         `);
     });
 
-    // Abrir ventana aislada
     const printWin = window.open('', '_blank', 'width=800,height=600');
     if (!printWin) {
-        Ui.showToast("El navegador bloqueó la ventana emergente. Activa los pop-ups.", "danger");
+        Ui.showToast("El navegador bloqueó la ventana emergente.", "danger");
         return;
     }
 
@@ -391,36 +832,50 @@ function ejecutarImpresionAislada() {
         <!DOCTYPE html>
         <html>
         <head>
-            <title>Impresión de Tarjetas - Reception Suite</title>
+            <title>Impresión ${TEMPLATE_CONFIGS[currentTemplateId].label}</title>
             <style>
-                @page { 
-                    size: 140mm 110mm landscape; 
-                    margin: 0 !important; 
-                }
-                body { 
-                    margin: 0 !important; 
-                    padding: 0 !important; 
-                    background: white; 
-                }
+                @page { size: ${finalPageSize}; margin: 0; }
+                body { margin: 0; padding: 0; background: white; }
                 * { -webkit-print-color-adjust: exact !important; }
             </style>
         </head>
         <body>
             ${cardsHtml.join('')}
             <script>
-                // Esperar a que todo el contenido se dibuje
                 window.onload = function() {
-                    setTimeout(() => {
-                        window.focus();
-                        window.print();
-                        // Opcional: window.close(); // Cerrar tras imprimir
-                    }, 500);
+                    setTimeout(() => { window.focus(); window.print(); }, 500);
                 };
             </script>
         </body>
         </html>
     `);
     printWin.document.close();
+}
+
+function autoAjustarFuente(el) {
+    const maxWidth = el.parentElement.offsetWidth - 10;
+    let size = 13;
+    el.style.fontSize = size + 'pt';
+    while (el.scrollWidth > maxWidth && size > 6) {
+        size -= 0.5;
+        el.style.fontSize = size + 'pt';
+    }
+}
+
+function calcularProximoDia(fechaBase, diaObjetivo) {
+    const proxima = new Date(fechaBase);
+    const dayOfWeek = proxima.getDay(); // 0-6 (Dom-Sab)
+    
+    // Calculamos los días hasta el objetivo
+    let daysToAdd = (diaObjetivo - dayOfWeek + 7) % 7;
+    
+    // Si la llegada es el mismo día, ¿poner el mismo día o el siguiente de la semana que viene?
+    // User dice "siguiente a la llegada", así que si llega el viernes y el cocktail es el viernes,
+    // quizás sea el mismo día o el siguiente. Asumiremos que si es 0, sumamos 7 para que sea el "siguiente".
+    if (daysToAdd === 0) daysToAdd = 7;
+    
+    proxima.setDate(proxima.getDate() + daysToAdd);
+    return proxima;
 }
 
 window.inicializarImpresion = inicializarImpresion;

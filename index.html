@@ -118,7 +118,7 @@
                             <span data-tooltip="true" data-bs-placement="right" data-bs-title="Reservas de pistas de tenis, gimnasio, etc."><i class="bi bi-calendar-check me-2"></i>Reservas Instalaciones</span>
                         </button></li>
                         <!-- Nuevo Módulo Impresión -->
-                        <li><button class="dropdown-item" id="nav-impresion-tab" data-bs-toggle="tab" data-bs-target="#impresion-content" onclick="import('./assets/js/modules/Impresion.js?v=V131_FINAL').then(m => m.inicializarImpresion())">
+                        <li><button class="dropdown-item" id="nav-impresion-tab" data-bs-toggle="tab" data-bs-target="#impresion-content" onclick="import('./assets/js/modules/Impresion.js?v=V140_MODS').then(m => m.inicializarImpresion())">
                             <span data-tooltip="true" data-bs-placement="right" data-bs-title="Impresión de documentos operativos (Tarjetero, etc.)"><i class="bi bi-printer me-2"></i>Impresión Documentos</span>
                         </button></li>
                         <!-- Nuevo Módulo Vales -->
@@ -2453,9 +2453,6 @@
                         <button class="btn btn-outline-primary" id="btnImpresionVista">
                             <i class="bi bi-eye me-2"></i>Vista Previa Tarjetero
                         </button>
-                        <button class="btn btn-outline-primary" id="btnImpresionConfig">
-                            <i class="bi bi-gear-fill me-2"></i>Calibrar Campos
-                        </button>
                     </div>
 
                     <div class="calibration-controls d-flex gap-2 ms-3 align-items-center">
@@ -2468,7 +2465,11 @@
                             <span class="input-group-text">Y</span>
                             <input type="number" id="nudgeY" class="form-control" value="0" step="0.5">
                         </div>
-                        <button class="btn btn-outline-secondary btn-sm" id="btnToggleGuide">
+                        <div class="form-check form-switch ms-2 d-flex align-items-center">
+                            <input class="form-check-input me-1" type="checkbox" id="chkCenterA4" style="cursor: pointer;">
+                            <label class="form-check-label small fw-bold text-primary mb-0" for="chkCenterA4" style="cursor: pointer;" data-bs-toggle="tooltip" title="Para impresoras con bandeja centrada (Brother). Fuerza tamaño A4 y centra la tarjeta.">Centrar A4</label>
+                        </div>
+                        <button class="btn btn-outline-secondary btn-sm ms-1" id="btnToggleGuide">
                             <i class="bi bi-eye me-1"></i>Guía Visual
                         </button>
                     </div>
@@ -3168,6 +3169,7 @@
                 </div>
             </div>
         </div>
+
 
         <!-- 3. Configuración de Habitaciones -->
         <div class="card mb-4 shadow-sm border-0">

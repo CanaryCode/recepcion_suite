@@ -482,7 +482,7 @@
       </div>
     </div>
 
-    <!-- 2. Hotel & Sistema -->
+    <!-- 2. Hotel y Sistema -->
     <div class="card mb-4 shadow-sm border-0">
       <div class="card-header py-3 bg-white">
         <h6 class="mb-0 fw-bold text-primary">
@@ -549,8 +549,114 @@
                 <i class="bi bi-eye"></i>
               </button>
             </div>
-            <div class="form-text text-muted" style="font-size: 0.75rem">
-              Para funciones sensibles como editar configuracion o borrar datos.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2.5 Ajustes de Impresión / Cocktail -->
+    <div class="card mb-4 shadow-sm border-0">
+        <div class="card-header py-3 bg-white">
+          <h6 class="mb-0 fw-bold text-primary">
+            <i class="bi bi-printer-fill me-2"></i>Automatización Cocktail
+          </h6>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label small fw-bold">Día del Cocktail (Próximo a la llegada)</label>
+              <select id="conf_cocktail_dia" class="form-select">
+                  <option value="1">Lunes</option>
+                  <option value="2">Martes</option>
+                  <option value="3">Miércoles</option>
+                  <option value="4">Jueves</option>
+                  <option value="5">Viernes</option>
+                  <option value="6">Sábado</option>
+                  <option value="0">Domingo</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-bold">Hora Predeterminada</label>
+              <input type="time" id="conf_cocktail_hora" class="form-control" />
+            </div>
+            <div class="col-md-12">
+              <label class="form-label small fw-bold">Lugar Predeterminado</label>
+              <input type="text" id="conf_cocktail_lugar" class="form-control" placeholder="Ej: Salón la paz" />
+            </div>
+          </div>
+        </div>
+    </div>
+
+    <!-- 2.6 Touroperadores por Nacionalidad -->
+    <div class="card mb-4 shadow-sm border-0">
+      <div class="card-header py-3 bg-white">
+        <h6 class="mb-0 fw-bold text-primary">
+          <i class="bi bi-flag-fill me-2"></i>Touroperadores por Nacionalidad (Impresión Cocktail)
+        </h6>
+      </div>
+      <div class="card-body">
+        <p class="small text-muted mb-3">
+          Configura qué touroperadores pertenecen a cada nacionalidad. Los clientes de estos touroperadores se marcarán automáticamente en el módulo de impresión.
+        </p>
+        <div class="row g-3">
+          <!-- Alemanes -->
+          <div class="col-md-6">
+            <div class="p-3 border rounded bg-light bg-opacity-50">
+              <label class="form-label small fw-bold text-warning d-flex align-items-center">
+                <span class="badge bg-warning text-dark me-2">DE</span> Alemanes
+              </label>
+              <div id="list-to-de" class="d-flex flex-wrap gap-2 mb-3"></div>
+              <div class="input-group input-group-sm">
+                <input type="text" id="newToDE" class="form-control" placeholder="Ej: TUI, DERTOUR...">
+                <button class="btn btn-outline-warning" type="button" onclick="addTourOperator('DE')">
+                  <i class="bi bi-plus-lg"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+          <!-- Españoles -->
+          <div class="col-md-6">
+            <div class="p-3 border rounded bg-light bg-opacity-50">
+              <label class="form-label small fw-bold text-danger d-flex align-items-center">
+                <span class="badge bg-danger me-2">ES</span> Españoles
+              </label>
+              <div id="list-to-es" class="d-flex flex-wrap gap-2 mb-3"></div>
+              <div class="input-group input-group-sm">
+                <input type="text" id="newToES" class="form-control" placeholder="Ej: VECI, SOLTOUR...">
+                <button class="btn btn-outline-danger" type="button" onclick="addTourOperator('ES')">
+                  <i class="bi bi-plus-lg"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+          <!-- Franceses -->
+          <div class="col-md-6">
+            <div class="p-3 border rounded bg-light bg-opacity-50">
+              <label class="form-label small fw-bold text-info d-flex align-items-center">
+                <span class="badge bg-info me-2 text-white">FR</span> Franceses
+              </label>
+              <div id="list-to-fr" class="d-flex flex-wrap gap-2 mb-3"></div>
+              <div class="input-group input-group-sm">
+                <input type="text" id="newToFR" class="form-control" placeholder="Ej: THALASSO, FRAM...">
+                <button class="btn btn-outline-info" type="button" onclick="addTourOperator('FR')">
+                  <i class="bi bi-plus-lg"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+          <!-- Ingleses -->
+          <div class="col-md-6">
+            <div class="p-3 border rounded bg-light bg-opacity-50">
+              <label class="form-label small fw-bold text-primary d-flex align-items-center">
+                <span class="badge bg-primary me-2">UK</span> Ingleses (Default)
+              </label>
+              <div id="list-to-uk" class="d-flex flex-wrap gap-2 mb-3"></div>
+              <div class="input-group input-group-sm">
+                <input type="text" id="newToUK" class="form-control" placeholder="Ej: JET2, EASYJET...">
+                <button class="btn btn-outline-primary" type="button" onclick="addTourOperator('UK')">
+                  <i class="bi bi-plus-lg"></i>
+                </button>
+              </div>
             </div>
           </div>
         </div>

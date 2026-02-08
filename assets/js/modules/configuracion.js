@@ -45,6 +45,9 @@ export const Configurator = {
         Utils.setVal('conf_gallery_path', tempConfig.SYSTEM?.GALLERY_PATH || 'assets/gallery');
         Utils.setVal('conf_sync_interval', tempConfig.SYSTEM?.SYNC_INTERVAL || 10000);
         Utils.setVal('configSpotifyUrl', tempConfig.HOTEL?.SPOTIFY_URL || '');
+        Utils.setVal('conf_cocktail_dia', tempConfig.HOTEL?.COCKTAIL_CONFIG?.DIA !== undefined ? tempConfig.HOTEL.COCKTAIL_CONFIG.DIA : 5);
+        Utils.setVal('conf_cocktail_hora', tempConfig.HOTEL?.COCKTAIL_CONFIG?.HORA || '19:00');
+        Utils.setVal('conf_cocktail_lugar', tempConfig.HOTEL?.COCKTAIL_CONFIG?.LUGAR || 'Salón la paz');
 
         // Listas dinámicas
         this.renderRecepcionistas();
@@ -58,6 +61,7 @@ export const Configurator = {
         this.renderFiltros('CARACTERISTICAS', 'list-filtros-carac');
         this.renderExcursionesCatalogo();
         this.renderInstalaciones();
+        this.renderTourOperators();
     },
 
     verificarEstructuras() {
@@ -76,6 +80,8 @@ export const Configurator = {
         if (!tempConfig.AGENDA) tempConfig.AGENDA = { PAISES: [] };
         if (!tempConfig.CAJA) tempConfig.CAJA = { BILLETES: [], MONEDAS: [], FONDO: -2000 };
         if (!tempConfig.COBRO) tempConfig.COBRO = { VALORES: [] };
+        if (!tempConfig.HOTEL.COCKTAIL_CONFIG) tempConfig.HOTEL.COCKTAIL_CONFIG = { DIA: 5, HORA: '19:00', LUGAR: 'Salón la paz' };
+        if (!tempConfig.HOTEL.TO_LISTS) tempConfig.HOTEL.TO_LISTS = { ES: [], DE: [], FR: [], UK: [] };
     },
 
     // --- RENDERERS ---
@@ -268,6 +274,25 @@ export const Configurator = {
         `);
     },
 
+    renderTourOperators() {
+        const nacs = [
+            { id: 'ES', label: 'Españoles', color: 'danger' },
+            { id: 'DE', label: 'Alemanes', color: 'warning' },
+            { id: 'FR', label: 'Franceses', color: 'info' },
+            { id: 'UK', label: 'Ingleses', color: 'primary' }
+        ];
+
+        nacs.forEach(n => {
+            const list = tempConfig.HOTEL.TO_LISTS[n.id] || [];
+            Ui.renderTable(`list-to-${n.id.toLowerCase()}`, list, (to) => `
+                <div class="badge bg-light text-dark border p-2 d-flex align-items-center">
+                    <span class="fs-6 me-2 text-truncate" style="max-width: 150px;">${to}</span>
+                    <button type="button" class="btn-close" style="width: 0.5em; height: 0.5em;" onclick="Configurator.removeTourOperator('${n.id}', '${to}')"></button>
+                </div>
+            `);
+        });
+    },
+
     // --- EVENTOS ---
 
     configurarEventos() {
@@ -288,6 +313,7 @@ export const Configurator = {
         window.addGalleryFolder = () => this.addGalleryFolder();
         window.pickNewGalleryFolder = () => this.pickNewGalleryFolder();
         window.pickGalleryFolder = () => this.pickGalleryFolder();
+        window.addTourOperator = (nac) => this.addTourOperator(nac);
     },
 
     pickGalleryFolder() {
@@ -597,6 +623,24 @@ export const Configurator = {
         }
     },
 
+    addTourOperator(nac) {
+        const input = document.getElementById(`newTo${nac}`);
+        const val = input.value.trim().toUpperCase();
+        if (val && !tempConfig.HOTEL.TO_LISTS[nac].includes(val)) {
+            tempConfig.HOTEL.TO_LISTS[nac].push(val);
+            this.renderTourOperators();
+            input.value = '';
+            input.focus();
+        }
+    },
+
+    async removeTourOperator(nac, val) {
+        if (await Ui.showConfirm(`¿Eliminar "${val}" de la lista de ${nac}?`)) {
+            tempConfig.HOTEL.TO_LISTS[nac] = tempConfig.HOTEL.TO_LISTS[nac].filter(t => t !== val);
+            this.renderTourOperators();
+        }
+    },
+
     async removeFilter(type, val) {
         if (await Ui.showConfirm(`¿Eliminar el filtro "${val}"?`)) {
             tempConfig.HOTEL.STATS_CONFIG.FILTROS[type] = tempConfig.HOTEL.STATS_CONFIG.FILTROS[type].filter(item => (item.label || item) !== val);
@@ -702,6 +746,11 @@ export const Configurator = {
             tempConfig.SYSTEM.SYNC_INTERVAL = parseInt(document.getElementById('conf_sync_interval').value) || 10000;
             tempConfig.HOTEL.SPOTIFY_URL = document.getElementById('configSpotifyUrl').value;
             
+            if (!tempConfig.HOTEL.COCKTAIL_CONFIG) tempConfig.HOTEL.COCKTAIL_CONFIG = {};
+            tempConfig.HOTEL.COCKTAIL_CONFIG.DIA = parseInt(document.getElementById('conf_cocktail_dia').value);
+            tempConfig.HOTEL.COCKTAIL_CONFIG.HORA = document.getElementById('conf_cocktail_hora').value;
+            tempConfig.HOTEL.COCKTAIL_CONFIG.LUGAR = document.getElementById('conf_cocktail_lugar').value;
+
             await configService.saveConfig(tempConfig);
             Ui.showToast("Configuración guardada correctamente.", "success");
             setTimeout(() => location.reload(), 1500);

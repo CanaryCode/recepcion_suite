@@ -390,7 +390,22 @@
                 "icono": "calendar"
             }
         ],
-        "SPOTIFY_URL": "https://open.spotify.com/playlist/6lzmVNCUx1xrLWhpeuLH12?si=UqkrF82qTsqu8XbqECtKnw"
+        "SPOTIFY_URL": "https://open.spotify.com/playlist/6lzmVNCUx1xrLWhpeuLH12?si=UqkrF82qTsqu8XbqECtKnw",
+        "COCKTAIL_CONFIG": {
+            "DIA": 5,
+            "HORA": "12:15",
+            "LUGAR": "LA ÑAMERA"
+        },
+        "TO_LISTS": {
+            "ES": [],
+            "DE": [
+                "TUI DEUTSCHLAND GMBH"
+            ],
+            "FR": [],
+            "UK": [
+                "TUI UK"
+            ]
+        }
     },
     "AGENDA": {
         "PAISES": [

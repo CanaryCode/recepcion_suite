@@ -11,7 +11,10 @@ export const APP_CONFIG = {
         GALLERY_PATH: 'assets/gallery',
         LAUNCHERS: []
     },
-    HOTEL: { RECEPCIONISTAS: [] }
+    HOTEL: { 
+        RECEPCIONISTAS: [],
+        TO_LISTS: { ES: [], DE: [], FR: [], UK: [] }
+    }
 };
 
 export const Config = {

@@ -5,36 +5,12 @@
         "API_URL": "/api",
         "SYNC_INTERVAL": 10000,
         "LAUNCHERS": [
-            {
-                "label": "SIHOT",
-                "path": "",
-                "icon": "display"
-            },
-            {
-                "label": "ALTA RIU",
-                "path": "",
-                "icon": "house"
-            },
-            {
-                "label": "GESTATUR",
-                "path": "",
-                "icon": "receipt"
-            },
-            {
-                "label": "SUPREMO",
-                "path": "",
-                "icon": "tablet"
-            },
-            {
-                "label": "ATLANTICO EXCURSIONES",
-                "path": "",
-                "icon": "camera"
-            },
-            {
-                "label": "EXTRANET RIU",
-                "path": "",
-                "icon": "globe"
-            },
+            { "label": "SIHOT", "path": "", "icon": "display" },
+            { "label": "ALTA RIU", "path": "", "icon": "house" },
+            { "label": "GESTATUR", "path": "", "icon": "receipt" },
+            { "label": "SUPREMO", "path": "", "icon": "tablet" },
+            { "label": "ATLANTICO EXCURSIONES", "path": "", "icon": "camera" },
+            { "label": "EXTRANET RIU", "path": "", "icon": "globe" },
             {
                 "label": "Aeropuerto norte",
                 "path": "https://www.google.com/maps/search/?api=1&query=Aeropuerto+Tenerife+Norte&query_place_id=ChIJbx3s_vTNQQwReLBTc3mRXBw",
@@ -245,6 +221,34 @@
                 "icon": "video",
                 "type": "video",
                 "embedded": true
+            },
+            {
+                "label": "RECEPCIÓN",
+                "path": "Z:\\RECEPCIÓN",
+                "icon": "briefcase",
+                "type": "folder",
+                "embedded": false
+            },
+            {
+                "label": "BOOKING MENSUAL PARA DEPARTAMENTOS",
+                "path": "Z:\\BOOKING MENSUAL PARA DEPARTAMENTOS",
+                "icon": "briefcase",
+                "type": "folder",
+                "embedded": false
+            },
+            {
+                "label": "FICHA POLICIA",
+                "path": "Z:\\FICHA POLICIA",
+                "icon": "briefcase",
+                "type": "folder",
+                "embedded": false
+            },
+            {
+                "label": "RECEPCIÓN (Docs)",
+                "path": "Z:\\RECEPCIÓN",
+                "icon": "clipboard-data",
+                "type": "documentos",
+                "embedded": false
             }
         ],
         "GALLERY_PATH": "C:/Users/usuario/Desktop/ANTONIO/RECURSOS/INFORMACIÓN",
@@ -271,122 +275,41 @@
         ],
         "STATS_CONFIG": {
             "RANGOS": [
-                {
-                    "planta": 0,
-                    "min": 10,
-                    "max": 28
-                },
-                {
-                    "planta": 1,
-                    "min": 101,
-                    "max": 153
-                },
-                {
-                    "planta": 2,
-                    "min": 201,
-                    "max": 253
-                },
-                {
-                    "planta": 3,
-                    "min": 301,
-                    "max": 349
-                },
-                {
-                    "planta": 4,
-                    "min": 401,
-                    "max": 416
-                }
+                { "planta": 0, "min": 10, "max": 28 },
+                { "planta": 1, "min": 101, "max": 153 },
+                { "planta": 2, "min": 201, "max": 253 },
+                { "planta": 3, "min": 301, "max": 349 },
+                { "planta": 4, "min": 401, "max": 416 }
             ],
             "FILTROS": {
                 "TIPOS": [
-                    {
-                        "label": "Estándar",
-                        "icon": "🛏️"
-                    },
-                    {
-                        "label": "Doble Superior",
-                        "icon": "🌟"
-                    },
-                    {
-                        "label": "Suite Estándar",
-                        "icon": "🛋️"
-                    },
-                    {
-                        "label": "Master Suite",
-                        "icon": "👑"
-                    }
+                    { "label": "Estándar", "icon": "🛏️" },
+                    { "label": "Doble Superior", "icon": "🌟" },
+                    { "label": "Suite Estándar", "icon": "🛋️" },
+                    { "label": "Master Suite", "icon": "👑" }
                 ],
                 "VISTAS": [
-                    {
-                        "label": "Vista Mar",
-                        "icon": "🌊"
-                    },
-                    {
-                        "label": "Vista Piscina",
-                        "icon": "🏊"
-                    },
-                    {
-                        "label": "Vista Calle",
-                        "icon": "🏙️"
-                    }
+                    { "label": "Vista Mar", "icon": "🌊" },
+                    { "label": "Vista Piscina", "icon": "🏊" },
+                    { "label": "Vista Calle", "icon": "🏙️" }
                 ],
                 "CARACTERISTICAS": [
-                    {
-                        "label": "Sofá Cama",
-                        "icon": "🛋️"
-                    },
-                    {
-                        "label": "Cheslong",
-                        "icon": "🛋️"
-                    },
-                    {
-                        "label": "Sofá Estándar",
-                        "icon": "🛋️"
-                    },
-                    {
-                        "label": "Adaptada",
-                        "icon": "♿"
-                    },
-                    {
-                        "label": "Comunicada",
-                        "icon": "↔️"
-                    },
-                    {
-                        "label": "Ruidosa",
-                        "icon": "🔊"
-                    },
-                    {
-                        "label": "Tranquila",
-                        "icon": "🔇"
-                    }
+                    { "label": "Sofá Cama", "icon": "🛋️" },
+                    { "label": "Cheslong", "icon": "🛋️" },
+                    { "label": "Sofá Estándar", "icon": "🛋️" },
+                    { "label": "Adaptada", "icon": "♿" },
+                    { "label": "Comunicada", "icon": "↔️" },
+                    { "label": "Ruidosa", "icon": "🔊" },
+                    { "label": "Tranquila", "icon": "🔇" }
                 ]
             }
         },
         "RECEPCIONISTAS": [
-            "Pavel",
-            "Javi",
-            "Anadelia",
-            "Marta",
-            "Carmen",
-            "Alberto",
-            "Nerea",
-            "Emiliano",
-            "Domingo",
-            "Antonio"
+            "Pavel", "Javi", "Anadelia", "Marta", "Carmen", "Alberto", "Nerea", "Emiliano", "Domingo", "Antonio"
         ],
         "INSTALACIONES": [
-            {
-                "nombre": "Cancha de tennis",
-                "apertura": "08:00",
-                "cierre": "18:00",
-                "icono": "🏠"
-            },
-            {
-                "nombre": "Cancha de squash",
-                "apertura": "08:00",
-                "cierre": "18:00",
-                "icono": "calendar"
-            }
+            { "nombre": "Cancha de tennis", "apertura": "08:00", "cierre": "18:00", "icono": "🏠" },
+            { "nombre": "Cancha de squash", "apertura": "08:00", "cierre": "18:00", "icono": "calendar" }
         ],
         "SPOTIFY_URL": "https://open.spotify.com/playlist/6lzmVNCUx1xrLWhpeuLH12?si=UqkrF82qTsqu8XbqECtKnw",
         "COCKTAIL_CONFIG": {
@@ -396,128 +319,38 @@
         },
         "TO_LISTS": {
             "ES": [],
-            "DE": [
-                "TUI DEUTSCHLAND GMBH"
-            ],
+            "DE": [ "TUI DEUTSCHLAND GMBH" ],
             "FR": [],
-            "UK": [
-                "TUI UK"
-            ]
+            "UK": [ "TUI UK" ]
         }
     },
     "AGENDA": {
         "PAISES": [
-            {
-                "c": "+34",
-                "n": "España",
-                "f": "🇪🇸"
-            },
-            {
-                "c": "+49",
-                "n": "Alemania",
-                "f": "🇩🇪"
-            },
-            {
-                "c": "+44",
-                "n": "Reino Unido",
-                "f": "🇬🇧"
-            },
-            {
-                "c": "+33",
-                "n": "Francia",
-                "f": "🇫🇷"
-            },
-            {
-                "c": "+39",
-                "n": "Italia",
-                "f": "🇮🇹"
-            },
-            {
-                "c": "+351",
-                "n": "Portugal",
-                "f": "🇵🇹"
-            },
-            {
-                "c": "+1",
-                "n": "EE.UU.",
-                "f": "🇺🇸"
-            },
-            {
-                "c": "+52",
-                "n": "México",
-                "f": "🇲🇽"
-            }
+            { "c": "+34", "n": "España", "f": "🇪🇸" },
+            { "c": "+49", "n": "Alemania", "f": "🇩🇪" },
+            { "c": "+44", "n": "Reino Unido", "f": "🇬🇧" },
+            { "c": "+33", "n": "Francia", "f": "🇫🇷" },
+            { "c": "+39", "n": "Italia", "f": "🇮🇹" },
+            { "c": "+351", "n": "Portugal", "f": "🇵🇹" },
+            { "c": "+1", "n": "EE.UU.", "f": "🇺🇸" },
+            { "c": "+52", "n": "México", "f": "🇲🇽" }
         ]
     },
     "NOVEDADES": {
         "DEPARTAMENTOS": [
-            "Servicio Técnico",
-            "Recepción",
-            "Cocina",
-            "Administración",
-            "Dirección",
-            "Economato",
-            "Vigilancia",
-            "Bar Hall",
-            "Bar Piscina",
-            "Alimentación y Bebidas",
-            "Restaurante",
-            "Pisos",
-            "Jardinería",
-            "Propiedad",
-            "Externo"
+            "Servicio Técnico", "Recepción", "Cocina", "Administración", "Dirección", "Economato", "Vigilancia", "Bar Hall", "Bar Piscina", "Alimentación y Bebidas", "Restaurante", "Pisos", "Jardinería", "Propiedad", "Externo"
         ]
     },
     "CAJA": {
-        "BILLETES": [
-            500,
-            200,
-            100,
-            50,
-            20,
-            10,
-            5
-        ],
-        "MONEDAS": [
-            2,
-            1,
-            0.5,
-            0.2,
-            0.1,
-            0.05,
-            0.02,
-            0.01
-        ],
+        "BILLETES": [ 500, 200, 100, 50, 20, 10, 5 ],
+        "MONEDAS": [ 2, 1, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01 ],
         "FONDO": -2000
     },
     "COBRO": {
-        "VALORES": [
-            500,
-            200,
-            100,
-            50,
-            20,
-            10,
-            5,
-            2,
-            1,
-            0.5,
-            0.2,
-            0.1,
-            0.05,
-            0.02,
-            0.01
-        ]
+        "VALORES": [ 500, 200, 100, 50, 20, 10, 5, 2, 1, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01 ]
     },
-    "SAFE": {
-        "PRECIO_DIARIO": 2
-    },
-    "TRANSFERS": {
-        "DESTINOS": [
-            "Aeropuerto Norte",
-            "Aeropuerto Sur"
-        ]
-    },
+    "SAFE": { "PRECIO_DIARIO": 2 },
+    "TRANSFERS": { "DESTINOS": [ "Aeropuerto Norte", "Aeropuerto Sur" ] },
     "EXCURSIONES_CATALOGO": [
         {
             "id": "CAT-1769894964475",

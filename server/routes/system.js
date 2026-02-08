@@ -287,11 +287,18 @@ async function scanDirectoryRecursive(dirPath, extensions, maxDepth = 5, current
             } else if (dirent.isFile() || dirent.isSymbolicLink()) {
                 const ext = path.extname(dirent.name).toLowerCase();
                 if (extensions.includes(ext)) {
+                    let mtime = new Date(0);
+                    try {
+                        const stats = await fs.stat(fullPath);
+                        mtime = stats.mtime;
+                    } catch (e) {}
+
                     results.push({
                         label: dirent.name,
                         path: fullPath,
                         type: 'documentos',
-                        icon: 'file-earmark-text'
+                        icon: 'file-earmark-text',
+                        mtime: mtime.toISOString()
                     });
                 }
             }

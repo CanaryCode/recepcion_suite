@@ -389,6 +389,13 @@ window.renderLaunchPad = async (query = '', filter = 'app', target = 'modal') =>
                 
                 if (data && data.documents) {
                     aggregatedItems = [...aggregatedItems, ...data.documents];
+                    
+                    // Ordenar documentos por fecha de modificación (más recientes primero)
+                    aggregatedItems.sort((a, b) => {
+                        const dateA = new Date(a.mtime || 0);
+                        const dateB = new Date(b.mtime || 0);
+                        return dateB - dateA;
+                    });
                 }
             } catch (err) { 
                 console.error("Error scan:", err); 
@@ -517,6 +524,13 @@ window.launchExternalApp = async (command, type = 'app', label = '', embedded = 
         } else {
             window.open(command, '_blank');
         }
+        return;
+    }
+
+    // Validación para evitar errores 400 por comandos vacíos
+    if (!command || command.trim() === "") {
+        console.warn(`[Launcher] Intento de lanzar comando vacío para: "${label}"`);
+        Ui.showToast(`El lanzador "${label}" no tiene una ruta configurada.`, "warning");
         return;
     }
 

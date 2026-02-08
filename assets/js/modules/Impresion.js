@@ -58,7 +58,7 @@ export async function inicializarImpresion() {
         const tab = document.getElementById('impresion-content');
         if (tab) {
             root = document.createElement('div');
-            root.id = 'impresion-v120-root';
+            root.id = 'impresion-root';
             tab.appendChild(root);
         }
     }

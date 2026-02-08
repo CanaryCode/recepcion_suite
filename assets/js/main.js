@@ -467,19 +467,30 @@ function renderGridItems(container, items, query = '', append = false) {
         if (isFolder) iconColor = 'text-warning';
         if (app.type === 'maps') iconColor = 'text-danger';
         if (isUrl && app.type !== 'maps') iconColor = 'text-success';
-        if (isDoc) iconColor = 'text-info';
         if (isVideo) iconColor = 'text-danger';
         if (isSpotify) iconColor = 'text-success';
 
         const defaultIcon = isFolder ? 'folder-fill' : (app.type === 'maps' ? 'geo-alt-fill' : (isUrl ? 'globe-americas' : (isDoc ? 'file-earmark-text' : (isSpotify ? 'spotify' : 'app'))));
-
         let specificIcon = app.icon || defaultIcon;
-        if (isDoc && app.path && !app.icon) {
-            const ext = app.path.split('.').pop().toLowerCase();
-            if (ext === 'pdf') specificIcon = 'file-earmark-pdf';
-            if (ext === 'doc' || ext === 'docx' || ext === 'odt') specificIcon = 'file-earmark-word';
-            if (ext === 'xls' || ext === 'xlsx') specificIcon = 'file-earmark-excel';
-            if (ext === 'txt' || ext === 'rtf') specificIcon = 'file-earmark-font';
+
+        // LÓGICA DE ICONOS Y COLORES PARA DOCUMENTOS
+        if (isDoc) {
+            const pathForExt = (app.path || '').toLowerCase();
+            if (pathForExt.endsWith('.pdf')) {
+                iconColor = 'text-danger'; // Rojo para PDF
+                specificIcon = 'file-earmark-pdf';
+            } else if (pathForExt.match(/\.(doc|docx|odt|rtf)$/)) {
+                iconColor = 'text-primary'; // Azul para Word
+                specificIcon = 'file-earmark-word';
+            } else if (pathForExt.match(/\.(xls|xlsx)$/)) {
+                iconColor = 'text-success'; // Verde para Excel
+                specificIcon = 'file-earmark-excel';
+            } else if (pathForExt.endsWith('.txt')) {
+                iconColor = 'text-secondary'; // Gris para Notas
+                specificIcon = 'file-earmark-font';
+            } else {
+                iconColor = 'text-info'; // Color por defecto para otros docs
+            }
         }
 
         let thumbnailHtml = '';

@@ -752,9 +752,9 @@ function ejecutarImpresionAislada(forceData = null) {
     const template = TEMPLATE_CONFIGS[currentTemplateId];
     const coordsToUse = template.coordinates;
 
-    // A4 Landscape Dimensions
-    const A4_WIDTH = 297;
-    const A4_HEIGHT = 210;
+    // A4 Portrait Dimensions (Standard feed 210mm wide)
+    const A4_WIDTH = 210;
+    const A4_HEIGHT = 297;
     
     // Calculate auto-center offset if enabled
     let finalOffX = offX;
@@ -764,10 +764,10 @@ function ejecutarImpresionAislada(forceData = null) {
     let containerHeight = template.height;
 
     if (isCenterA4) {
-        // Centrar horizontalmente: (Ancho A4 - Ancho Tarjeta) / 2
+        // Centrar horizontalmente en Portrait: (210 - Ancho Tarjeta) / 2
         const autoOffX = (A4_WIDTH - template.width) / 2;
         finalOffX += autoOffX;
-        finalPageSize = "A4 landscape";
+        finalPageSize = "A4 portrait";
         containerWidth = A4_WIDTH;
         containerHeight = A4_HEIGHT;
     }

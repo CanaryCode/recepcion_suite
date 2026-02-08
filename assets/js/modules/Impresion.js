@@ -82,9 +82,6 @@ export async function inicializarImpresion() {
         });
 
         document.getElementById('btnProcesarWord')?.addEventListener('click', () => procesarDatosWord());
-        document.getElementById('nudgeX')?.addEventListener('input', updateGlobalOffsets);
-        document.getElementById('nudgeY')?.addEventListener('input', updateGlobalOffsets);
-        document.getElementById('btnToggleGuide')?.addEventListener('click', () => toggleSimulatedCard());
         
         // Listeners para cocktail metadata
         document.getElementById('cocktail-fecha')?.addEventListener('input', (e) => { cocktailMetadata.fecha = e.target.value; syncCocktailMetadata(); });
@@ -435,17 +432,6 @@ function inyectarEstilosBaseV140() {
     document.head.appendChild(styleTag);
 }
 
-function updateGlobalOffsets() {
-    const x = document.getElementById('nudgeX')?.value || 0;
-    const y = document.getElementById('nudgeY')?.value || 0;
-    document.querySelectorAll('.precision-container').forEach(c => {
-        c.style.transform = `translate(${x}mm, ${y}mm)`;
-    });
-}
-
-function toggleSimulatedCard() {
-    document.querySelectorAll('.customer-card').forEach(c => c.classList.toggle('show-guide'));
-}
 
 /**
  * PARSER v1.28
@@ -649,7 +635,7 @@ function renderizarTarjetero(data) {
 
     data.forEach((item, index) => {
         const div = document.createElement('div');
-        div.className = 'customer-card';
+        div.className = 'customer-card show-guide'; // Guía siempre visible
         div.dataset.index = index;
         
         const precisionContainer = document.createElement('div');
@@ -757,7 +743,6 @@ function renderizarTarjetero(data) {
         }, 10);
     });
 
-    updateGlobalOffsets();
 }
 
 function renderControlesLotes(data) {

@@ -131,7 +131,7 @@ function renderAlarmsList() {
         const hB = b.hora || '00:00';
         return hA.localeCompare(hB);
     });
-    console.log(`[UI] Rendering ${alarms.length} alarms:`, alarms);
+
     const renderRow = (a) => {
         let freqBadge = '';
         if (a.type === 'date') {

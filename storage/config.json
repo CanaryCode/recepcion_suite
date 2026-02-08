@@ -240,12 +240,6 @@
                 "type": "documentos"
             },
             {
-                "label": "as",
-                "path": "https://as.com/",
-                "icon": "calendar",
-                "type": "url"
-            },
-            {
                 "label": "Royal Delfín",
                 "path": "https://www.youtube.com/watch?v=1MXizg-PQFI",
                 "icon": "video",
@@ -253,9 +247,13 @@
                 "embedded": true
             }
         ],
-        "GALLERY_PATH": "C:/Users/usuario/Desktop/ANTONIO/RECURSOS/IMAGENES",
+        "GALLERY_PATH": "C:/Users/usuario/Desktop/ANTONIO/RECURSOS/INFORMACIÓN",
         "ADMIN_PASSWORD": "1234",
         "GALLERY_FOLDERS": [
+            {
+                "label": "ESCANER",
+                "path": "Z:\\\\ESCANER"
+            },
             {
                 "label": "DESCARGAS",
                 "path": "C:\\Users\\jesus\\Downloads"

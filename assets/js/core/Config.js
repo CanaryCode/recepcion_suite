@@ -25,8 +25,7 @@ export const Config = {
      */
     loadConfig: async () => {
         try {
-            // FIX: Cargamos desde la API de Almacenamiento
-            console.log("Cargando Config.js v4.2 (Fixed Syntax)..."); 
+// FIX: Cargamos desde la API de Almacenamiento
             const response = await fetch('/api/storage/config?v=' + Date.now()); 
             if (!response.ok) throw new Error("Config not found");
             const data = await response.json();
@@ -61,15 +60,13 @@ export const Config = {
                     
                     const localConfig = JSON.parse(safeOverride);
                     Object.assign(APP_CONFIG, localConfig);
-                    console.log("Config cargada con sobrescrituras de LocalStorage");
                 }
             } catch (e) {
                 console.warn("Error cargando sobrescritura de configuración local (posible SyntaxError):", e);
                 // Limpiar si está corrupto para evitar bucles de error
-                // localStorage.removeItem('app_config_override');
+    // localStorage.removeItem('app_config_override');
             }
             
-            console.log("Configuración del sistema cargada:", APP_CONFIG);
             return true;
         } catch (error) {
             console.error("Crítico: No se pudo cargar config.json", error);

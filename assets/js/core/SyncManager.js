@@ -104,8 +104,6 @@ class SyncManager {
         this.isSyncing = true;
         const queueCopy = [...this.queue]; // Trabajamos sobre una copia por seguridad
 
-        console.log(`[Sync] Subiendo ${queueCopy.length} cambios pendientes...`);
-
         for (const item of queueCopy) {
             try {
                 // Intentamos la subida a través de la API
@@ -114,7 +112,6 @@ class SyncManager {
                 // Si tiene éxito, lo borramos de la cola definitiva
                 this.queue = this.queue.filter(q => q.key !== item.key);
                 this.saveQueue();
-                console.log(`[Sync] Sincronizado con éxito: ${item.key}`);
             } catch (error) {
                 console.error(`[Sync] Error al subir ${item.key}. Se reintentará luego.`, error);
             }

@@ -577,7 +577,6 @@ function calcularCaja() {
         turno: document.getElementById("caja_turno")?.value,
         comentarios: document.getElementById("caja_comentarios_cierre")?.value
       });
-      console.log("[Caja] Metadatos guardados (Debounced).");
   }, 2000);
 }
 

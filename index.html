@@ -39,7 +39,6 @@
     <!-- MÓDULO DE IMPRESIÓN -->
     <link rel="stylesheet" href="assets/css/modules/impresion.css?v=V125_FIX">
     <script>
-        console.log("INDEX.HTML LOADED - V.FINAL_FIX");
     </script>
     <script src="assets/vendor/chart.min.js"></script>
     <!-- Librería para generar PDF directamente -->
@@ -3414,7 +3413,12 @@
             <div class="modal-content border-0">
                 <div class="modal-header bg-dark text-white py-2">
                     <h6 class="modal-title fw-bold" id="webViewerTitle">Visor Web</h6>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="window.stopWebViewer()"></button>
+                    <div class="ms-auto d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-outline-light btn-sm border-0" onclick="window.openExternalWeb()" title="Abrir en nueva ventana">
+                            <i class="bi bi-box-arrow-up-right me-1"></i> Abrir fuera
+                        </button>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="window.stopWebViewer()"></button>
+                    </div>
                 </div>
                 <div class="modal-body p-0 overflow-hidden">
                     <iframe id="webViewerIframe" src="" class="w-100 h-100 border-0"></iframe>
@@ -3430,7 +3434,7 @@
     <!-- Spotify Footer Player (Minimizable) -->
     <div id="spotify-footer-player" class="spotify-footer-player no-print minimized">
         <div class="spotify-player-body">
-            <iframe id="spotify-footer-iframe" src="" width="100%" height="152" frameborder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" style="border-radius:12px"></iframe>
+            <iframe id="spotify-footer-iframe" src="" width="100%" height="152" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" style="border-radius:12px"></iframe>
         </div>
         <button class="spotify-footer-toggle" onclick="toggleSpotifyFooter()">
             <i class="bi bi-spotify me-2"></i> <span id="spotify-toggle-text">Spotify</span>

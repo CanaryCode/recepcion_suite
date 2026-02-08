@@ -50,10 +50,10 @@ export async function inicializarRack() {
 window.renderRack = renderRack;
 
 // GLOBAL LISTENER - ATTACH IMMEDIATELY (Ensure it runs even if init fails)
-console.log("Rack: Script Execution Started");
+
 
 function attachRackListener() {
-    console.log("Rack: Attaching Global Click Listener...");
+
     
     document.body.addEventListener('click', async (e) => {
         const roomCard = e.target.closest('.room-card');

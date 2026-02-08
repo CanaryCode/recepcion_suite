@@ -770,7 +770,6 @@ function ejecutarImpresionAislada(forceData = null) {
         finalPageSize = "A4 landscape";
         containerWidth = A4_WIDTH;
         containerHeight = A4_HEIGHT;
-        console.log(`[Print] Centering Mode Active. AutoX: ${autoOffX}mm + NudgeX: ${offX}mm`);
     }
 
     data.forEach(item => {

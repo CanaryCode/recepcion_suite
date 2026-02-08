@@ -58,7 +58,7 @@ class AgendaService extends BaseService {
     const esIncompleta = !Array.isArray(data) || data.length < 50;
 
     if (LocalStorage.get(this.importKey) === "true" && !esIncompleta) {
-      console.log(`[AgendaService] Importación ya marcada como completa (${this.importKey}).`);
+
       return;
     }
 

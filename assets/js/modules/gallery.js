@@ -261,7 +261,7 @@ export const Gallery = {
         }
     },
     async loadImages(resetFilters = false) {
-        console.log("[Gallery] loadImages - Starting load...");
+
         const container = document.getElementById('gallery-grid');
         if (!container) return;
 
@@ -292,7 +292,7 @@ export const Gallery = {
             let folderPaths = [mainPath, ...configFolders.map(f => f.path.trim())];
             folderPaths = [...new Set(folderPaths)].filter(p => p !== '');
 
-            console.log("[Gallery] folderPaths to scan:", folderPaths);
+
 
             this.updateFolderFilterUI(mainPath, configFolders);
 
@@ -300,8 +300,6 @@ export const Gallery = {
             const response = await Api.post('/system/list-images?t=' + Date.now(), {
                 folderPaths: folderPaths
             });
-
-            console.log(`[Gallery] loadImages finished. Found ${response?.images?.length || 0} items.`);
 
             if (response && response.images && response.images.length > 0) {
                 currentImages = response.images;

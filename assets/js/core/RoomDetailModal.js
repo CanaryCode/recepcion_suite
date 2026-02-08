@@ -13,7 +13,6 @@ export const RoomDetailModal = {
     currentRoomNum: null,
 
     open: async (roomNum) => {
-        console.log(`[RoomDetailModal] NATIVE STYLE OPEN: ${roomNum}`);
         RoomDetailModal.currentRoomNum = roomNum;
 
         // 1. Clean previous instances

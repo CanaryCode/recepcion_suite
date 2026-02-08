@@ -302,7 +302,7 @@ export class BaseService {
                 const remoteStr = JSON.stringify(remoteData);
 
                 if (localStr !== remoteStr) {
-                    console.log(`[BaseService] Actualizado '${this.endpoint}' desde Servidor.`);
+
                     this.cache = remoteData;
                     LocalStorage.set(this.endpoint, remoteData);
                     // Emitir evento global por si el UI necesita refrescarse

@@ -1,5 +1,4 @@
 // --- STARTUP ---
-console.log("Recepcion Suite V2 - Starting...");
 
 // --- IMPORTACIÓN DE MÓDULOS OPERATIVOS ---
 // Cada módulo gestiona una funcionalidad específica (Agenda, Caja, etc.)
@@ -83,7 +82,7 @@ window.initFooterSpotify = () => {
         
         // Construcción limpia
         iframe.src = embedUrl;
-        console.info("Spotify Player: Cargando URL ->", embedUrl);
+
     }
 
 };
@@ -133,7 +132,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         // 3. Inicializar Sistemas Base
-        console.log("Initializing App Systems...");
+
         Ui.init();
         clock.init();
         Modal.init();  
@@ -215,7 +214,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const webModal = document.getElementById('webViewerModal');
             if (webModal) webModal.addEventListener('hidden.bs.modal', window.stopWebViewer);
 
-            console.log("Sistema completamente inicializado.");
+
         }, 100);
 
         // 6. Reactividad
@@ -333,7 +332,6 @@ window.renderLaunchPad = async (query = '', filter = 'app', target = 'modal') =>
     window._launchPadOffset = 0; // Reiniciar paginación
 
     let baseApps = APP_CONFIG.SYSTEM?.LAUNCHERS || [];
-    console.log("DEBUG: renderLaunchPad started. Filter:", filter, "BaseApps full config:", baseApps);
     
     // 1. Filtrar Lanzadores Base por Categoría
     let filteredLaunchers = baseApps;
@@ -367,7 +365,6 @@ window.renderLaunchPad = async (query = '', filter = 'app', target = 'modal') =>
             return type === filter;
         });
     }
-    console.log("DEBUG: filteredLaunchers count:", filteredLaunchers.length);
 
     // 2. LÓGICA ESPECIAL PARA AGREGAR DOCUMENTOS
     let aggregatedItems = [];
@@ -377,7 +374,6 @@ window.renderLaunchPad = async (query = '', filter = 'app', target = 'modal') =>
             const docExts = ['.pdf', '.doc', '.docx', '.txt', '.xlsx', '.xls', '.odt', '.rtf'];
             return !docExts.some(ext => p.endsWith(ext)); 
         });
-        console.log("DEBUG: folderLaunchers to scan:", folderLaunchers.map(f => f.path));
 
         const directFiles = filteredLaunchers.filter(a => !folderLaunchers.includes(a));
         aggregatedItems = [...directFiles];
@@ -391,10 +387,8 @@ window.renderLaunchPad = async (query = '', filter = 'app', target = 'modal') =>
                     folderPaths: folderLaunchers.map(f => f.path)
                 });
                 
-                console.log("DEBUG: list-docs response data:", data);
                 if (data && data.documents) {
                     aggregatedItems = [...aggregatedItems, ...data.documents];
-                    console.log("DEBUG: Total items after scan:", aggregatedItems.length);
                 }
             } catch (err) { 
                 console.error("Error scan:", err); 
@@ -518,7 +512,8 @@ window.launchExternalApp = async (command, type = 'app', label = '', embedded = 
     // Si es una URL o el comando parece una URL
     if (type === 'url' || type === 'maps' || type === 'video' || type === 'spotify' || command.startsWith('http')) {
         if (embedded) {
-            window.openWebViewer(command, label || 'Acceso Externo');
+            // Usamos el proxy por defecto si es embebido para evitar bloqueos
+            window.openWebViewer(command, label || 'Acceso Externo', true);
         } else {
             window.open(command, '_blank');
         }
@@ -729,25 +724,26 @@ window.stopYouTubeVideo = () => {
 /**
  * WEB VIEWER HELPERS
  */
-window.openWebViewer = (url, title) => {
+window._currentWebUrl = '';
+
+window.openWebViewer = (url, title, useProxy = true) => {
     const iframe = document.getElementById('webViewerIframe');
     const titleEl = document.getElementById('webViewerTitle');
     
-    if (iframe) iframe.src = url;
+    window._currentWebUrl = url;
+    
+    // Si useProxy es true, pasamos la URL por nuestro proxy para evitar bloqueos CSP/X-Frame
+    const finalUrl = useProxy ? `/api/system/web-proxy?url=${encodeURIComponent(url)}` : url;
+    
+    if (iframe) iframe.src = finalUrl;
     if (titleEl) titleEl.textContent = title;
 
     const modal = new bootstrap.Modal(document.getElementById('webViewerModal'));
     modal.show();
 };
 
-window.stopWebViewer = () => {
-    const iframe = document.getElementById('webViewerIframe');
-    if (iframe) iframe.src = '';
+window.openExternalWeb = () => {
+    if (window._currentWebUrl) {
+        window.open(window._currentWebUrl, '_blank');
+    }
 };
-
-window.stopWebViewer = () => {
-    const iframe = document.getElementById('webViewerIframe');
-    if (iframe) iframe.src = '';
-};
-
-

@@ -2630,7 +2630,3 @@ www.volcanoteide.com`,
 `ZAPATEROS EN PUERTO CRUZ
 - EN CANARY CENTER HAY UNO`
 ];
-console.log("AgendaData full load successful");
-
-
-

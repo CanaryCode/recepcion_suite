@@ -58,6 +58,5 @@ export const CompLoader = {
         // Ejecutamos todas las cargas al mismo tiempo para que la app arranque más rápido
         const promises = components.map(comp => CompLoader.loadComponent(comp.id, comp.path));
         await Promise.all(promises);
-        console.log("CompLoader: Todos los componentes han sido inyectados.");
     }
 };

@@ -3,7 +3,7 @@ import { Utils } from '../core/Utils.js';
 import { Ui } from '../core/Ui.js';
 
 /**
- * MÓDULO DE IMPRESIÓN DINÁMICA v1.40 - ISOLATED WINDOW ENGINE
+ * MÓDULO DE IMPRESIÓN DINÁMICA - ISOLATED WINDOW ENGINE
  * -----------------------------------------------------------
  * Re-diseño total: Usa una ventana independiente para garantizar
  * el renderizado y la orientación horizontal (Landscape) de 14x11cm.
@@ -39,7 +39,7 @@ const TEMPLATE_CONFIGS = {
     }
 };
 
-let currentTemplateId = localStorage.getItem('impresion_current_template_v140') || 'tarjetero';
+let currentTemplateId = localStorage.getItem('impresion_current_template') || 'tarjetero';
 let currentCoordinates = { ...TEMPLATE_CONFIGS[currentTemplateId].coordinates };
 let cocktailMetadata = {
     fecha: '',
@@ -51,9 +51,9 @@ let dragSubject = null;  // { key, startX, startY, initialX, initialY }
 let activeFieldKey = null; 
 
 export async function inicializarImpresion() {
-    if (window.__impresion_v140_initialized) return;
+    if (window.__impresion_initialized) return;
 
-    let root = document.getElementById('impresion-v120-root');
+    let root = document.getElementById('impresion-root');
     if (!root) {
         const tab = document.getElementById('impresion-content');
         if (tab) {
@@ -114,8 +114,8 @@ export async function inicializarImpresion() {
         document.addEventListener('mousemove', handleFieldMouseMove);
         document.addEventListener('mouseup', handleFieldMouseUp);
 
-        window.__impresion_v140_initialized = true;
-        console.log("%c[Impresion] v1.40 - ISOLATED WINDOW ENGINE LOADED", "color: #ff00ff; font-weight: bold;");
+        window.__impresion_initialized = true;
+        console.log("%c[Impresion] ISOLATED WINDOW ENGINE LOADED", "color: #ff00ff; font-weight: bold;");
         
         Ui.initTooltips?.();
 
@@ -802,7 +802,7 @@ function ejecutarImpresionAislada(forceData = null) {
 
     const offX = parseFloat(document.getElementById('nudgeX')?.value || 0);
     const offY = parseFloat(document.getElementById('nudgeY')?.value || 0);
-    const isCenterA4 = document.getElementById('chkCenterA4')?.checked || false;
+    const isCenterA4 = true; // Forzado por defecto
 
     const cardsHtml = [];
     const template = TEMPLATE_CONFIGS[currentTemplateId];

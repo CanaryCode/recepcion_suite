@@ -511,7 +511,9 @@ function procesarDatosWord() {
 
                 // 4. Régimen
                 if (valUpper.match(/\b(MP|PC|TI|HD|AD|AL)\b/)) {
-                    entry.regime = valUpper;
+                    let r = valUpper.match(/\b(MP|PC|TI|HD|AD|AL)\b/)[0];
+                    if (r === 'AD') r = 'HD';
+                    entry.regime = r;
                 }
 
                 // 5. Agencia (Búsqueda de palabras clave)
@@ -526,12 +528,13 @@ function procesarDatosWord() {
             const textBefore = line.substring(0, firstDateIdx).trim();
             const textAfter = line.substring(line.lastIndexOf(dates[1]) + dates[1].length).toUpperCase();
 
-            // Régimen en el texto posterior
-            if (textAfter.includes("MP")) entry.regime = "MP";
-            else if (textAfter.includes("PC")) entry.regime = "PC";
-            else if (textAfter.includes("TI")) entry.regime = "TI";
-            else if (textAfter.includes("AD")) entry.regime = "HD";
-            else if (textAfter.includes("HD")) entry.regime = "HD";
+            // Régimen en el texto posterior - Soporta AD -> HD y repeticiones
+            const regimeMatch = textAfter.match(/\b(MP|PC|TI|HD|AD|AL)\b/);
+            if (regimeMatch) {
+                let r = regimeMatch[0];
+                if (r === 'AD') r = 'HD';
+                entry.regime = r;
+            }
 
             // Números antes de la fecha
             const numbers = textBefore.match(/\b\d+\b/g) || [];

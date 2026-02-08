@@ -256,7 +256,7 @@ function handleFieldMouseUp() {
 function setTemplateType(typeId, silent = false) {
     if (!TEMPLATE_CONFIGS[typeId]) return;
     currentTemplateId = typeId;
-    localStorage.setItem('impresion_current_template_v140', typeId);
+    localStorage.setItem('impresion_current_template', typeId);
     loadCoordinates(); 
     
     // UI Updates
@@ -264,6 +264,12 @@ function setTemplateType(typeId, silent = false) {
         btn.classList.toggle('active', btn.dataset.type === typeId);
     });
     
+    // Actualizar nombre de la pestaña de vista previa
+    const btnVista = document.getElementById('btnImpresionVista');
+    if (btnVista) {
+        btnVista.innerHTML = `<i class="bi bi-eye me-2"></i>Vista Previa ${TEMPLATE_CONFIGS[typeId].label}`;
+    }
+
     // Update CSS Variables for card size
     const root = document.documentElement;
     root.style.setProperty('--card-width', `${TEMPLATE_CONFIGS[typeId].width}mm`);
@@ -280,8 +286,8 @@ function setTemplateType(typeId, silent = false) {
         }
     }
 
-    // Mark root with template type for CSS scoping
-    const rootEl = document.getElementById('impresion-v120-root');
+    // Marcar root con el tipo de plantilla para el CSS de la guía
+    const rootEl = document.getElementById('impresion-root');
     if (rootEl) rootEl.dataset.template = typeId;
 
     if (lastParsedData.length > 0) {

@@ -459,64 +459,118 @@ function procesarDatosWord() {
 
     const lines = rawText.split(/\r?\n/).filter(l => l.trim().length > 5);
     const parsedData = [];
-    const dateRegex = /\d{2}[\.\/\-]\d{2}[\.\/\-]\d{2,4}/g;
+    const dateRegex = /\b\d{2}[\.\/\-]\d{2}[\.\/\-]\d{2,4}\b/g;
 
     lines.forEach(line => {
-        const dates = line.match(dateRegex);
-        if (dates && dates.length >= 2) {
-            const entry = {
-                entrada: dates[0],
-                salida: dates[1],
-                nombre: "DESCONOCIDO",
-                habitacion: "",
-                pax: "1",
-                regime: "HD",
-                agencia: "DIRECTO",
-                nacionalidad: "UK", // Default UK (Inglesa)
-                nacionalidadCierta: false // Marcar como incierta por defecto
-            };
+        // 1. Detección de Columnas por Tabulador (Pestañas de Word)
+        const tabs = line.split('\t');
+        const hasTabs = tabs.length >= 4;
 
-            const lastDateIdx = line.lastIndexOf(dates[dates.length - 1]);
-            const textAfter = line.substring(lastDateIdx + dates[dates.length - 1].length).toUpperCase();
+        let entry = {
+            nombre: "DESCONOCIDO",
+            habitacion: "",
+            pax: "1",
+            regime: "HD",
+            entrada: "",
+            salida: "",
+            agencia: "DIRECTO",
+            nacionalidad: "UK",
+            nacionalidadCierta: false
+        };
+
+        const dates = line.match(dateRegex);
+        if (!dates || dates.length < 2) return; // Línea inválida
+
+        entry.entrada = dates[0];
+        entry.salida = dates[1];
+
+        if (hasTabs) {
+            // LÓGICA POR COLUMNAS (Más fiable si viene de Word)
+            // Estructura típica: Habitacion | Tipo | Pax | ResID | Nombre | Llegada | Salida | Regimen | ...
+            // Buscamos cuál es cual basándonos en contenido
             
+            tabs.forEach((col, idx) => {
+                const val = col.trim();
+                const valUpper = val.toUpperCase();
+                
+                // 1. Nombre (Campo con espacios y sin muchos números)
+                if (val.length > 8 && val.includes(" ") && !val.match(/\b\d{3,}\b/)) {
+                    // Si el nombre aún es desconocido o este parece más largo
+                    if (entry.nombre === "DESCONOCIDO") entry.nombre = val.toUpperCase();
+                }
+                
+                // 2. Habitación (Número de 3 dígitos usualmente, al principio)
+                if (val.match(/^\b\d{2,4}\b$/) && !entry.habitacion && idx < 3) {
+                    entry.habitacion = val;
+                }
+
+                // 3. Pax (Número de 1 o 2 dígitos solo)
+                if (val.match(/^\b\d{1,2}\b$/) && idx < 5 && val !== entry.habitacion) {
+                    entry.pax = val;
+                }
+
+                // 4. Régimen
+                if (valUpper.match(/\b(MP|PC|TI|HD|AD|AL)\b/)) {
+                    entry.regime = valUpper;
+                }
+
+                // 5. Agencia (Búsqueda de palabras clave)
+                const kw = ["EXPEDIA", "BOOKING", "TUI", "JET2", "MTS", "HOTELBEDS", "VECI", "DIR", "SUNWEB", "SCHAUIN", "DERTOUR"];
+                if (kw.some(k => valUpper.includes(k))) {
+                    entry.agencia = val.substring(0, 20);
+                }
+            });
+        } else {
+            // LÓGICA FUZZY (Fallback para texto plano)
+            const firstDateIdx = line.indexOf(dates[0]);
+            const textBefore = line.substring(0, firstDateIdx).trim();
+            const textAfter = line.substring(line.lastIndexOf(dates[1]) + dates[1].length).toUpperCase();
+
+            // Régimen en el texto posterior
             if (textAfter.includes("MP")) entry.regime = "MP";
             else if (textAfter.includes("PC")) entry.regime = "PC";
             else if (textAfter.includes("TI")) entry.regime = "TI";
             else if (textAfter.includes("AD")) entry.regime = "HD";
             else if (textAfter.includes("HD")) entry.regime = "HD";
 
-            const firstDateIdx = line.indexOf(dates[0]);
-            const textBefore = line.substring(0, firstDateIdx).trim();
-            
+            // Números antes de la fecha
             const numbers = textBefore.match(/\b\d+\b/g) || [];
-            if (numbers.length >= 1) {
-                entry.habitacion = numbers.find(n => n.length >= 3) || numbers[0];
-            }
-            if (numbers.length >= 2) {
-                entry.pax = numbers.find(n => n !== entry.habitacion && n.length === 1) || numbers[1];
+            
+            // Heurística crítica: Una habitación tiene 2-4 dígitos. 
+            // Un ID de reserva suele tener 5 o más.
+            const roomCandidates = numbers.filter(n => n.length >= 2 && n.length <= 4);
+            if (roomCandidates.length > 0) {
+                entry.habitacion = roomCandidates[0];
             }
 
-            const parts = textBefore.split(/[\t]{1,}|[ ]{2,}/).map(p => p.trim()).filter(p => p.length > 2);
-            if (parts.length > 0) {
-                const nameCandidates = parts.filter(p => !p.match(/^\d+$/) && p.length > 5);
-                if (nameCandidates.length > 0) {
-                    entry.nombre = nameCandidates.find(c => c.includes(" ")) || nameCandidates[0];
-                }
-                const agencyCandidate = parts.find(p => p !== entry.nombre && ["EXPEDIA", "BOOKING", "TUI", "JET2", "MTS", "HOTELBEDS", "VECI", "DIR"].some(kw => p.toUpperCase().includes(kw)));
-                if (agencyCandidate) {
-                    const agencyUpper = agencyCandidate.toUpperCase();
-                    entry.agencia = agencyCandidate.substring(0, 15);
-
-                    // Lógica de Nacionalidad automática
-                    const toLists = APP_CONFIG.HOTEL?.TO_LISTS || { ES: [], DE: [], FR: [], UK: [] };
-                    if (toLists.DE.some(kw => agencyUpper.includes(kw))) { entry.nacionalidad = 'DE'; entry.nacionalidadCierta = true; }
-                    else if (toLists.ES.some(kw => agencyUpper.includes(kw))) { entry.nacionalidad = 'ES'; entry.nacionalidadCierta = true; }
-                    else if (toLists.FR.some(kw => agencyUpper.includes(kw))) { entry.nacionalidad = 'FR'; entry.nacionalidadCierta = true; }
-                    else if (toLists.UK.some(kw => agencyUpper.includes(kw))) { entry.nacionalidad = 'UK'; entry.nacionalidadCierta = true; }
-                }
+            const paxCandidates = numbers.filter(n => n.length === 1 && n !== entry.habitacion);
+            if (paxCandidates.length > 0) {
+                entry.pax = paxCandidates[0];
             }
-            parsedData.push(entry);
+
+            // Nombre y Agencia
+            const parts = textBefore.split(/[ ]{2,}/).map(p => p.trim()).filter(p => p.length > 3);
+            parts.forEach(p => {
+                const pUpper = p.toUpperCase();
+                if (p.includes(" ") && !p.match(/\b\d{4,}\b/)) {
+                    entry.nombre = pUpper;
+                }
+                const kw = ["EXPEDIA", "BOOKING", "TUI", "JET2", "MTS", "HOTELBEDS", "VECI", "DIR", "SUNWEB", "SCHAUIN", "DERTOUR"];
+                if (kw.some(k => pUpper.includes(k))) {
+                    entry.agencia = p.substring(0, 20);
+                }
+            });
         }
+
+        // Determinar Nacionalidad Automática
+        const agencyUpper = entry.agencia.toUpperCase();
+        const toLists = APP_CONFIG.HOTEL?.TO_LISTS || { ES: [], DE: [], FR: [], UK: [] };
+        if (toLists.DE.some(kw => agencyUpper.includes(kw))) { entry.nacionalidad = 'DE'; entry.nacionalidadCierta = true; }
+        else if (toLists.ES.some(kw => agencyUpper.includes(kw))) { entry.nacionalidad = 'ES'; entry.nacionalidadCierta = true; }
+        else if (toLists.FR.some(kw => agencyUpper.includes(kw))) { entry.nacionalidad = 'FR'; entry.nacionalidadCierta = true; }
+        else if (toLists.UK.some(kw => agencyUpper.includes(kw))) { entry.nacionalidad = 'UK'; entry.nacionalidadCierta = true; }
+
+        parsedData.push(entry);
     });
 
     if (parsedData.length === 0) {
@@ -527,7 +581,6 @@ function procesarDatosWord() {
     renderizarTarjetero(parsedData);
     lastParsedData = parsedData;
 
-    // Si es Cocktail y tenemos fecha de entrada, promediar/determinar la del primer cliente
     if (currentTemplateId === 'cocktail' && parsedData.length > 0) {
         autoCalcularFechaCocktail(parsedData[0].entrada);
     }

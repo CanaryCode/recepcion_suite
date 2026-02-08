@@ -473,18 +473,27 @@ function renderGridItems(container, items, query = '', append = false) {
         const defaultIcon = isFolder ? 'folder-fill' : (app.type === 'maps' ? 'geo-alt-fill' : (isUrl ? 'globe-americas' : (isDoc ? 'file-earmark-text' : (isSpotify ? 'spotify' : 'app'))));
         let specificIcon = app.icon || defaultIcon;
 
-        // LÓGICA DE ICONOS Y COLORES PARA DOCUMENTOS
+        // LÓGICA DE ICONOS Y COLORES PARA DOCUMENTOS (OFICINA + LIBREOFFICE + OTROS)
         if (isDoc) {
             const pathForExt = (app.path || '').toLowerCase();
             if (pathForExt.endsWith('.pdf')) {
                 iconColor = 'text-danger'; // Rojo para PDF
                 specificIcon = 'file-earmark-pdf';
             } else if (pathForExt.match(/\.(doc|docx|odt|rtf)$/)) {
-                iconColor = 'text-primary'; // Azul para Word
+                iconColor = 'text-primary'; // Azul para Word / Writer
                 specificIcon = 'file-earmark-word';
-            } else if (pathForExt.match(/\.(xls|xlsx)$/)) {
-                iconColor = 'text-success'; // Verde para Excel
+            } else if (pathForExt.match(/\.(xls|xlsx|ods)$/)) {
+                iconColor = 'text-success'; // Verde para Excel / Calc
                 specificIcon = 'file-earmark-excel';
+            } else if (pathForExt.endsWith('.csv')) {
+                iconColor = 'text-info'; // Turquesa para CSV
+                specificIcon = 'filetype-csv';
+            } else if (pathForExt.match(/\.(ppt|pptx|pps|odp)$/)) {
+                iconColor = 'text-warning'; // Naranja para PowerPoint / Impress
+                specificIcon = 'file-earmark-slides';
+            } else if (pathForExt.match(/\.(zip|rar|7z)$/)) {
+                iconColor = 'text-warning'; // Amarillo/Naranja para Comprimidos
+                specificIcon = 'file-earmark-zip';
             } else if (pathForExt.endsWith('.txt')) {
                 iconColor = 'text-secondary'; // Gris para Notas
                 specificIcon = 'file-earmark-font';

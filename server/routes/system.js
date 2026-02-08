@@ -324,7 +324,13 @@ router.post('/list-docs', async (req, res) => {
         }
 
         const allDocs = [];
-        const extensions = ['.pdf', '.doc', '.docx', '.txt', '.xlsx', '.xls', '.odt', '.rtf'];
+        const extensions = [
+            '.pdf', 
+            '.doc', '.docx', '.odt', '.rtf', 
+            '.xls', '.xlsx', '.ods', '.csv',
+            '.ppt', '.pptx', '.pps', '.odp',
+            '.zip', '.rar', '.7z', '.txt'
+        ];
 
         for (let targetPath of folderPaths) {
             try {

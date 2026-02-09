@@ -47,9 +47,9 @@ export const Configurator = {
         Utils.setVal('configSpotifyUrl', tempConfig.HOTEL?.SPOTIFY_URL || '');
         Utils.setVal('conf_cocktail_dia', tempConfig.HOTEL?.COCKTAIL_CONFIG?.DIA !== undefined ? tempConfig.HOTEL.COCKTAIL_CONFIG.DIA : 5);
         Utils.setVal('conf_cocktail_hora', tempConfig.HOTEL?.COCKTAIL_CONFIG?.HORA || '19:00');
-        Utils.setVal('conf_cocktail_lugar', tempConfig.HOTEL?.COCKTAIL_CONFIG?.LUGAR || 'Salón la paz');
 
         // Listas dinámicas
+        this.renderCocktailLugares();
         this.renderRecepcionistas();
         this.renderDestinosTransfers();
         this.renderDepartamentosGlobal();
@@ -80,7 +80,8 @@ export const Configurator = {
         if (!tempConfig.AGENDA) tempConfig.AGENDA = { PAISES: [] };
         if (!tempConfig.CAJA) tempConfig.CAJA = { BILLETES: [], MONEDAS: [], FONDO: -2000 };
         if (!tempConfig.COBRO) tempConfig.COBRO = { VALORES: [] };
-        if (!tempConfig.HOTEL.COCKTAIL_CONFIG) tempConfig.HOTEL.COCKTAIL_CONFIG = { DIA: 5, HORA: '19:00', LUGAR: 'Salón la paz' };
+        if (!tempConfig.HOTEL.COCKTAIL_CONFIG) tempConfig.HOTEL.COCKTAIL_CONFIG = { DIA: 5, HORA: '19:00' };
+        
         if (!tempConfig.HOTEL.TO_LISTS) tempConfig.HOTEL.TO_LISTS = { ES: [], DE: [], FR: [], UK: [] };
     },
 
@@ -293,6 +294,29 @@ export const Configurator = {
         });
     },
 
+    renderCocktailLugares() {
+        const list = tempConfig.HOTEL.COCKTAIL_LUGARES || [];
+        Ui.renderTable('list-cocktail-lugares', list, (item, index) => `
+            <tr>
+                <td><span class="fw-bold">${item.es}</span></td>
+                <td><span class="small text-muted">${item.en}</span></td>
+                <td><span class="small text-muted">${item.de}</span></td>
+                <td><span class="small text-muted">${item.fr}</span></td>
+                <td class="text-center">
+                    <div class="form-check form-check-inline m-0">
+                        <input class="form-check-input" type="radio" name="lugarDefault" 
+                            ${item.default ? 'checked' : ''} 
+                            onclick="Configurator.setCocktailLugarDefault(${index})">
+                    </div>
+                </td>
+                <td class="text-end">
+                    <button type="button" class="btn btn-outline-primary btn-sm border-0 me-1" onclick="Configurator.editCocktailLugar(${index})" title="Editar"><i class="bi bi-pencil"></i></button>
+                    <button type="button" class="btn btn-outline-danger btn-sm border-0" onclick="Configurator.removeCocktailLugar(${index})" title="Eliminar"><i class="bi bi-trash"></i></button>
+                </td>
+            </tr>
+        `);
+    },
+
     // --- EVENTOS ---
 
     configurarEventos() {
@@ -314,6 +338,7 @@ export const Configurator = {
         window.pickNewGalleryFolder = () => this.pickNewGalleryFolder();
         window.pickGalleryFolder = () => this.pickGalleryFolder();
         window.addTourOperator = (nac) => this.addTourOperator(nac);
+        window.addCocktailLugar = () => this.addCocktailLugar();
     },
 
     pickGalleryFolder() {
@@ -623,6 +648,65 @@ export const Configurator = {
         }
     },
 
+    addCocktailLugar() {
+        const es = document.getElementById('newLugarES').value.trim();
+        const en = document.getElementById('newLugarEN').value.trim() || es;
+        const de = document.getElementById('newLugarDE').value.trim() || es;
+        const fr = document.getElementById('newLugarFR').value.trim() || es;
+
+        if (!es) {
+            Ui.showToast("El nombre en español es obligatorio.", "warning");
+            return;
+        }
+
+        if (tempConfig.HOTEL.COCKTAIL_LUGARES.some(l => l.es.toLowerCase() === es.toLowerCase())) {
+            Ui.showToast("Este lugar ya existe.", "warning");
+            return;
+        }
+
+        tempConfig.HOTEL.COCKTAIL_LUGARES.push({ es, en, de, fr, default: false });
+        this.renderCocktailLugares();
+
+        // Limpiar
+        document.getElementById('newLugarES').value = '';
+        document.getElementById('newLugarEN').value = '';
+        document.getElementById('newLugarDE').value = '';
+        document.getElementById('newLugarFR').value = '';
+    },
+
+    async removeCocktailLugar(index) {
+        const item = tempConfig.HOTEL.COCKTAIL_LUGARES[index];
+        if (await Ui.showConfirm(`¿Eliminar el lugar "${item.es}"?`)) {
+            tempConfig.HOTEL.COCKTAIL_LUGARES.splice(index, 1);
+            if (item.default && tempConfig.HOTEL.COCKTAIL_LUGARES.length > 0) {
+                tempConfig.HOTEL.COCKTAIL_LUGARES[0].default = true;
+            }
+            this.renderCocktailLugares();
+        }
+    },
+
+    setCocktailLugarDefault(index) {
+        tempConfig.HOTEL.COCKTAIL_LUGARES.forEach((l, i) => {
+            l.default = (i === index);
+        });
+    },
+
+    async editCocktailLugar(index) {
+        const item = tempConfig.HOTEL.COCKTAIL_LUGARES[index];
+        if (!await Ui.showConfirm(`¿Editar el lugar "${item.es}"?`)) return;
+
+        // Eliminar del array (el usuario deberá añadirlo de nuevo tras editar)
+        // Siguiendo el patrón "Pop & Fill" de los otros editores del módulo
+        tempConfig.HOTEL.COCKTAIL_LUGARES.splice(index, 1);
+        this.renderCocktailLugares();
+
+        document.getElementById('newLugarES').value = item.es;
+        document.getElementById('newLugarEN').value = item.en || '';
+        document.getElementById('newLugarDE').value = item.de || '';
+        document.getElementById('newLugarFR').value = item.fr || '';
+        document.getElementById('newLugarES').focus();
+    },
+
     addTourOperator(nac) {
         const input = document.getElementById(`newTo${nac}`);
         const val = input.value.trim().toUpperCase();
@@ -749,7 +833,8 @@ export const Configurator = {
             if (!tempConfig.HOTEL.COCKTAIL_CONFIG) tempConfig.HOTEL.COCKTAIL_CONFIG = {};
             tempConfig.HOTEL.COCKTAIL_CONFIG.DIA = parseInt(document.getElementById('conf_cocktail_dia').value);
             tempConfig.HOTEL.COCKTAIL_CONFIG.HORA = document.getElementById('conf_cocktail_hora').value;
-            tempConfig.HOTEL.COCKTAIL_CONFIG.LUGAR = document.getElementById('conf_cocktail_lugar').value;
+            // El LUGAR ya no se guarda como string simple en COCKTAIL_CONFIG, 
+            // sino que se gestiona vía COCKTAIL_LUGARES[].default
 
             await configService.saveConfig(tempConfig);
             Ui.showToast("Configuración guardada correctamente.", "success");

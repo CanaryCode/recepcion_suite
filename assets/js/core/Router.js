@@ -2,39 +2,63 @@
  * SISTEMA DE ENRUTAMIENTO Y NAVEGACIÓN
  * -----------------------------------
  * Este módulo se encarga de cambiar entre las diferentes pestañas de la aplicación
+ * Este módulo se encarga de cambiar entre las diferentes pestañas de la aplicación
  * (Inicio, Operaciones, Administración, etc.) sin recargar la página.
  */
+
+let navigationHistory = [];
+let forwardStack = [];
+let isNavigatingHistory = false;
 
 export const Router = {
     /**
      * inicialización.
      * Registra la función navegarA globalmente para que pueda ser llamada
      * desde cualquier botón del HTML con onclick="navegarA(...)".
+     * 
+     * COMPORTAMIENTO DE NAVEGACIÓN:
+     * - "Inicio Transparente": El Dashboard no se guarda en el historial, actúa como capa base.
+     * - "Centro Toggle": El botón central de la cabecera alterna entre Inicio y el último módulo.
+     * - "Atrás Virtual": Si el historial está vacío, "Atrás" lleva a Inicio.
      */
     init: () => {
         window.navegarA = Router.navegarA;
+        window.Router = Router; // Globalize Router for HTML onclick
         
         // GLOBAL EVENT LISTENER: Ensure only ONE tab pane is visible at a time
         // This fixes the issue where dropdown tabs might not effectively hide the Dashboard or other views.
         const tabElsp = document.querySelectorAll('button[data-bs-toggle="tab"]');
         tabElsp.forEach(tabBtn => {
-            // Trigger reload on CLICK (even if tab is already active)
+            // Trigger reload on CLICK
             tabBtn.addEventListener('click', (event) => {
                 const targetId = tabBtn.getAttribute('data-bs-target');
-                console.log(`[Router] Tab button clicked: ${targetId}`);
                 Router.handleModuleReload(targetId);
             });
 
             tabBtn.addEventListener('show.bs.tab', (event) => {
                 const targetId = event.target.getAttribute('data-bs-target');
-                console.log(`[Router] show.bs.tab event: ${targetId}`);
-                if(!targetId) return;
+                
+                // Si el relatedTarget es nulo (pasa en navegación manual), 
+                // intentamos obtener el ID del panel que está activo actualmente.
+                let relId = event.relatedTarget ? event.relatedTarget.getAttribute('data-bs-target') : null;
+                if (!relId) {
+                    const currentActive = document.querySelector('.tab-pane.active');
+                    if (currentActive) relId = '#' + currentActive.id;
+                }
+
+                if (!targetId) return;
+
+                // Capturar historial si viene de una pestaña nativa de Bootstrap
+                // y no estamos ya en medio de una navegación controlada por el Router
+                if (relId && relId !== targetId && !isNavigatingHistory) {
+                    Router.recordNavigation(relId, targetId);
+                }
 
                 // Force hide ALL other tab-panes
                 document.querySelectorAll('.tab-pane').forEach(pane => {
                     if ('#' + pane.id !== targetId) {
                         pane.classList.remove('show', 'active');
-                        pane.style.display = 'none'; // Force hide
+                        pane.style.display = 'none'; 
                     }
                 });
                 
@@ -42,9 +66,11 @@ export const Router = {
                 const targetPane = document.querySelector(targetId);
                 if(targetPane) {
                     targetPane.style.display = ''; 
-                    // Manual trigger for first-show if click didn't happen (mobile etc)
                     Router.handleModuleReload(targetId);
                 }
+
+                // Asegurar que la cabecera se actualice al final del evento
+                Router.updateHeaderContext();
             });
         });
     },
@@ -56,6 +82,14 @@ export const Router = {
     handleModuleReload: (selector) => {
         if (selector === '#gallery-content') {
             if (window.Gallery) window.Gallery.loadImages(true);
+        } else if (selector === '#impresion-content') {
+            import('../modules/Impresion.js?v=V140_MODS').then(m => {
+                if (m.inicializarImpresion) m.inicializarImpresion();
+            });
+        } else if (selector === '#vales-content') {
+            import('../modules/vales.js').then(m => {
+                if (m.initVales) m.initVales();
+            });
         }
         // Aquí se pueden añadir otros módulos que necesiten refresco al abrir
     },
@@ -71,6 +105,14 @@ export const Router = {
      */
     navegarA: (targetId) => {
         const selector = targetId.startsWith('#') ? targetId : '#' + targetId;
+        const currentActive = document.querySelector('.tab-pane.active');
+        const currentId = currentActive ? '#' + currentActive.id : null;
+
+        // Capturar Historial
+        if (currentId && currentId !== selector && !isNavigatingHistory) {
+            Router.recordNavigation(currentId, selector);
+        }
+
         const targetPane = document.querySelector(selector);
         
         if (!targetPane) {
@@ -131,7 +173,211 @@ export const Router = {
             location.hash = selector;
         }
 
-        // 6. MODULE-SPECIFIC AUTO-RELOADS
+        // Importante: No resetear isNavigatingHistory aquí, 
+        // se resetea en back() / forward() tras completar navegarA
         Router.handleModuleReload(selector);
+        
+        // Sincronizar indicadores de cabecera tras el cambio de vista
+        Router.updateHeaderContext();
+    },
+
+    /**
+     * recordNavigation: (fromId, toId) => {
+        if (!fromId || !toId || fromId === toId) return;
+        
+        // LÓGICA DE INICIO TRANSPARENTE:
+        // Si venimos de Inicio, NO lo añadimos a la pila. 
+        // Esto permite que el historial solo contenga "módulos operativos".
+        // Al dar atrás desde un módulo con pila vacía, el sistema sabrá ir a Inicio.
+        if (Router.isDashboardId(fromId)) {
+            // Solo reseteamos forward si es navegación nueva no histórica
+            if (!isNavigatingHistory) forwardStack = [];
+            return;
+        }
+
+        console.log(`[Router] Grabando: ${fromId} -> ${toId}`);
+
+        // Evitar duplicados consecutivos
+        if (navigationHistory.length > 0 && navigationHistory[navigationHistory.length - 1] === fromId) return;
+
+        navigationHistory.push(fromId);
+        if (navigationHistory.length > 20) navigationHistory.shift();
+        
+        // Toda navegación nueva (no desde el historial) rompe el "adelante"
+        if (!isNavigatingHistory) forwardStack = []; 
+        
+        updateHeaderContext();
+    },
+
+    /**
+     * Gestión de clics en la cabecera para navegación bidireccional + Centro = Toggle Inicio
+     * - Izquierda (<30%): Atrás
+     * - Derecha (>70%): Adelante
+     * - Centro: Si estás en módulo -> Vas a Inicio. Si estás en Inicio -> Vuelves al módulo.
+     */
+    handleHeaderClick: (event) => {
+        const header = event.currentTarget;
+        const rect = header.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const width = rect.width;
+        
+        const leftZone = width * 0.3; // 30% izquierda
+        const rightZone = width * 0.7; // 70% derecha (inicio de la zona)
+
+        if (x < leftZone) {
+            Router.back(); 
+        } else if (x > rightZone) {
+            Router.forward(); 
+        } else {
+            // Centro: Toggle Inicio / Último módulo
+            const currentActive = document.querySelector('.tab-pane.active');
+            const onDashboard = currentActive && Router.isDashboardId('#' + currentActive.id);
+            
+            if (!onDashboard) {
+                // Si no estoy en inicio, voy a inicio
+                Router.navegarA('#dashboard-content');
+            } else {
+                // Si ya estoy en inicio, intento volver al último módulo del historial
+                Router.back();
+            }
+        }
+    },
+
+    forward: () => {
+        if (forwardStack.length === 0) return;
+        
+        const nextId = forwardStack.pop();
+        
+        try {
+            isNavigatingHistory = true;
+            const currentActive = document.querySelector('.tab-pane.active');
+            const currentId = currentActive ? '#' + currentActive.id : null;
+            
+            if (currentId && !Router.isDashboardId(currentId)) {
+                navigationHistory.push(currentId);
+            }
+
+            Router.navegarA(nextId);
+        } finally {
+            isNavigatingHistory = false;
+            Router.updateHeaderContext();
+        }
+    },
+
+    back: () => {
+        if (navigationHistory.length === 0) {
+            const currentActive = document.querySelector('.tab-pane.active');
+            const onDashboard = currentActive && Router.isDashboardId('#' + currentActive.id);
+            
+            if (!onDashboard) {
+                Router.navegarA('#dashboard-content');
+            }
+            return;
+        }
+
+        const prevId = navigationHistory.pop();
+        const currentActive = document.querySelector('.tab-pane.active');
+        const currentId = currentActive ? '#' + currentActive.id : null;
+
+        try {
+            isNavigatingHistory = true;
+            if (currentId && !Router.isDashboardId(currentId)) {
+                forwardStack.push(currentId);
+            }
+
+            Router.navegarA(prevId);
+        } finally {
+            isNavigatingHistory = false;
+            Router.updateHeaderContext();
+        }
+    },
+
+    /**
+     * Actualiza los indicadores visuales de la cabecera
+     */
+    updateHeaderContext: () => {
+        const header = document.querySelector('.app-header-panel');
+        if (!header) return;
+    
+        const currentActive = document.querySelector('.tab-pane.active');
+        const onDashboard = currentActive && Router.isDashboardId('#' + currentActive.id);
+    
+        // Indicador Izquierdo (Atrás)
+        const leftInd = document.getElementById('header-indicator-left');
+        const lastBackId = navigationHistory.length > 0 ? navigationHistory[navigationHistory.length - 1] : null;
+        
+        let prevLabel = '';
+        let showLeft = false;
+    
+        if (lastBackId) {
+            prevLabel = `Atrás: ${Router.getModuleLabel(lastBackId)}`;
+            showLeft = true;
+        } else if (!onDashboard) {
+            prevLabel = 'Atrás: Inicio';
+            showLeft = true;
+        }
+    
+        if (showLeft && leftInd) {
+            leftInd.innerHTML = `<i class="bi bi-arrow-left-short"></i> ${prevLabel}`;
+            leftInd.classList.remove('d-none');
+        } else if (leftInd) {
+            leftInd.classList.add('d-none');
+        }
+    
+        // Indicador Derecho (Adelante)
+        const rightInd = document.getElementById('header-indicator-right');
+        const lastForwardId = forwardStack.length > 0 ? forwardStack[forwardStack.length - 1] : null;
+    
+        if (lastForwardId) {
+            const nextLabel = `Sig: ${Router.getModuleLabel(lastForwardId)}`;
+            if (rightInd) {
+                rightInd.innerHTML = `${nextLabel} <i class="bi bi-arrow-right-short"></i>`;
+                rightInd.classList.remove('d-none');
+            }
+        } else if (rightInd) {
+            rightInd.classList.add('d-none');
+        }
+    
+        if (navigationHistory.length === 0 && forwardStack.length === 0 && onDashboard) {
+            header.style.cursor = 'default';
+            header.title = '';
+        } else {
+            header.style.cursor = 'pointer';
+            header.title = 'Izquierda: Atrás | Centro: Inicio | Derecha: Adelante';
+        }
+    },
+
+    /**
+     * Helper robusto para identificar el Dashboard
+     */
+    isDashboardId: (id) => {
+        if (!id) return false;
+        const clean = id.toString().trim().toLowerCase().replace('#', '');
+        return clean === 'dashboard-content' || clean === 'inicio' || clean === 'dashboard' || clean === 'main-dashboard';
+    },
+
+    /**
+     * Intenta resolver un nombre legible para un módulo basándose en su ID
+     */
+    getModuleLabel: (id) => {
+        if (!id) return '';
+        if (Router.isDashboardId(id)) return 'Inicio';
+
+        const btn = document.querySelector(`button[data-bs-target="${id}"]`);
+        if (btn && btn.innerText) return btn.innerText.trim();
+
+        const pane = document.querySelector(id);
+        if (pane) {
+            const headerTitle = pane.querySelector('.card-header h5, .card-header .fw-bold, h4, h5');
+            if (headerTitle && headerTitle.innerText) return headerTitle.innerText.trim();
+        }
+
+        const cleanId = id.replace('#', '').replace('-content', '');
+        return cleanId.charAt(0).toUpperCase() + cleanId.slice(1);
     }
 };
+
+// Aliases para compatibilidad y uso simplificado
+const isDashboardId = Router.isDashboardId;
+const getModuleLabel = Router.getModuleLabel; 
+const updateHeaderContext = Router.updateHeaderContext;

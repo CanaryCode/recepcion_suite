@@ -33,6 +33,17 @@ export const Config = {
             // Actualizamos la variable global SIN SOBRESCRIBIR LA REFERENCIA (evita nulos)
             Object.assign(APP_CONFIG, data || {});
 
+            // Verificamos estructuras y valores por defecto del Cocktail
+            if (!APP_CONFIG.HOTEL) APP_CONFIG.HOTEL = {};
+            if (!APP_CONFIG.HOTEL.COCKTAIL_LUGARES || APP_CONFIG.HOTEL.COCKTAIL_LUGARES.length === 0) {
+                APP_CONFIG.HOTEL.COCKTAIL_LUGARES = [
+                    { es: 'Terraza del restaurante', en: 'Restaurant Terrace', de: 'Restaurantterrasse', fr: 'Terrasse du restaurant', default: true },
+                    { es: 'Salón la paz', en: 'Paz Lounge', de: 'Paz Lounge', fr: 'Salon la paix', default: false },
+                    { es: 'Jardín del restaurante', en: 'Restaurant Garden', de: 'Restaurantgarten', fr: 'Jardin du restaurant', default: false },
+                    { es: 'Piscina', en: 'Pool area', de: 'Poolbereich', fr: 'Piscine', default: false }
+                ];
+            }
+            
             // FIX CRITICO: Forzamos ruta relativa para asegurar que funciona en cualquier PC/IP
             if (APP_CONFIG.SYSTEM) {
                 APP_CONFIG.SYSTEM.API_URL = '/api';

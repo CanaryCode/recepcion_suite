@@ -579,9 +579,63 @@
               <label class="form-label small fw-bold">Hora Predeterminada</label>
               <input type="time" id="conf_cocktail_hora" class="form-control" />
             </div>
-            <div class="col-md-12">
-              <label class="form-label small fw-bold">Lugar Predeterminado</label>
-              <input type="text" id="conf_cocktail_lugar" class="form-control" placeholder="Ej: Salón la paz" />
+          </div>
+        </div>
+    </div>
+
+    <!-- 2.55 Lugares del Cocktail (Multi-idioma) -->
+    <div class="card mb-4 shadow-sm border-0">
+        <div class="card-header py-3 bg-white">
+          <h6 class="mb-0 fw-bold text-primary">
+            <i class="bi bi-geo-alt-fill me-2"></i>Lugares para Celebración (Traducciones)
+          </h6>
+        </div>
+        <div class="card-body">
+          <p class="small text-muted mb-3">
+            Gestiona los sitios donde se celebra el cocktail y sus traducciones automáticas.
+          </p>
+
+          <div class="table-responsive border rounded mb-3">
+            <table class="table table-sm table-hover align-middle mb-0">
+                <thead class="table-light small">
+                    <tr>
+                        <th style="width: 20%;">ES (Básico)</th>
+                        <th style="width: 20%;">EN</th>
+                        <th style="width: 20%;">DE</th>
+                        <th style="width: 20%;">FR</th>
+                        <th style="width: 10%;" class="text-center">Defecto</th>
+                        <th style="width: 10%;"></th>
+                    </tr>
+                </thead>
+                <tbody id="list-cocktail-lugares">
+                    <!-- Dinámico -->
+                </tbody>
+            </table>
+          </div>
+
+          <div class="p-3 bg-light rounded border">
+            <div class="row g-2 mb-2">
+                <div class="col-md-3">
+                  <label class="small fw-bold text-muted">Nombre ES</label>
+                  <input type="text" id="newLugarES" class="form-control form-control-sm" placeholder="Ej: Piscina">
+                </div>
+                <div class="col-md-3">
+                  <label class="small fw-bold text-muted">Nombre EN</label>
+                  <input type="text" id="newLugarEN" class="form-control form-control-sm" placeholder="Ej: Pool">
+                </div>
+                <div class="col-md-3">
+                  <label class="small fw-bold text-muted">Nombre DE</label>
+                  <input type="text" id="newLugarDE" class="form-control form-control-sm" placeholder="Ej: Schwimmbad">
+                </div>
+                <div class="col-md-3">
+                  <label class="small fw-bold text-muted">Nombre FR</label>
+                  <input type="text" id="newLugarFR" class="form-control form-control-sm" placeholder="Ej: Piscine">
+                </div>
+            </div>
+            <div class="d-flex justify-content-end">
+                <button class="btn btn-primary btn-sm fw-bold" onclick="addCocktailLugar()">
+                    <i class="bi bi-plus-lg me-1"></i>Añadir Lugar
+                </button>
             </div>
           </div>
         </div>

@@ -1,6 +1,6 @@
-import { APP_CONFIG } from '../core/Config.js';
-import { Utils } from '../core/Utils.js';
-import { Ui } from '../core/Ui.js';
+import { APP_CONFIG } from "../core/Config.js";
+import { Utils } from "../core/Utils.js";
+import { Ui } from "../core/Ui.js";
 
 /**
  * MÓDULO DE IMPRESIÓN DINÁMICA - ISOLATED WINDOW ENGINE
@@ -10,323 +10,409 @@ import { Ui } from '../core/Ui.js';
  */
 
 const TEMPLATE_CONFIGS = {
-    tarjetero: {
-        id: 'tarjetero',
-        label: 'Tarjetero Cliente',
-        width: 140,
-        height: 110,
-        coordinates: {
-            nombre: { x: 75, y: 12, h: 10, w: 60, label: "Nombre" },
-            habitacion: { x: 75, y: 25, h: 10, w: 60, label: "Habitación" },
-            pax: { x: 75, y: 38, h: 10, w: 60, label: "Reservas" },
-            regime: { x: 75, y: 51, h: 10, w: 60, label: "Régimen" },
-            entrada: { x: 75, y: 65, h: 10, w: 60, label: "Llegadas" },
-            salida: { x: 75, y: 78, h: 10, w: 60, label: "Salida" },
-            agencia: { x: 75, y: 91, h: 5, w: 60, label: "Agencia" }
-        }
+  tarjetero: {
+    id: "tarjetero",
+    label: "Tarjetero Cliente",
+    width: 140,
+    height: 110,
+    coordinates: {
+      nombre: { x: 75, y: 12, h: 10, w: 60, label: "Nombre" },
+      habitacion: { x: 75, y: 25, h: 10, w: 60, label: "Habitación" },
+      pax: { x: 75, y: 38, h: 10, w: 60, label: "Reservas" },
+      regime: { x: 75, y: 51, h: 10, w: 60, label: "Régimen" },
+      entrada: { x: 75, y: 65, h: 10, w: 60, label: "Llegadas" },
+      salida: { x: 75, y: 78, h: 10, w: 60, label: "Salida" },
+      agencia: { x: 75, y: 91, h: 5, w: 60, label: "Agencia" },
     },
-    cocktail: {
-        id: 'cocktail',
-        label: 'Invitación Cocktail',
-        width: 165,
-        height: 100,
-        coordinates: {
-            nombre_invitado: { x: 15, y: 40, h: 12, w: 145, label: "Nombre" },
-            hora_cocktail: { x: 74, y: 52, h: 10, w: 15, label: "Hora" },
-            fecha_cocktail: { x: 89, y: 52, h: 10, w: 16, label: "Fecha" },
-            lugar_cocktail: { x: 110, y: 52, h: 10, w: 53, label: "Lugar" }
-        }
-    }
+  },
+  cocktail: {
+    id: "cocktail",
+    label: "Invitación Cocktail",
+    width: 165,
+    height: 100,
+    coordinates: {
+      nombre_invitado: { x: 15, y: 40, h: 12, w: 145, label: "Nombre" },
+      hora_cocktail: { x: 74, y: 52, h: 10, w: 15, label: "Hora" },
+      fecha_cocktail: { x: 89, y: 52, h: 10, w: 16, label: "Fecha" },
+      lugar_cocktail: { x: 110, y: 52, h: 10, w: 53, label: "Lugar" },
+    },
+  },
 };
 
-let currentTemplateId = localStorage.getItem('impresion_current_template') || 'tarjetero';
+let currentTemplateId =
+  localStorage.getItem("impresion_current_template") || "tarjetero";
 let currentCoordinates = { ...TEMPLATE_CONFIGS[currentTemplateId].coordinates };
 let cocktailMetadata = {
-    fecha: '',
-    hora: '',
-    lugar: ''
+  fecha: "",
+  hora: "",
+  lugar: "",
 };
 let lastParsedData = []; // Store data for session editing
-let dragSubject = null;  // { key, startX, startY, initialX, initialY }
-let activeFieldKey = null; 
+let dragSubject = null; // { key, startX, startY, initialX, initialY }
+let currentRotation = parseInt(
+  localStorage.getItem("impresion_rotation") || "0",
+);
+let activeFieldKey = null;
 
 export async function inicializarImpresion() {
-    if (window.__impresion_initialized) return;
+  if (window.__impresion_initialized) return;
 
-    let root = document.getElementById('impresion-root');
-    if (!root) {
-        const tab = document.getElementById('impresion-content');
-        if (tab) {
-            root = document.createElement('div');
-            root.id = 'impresion-root';
-            tab.appendChild(root);
-        }
+  let root = document.getElementById("impresion-root");
+  if (!root) {
+    const tab = document.getElementById("impresion-content");
+    if (tab) {
+      root = document.createElement("div");
+      root.id = "impresion-root";
+      tab.appendChild(root);
     }
+  }
 
-    if (!root) return;
+  if (!root) return;
 
-    try {
-        loadCoordinates(); 
+  try {
+    loadCoordinates();
 
-        const response = await fetch(`assets/templates/impresion.html?v=${Date.now()}`);
-        if (!response.ok) throw new Error("Plantilla no encontrada");
-        root.innerHTML = await response.text();
+    const response = await fetch(
+      `assets/templates/impresion.html?v=${Date.now()}`,
+    );
+    if (!response.ok) throw new Error("Plantilla no encontrada");
+    root.innerHTML = await response.text();
 
-        inyectarEstilosBase();
+    inyectarEstilosBase();
 
-        Ui.setupViewToggle({
-            buttons: [
-                { id: 'btnImpresionTrabajo', viewId: 'impresion-trabajo' },
-                { id: 'btnImpresionVista', viewId: 'impresion-tarjetero' }
-            ]
-        });
+    Ui.setupViewToggle({
+      buttons: [
+        { id: "btnImpresionTrabajo", viewId: "impresion-trabajo" },
+        { id: "btnImpresionVista", viewId: "impresion-tarjetero" },
+      ],
+    });
 
-        document.getElementById('btnProcesarWord')?.addEventListener('click', () => procesarDatosWord());
-        
-        // Listeners para cocktail metadata
-        document.getElementById('cocktail-fecha')?.addEventListener('input', (e) => { cocktailMetadata.fecha = e.target.value; syncCocktailMetadata(); });
-        document.getElementById('cocktail-hora')?.addEventListener('input', (e) => { cocktailMetadata.hora = e.target.value; syncCocktailMetadata(); });
-        document.getElementById('cocktail-lugar')?.addEventListener('input', (e) => { cocktailMetadata.lugar = e.target.value; syncCocktailMetadata(); });
-        // Initial Metadata from Config
-        const cocktailConfig = APP_CONFIG.HOTEL?.COCKTAIL_CONFIG || { DIA: 5, HORA: '19:00', LUGAR: 'Salón la paz' };
-        cocktailMetadata.hora = cocktailConfig.HORA;
-        cocktailMetadata.lugar = cocktailConfig.LUGAR || 'Salón la paz';
-        // La fecha se calculará dinámicamente al procesar datos
+    document
+      .getElementById("btnProcesarWord")
+      ?.addEventListener("click", () => procesarDatosWord());
 
-        // Initial state
+    // Listeners para cocktail metadata
+    document
+      .getElementById("cocktail-fecha")
+      ?.addEventListener("input", (e) => {
+        cocktailMetadata.fecha = e.target.value;
         syncCocktailMetadata();
-        setTemplateType(currentTemplateId, true);
-
-        window.ejecutarImpresionIframe = ejecutarImpresionAislada; 
-        
-        window.resetCoordinate = resetCoordinate;
-        window.updateCoordinateValue = updateCoordinateValue;
-        window.updateActiveFieldCoord = updateActiveFieldCoord;
-        window.resetActiveField = resetActiveField;
-        window.setTemplateType = setTemplateType;
-        window.updateNacionalidad = updateNacionalidad;
-        window.imprimirLote = imprimirLote;
-
-        // Global mouse events for dragging
-        document.addEventListener('mousemove', handleFieldMouseMove);
-        document.addEventListener('mouseup', handleFieldMouseUp);
-
-        window.__impresion_initialized = true;
-        console.log("%c[Impresion] ISOLATED WINDOW ENGINE LOADED", "color: #ff00ff; font-weight: bold;");
-        
-        Ui.initTooltips?.();
-
-    } catch (error) {
-        console.error("[Impresion] Error:", error);
-        root.innerHTML = `<div class="alert alert-danger m-3">Error v1.40: ${error.message}</div>`;
+      });
+    document.getElementById("cocktail-hora")?.addEventListener("input", (e) => {
+      cocktailMetadata.hora = e.target.value;
+      syncCocktailMetadata();
+    });
+    document
+      .getElementById("cocktail-lugar")
+      ?.addEventListener("change", (e) => {
+        cocktailMetadata.lugar = e.target.value;
+        syncCocktailMetadata();
+      });
+    // Initial Metadata from Config
+    const lugares = APP_CONFIG.HOTEL?.COCKTAIL_LUGARES || [];
+    const selectLugar = document.getElementById("cocktail-lugar");
+    if (selectLugar) {
+        selectLugar.innerHTML = lugares.map(l => `<option value="${l.es}">${l.es}</option>`).join('');
     }
+
+    const lugarDefault = lugares.find(l => l.default) || lugares[0];
+    const cocktailConfig = APP_CONFIG.HOTEL?.COCKTAIL_CONFIG || {
+      DIA: 5,
+      HORA: "19:00",
+    };
+    cocktailMetadata.hora = cocktailConfig.HORA;
+    cocktailMetadata.lugar = lugarDefault ? lugarDefault.es : "Salón la paz";
+    if (selectLugar) selectLugar.value = cocktailMetadata.lugar;
+
+    // Initial state
+    syncCocktailMetadata();
+    setTemplateType(currentTemplateId, true);
+
+    window.ejecutarImpresionIframe = ejecutarImpresionAislada;
+
+    window.resetCoordinate = resetCoordinate;
+    window.updateCoordinateValue = updateCoordinateValue;
+    window.updateActiveFieldCoord = updateActiveFieldCoord;
+    window.resetActiveField = resetActiveField;
+    window.setTemplateType = setTemplateType;
+    window.setRotation = setRotation;
+    window.updateNacionalidad = updateNacionalidad;
+    window.imprimirLote = imprimirLote;
+
+    // Global mouse events for dragging
+    document.addEventListener("mousemove", handleFieldMouseMove);
+    document.addEventListener("mouseup", handleFieldMouseUp);
+
+    window.__impresion_initialized = true;
+    console.log(
+      "%c[Impresion] ISOLATED WINDOW ENGINE LOADED",
+      "color: #ff00ff; font-weight: bold;",
+    );
+
+    Ui.initTooltips?.();
+  } catch (error) {
+    console.error("[Impresion] Error:", error);
+    root.innerHTML = `<div class="alert alert-danger m-3">Error v1.40: ${error.message}</div>`;
+  }
 }
 
 function loadCoordinates() {
-    const storageKey = `impresion_coords_${currentTemplateId}`;
-    const saved = localStorage.getItem(storageKey); 
-    if (saved) {
-        try {
-            currentCoordinates = JSON.parse(saved);
-        } catch (e) {
-            currentCoordinates = JSON.parse(JSON.stringify(TEMPLATE_CONFIGS[currentTemplateId].coordinates));
-        }
-    } else {
-        currentCoordinates = JSON.parse(JSON.stringify(TEMPLATE_CONFIGS[currentTemplateId].coordinates));
+  const storageKey = `impresion_coords_${currentTemplateId}`;
+  const saved = localStorage.getItem(storageKey);
+  if (saved) {
+    try {
+      currentCoordinates = JSON.parse(saved);
+    } catch (e) {
+      currentCoordinates = JSON.parse(
+        JSON.stringify(TEMPLATE_CONFIGS[currentTemplateId].coordinates),
+      );
     }
+  } else {
+    currentCoordinates = JSON.parse(
+      JSON.stringify(TEMPLATE_CONFIGS[currentTemplateId].coordinates),
+    );
+  }
 }
 
 function saveCoordinates() {
-    const storageKey = `impresion_coords_${currentTemplateId}`;
-    localStorage.setItem(storageKey, JSON.stringify(currentCoordinates));
+  const storageKey = `impresion_coords_${currentTemplateId}`;
+  localStorage.setItem(storageKey, JSON.stringify(currentCoordinates));
 }
 
 function updateCoordinateValue(key, axis, value) {
-    if (!currentCoordinates[key]) return;
-    currentCoordinates[key][axis] = parseFloat(value) || 0;
-    saveCoordinates();
-    
-    document.querySelectorAll(`.f-${key}`).forEach(el => {
-        if (axis === 'x') el.style.left = value + 'mm';
-        if (axis === 'y') el.style.top = value + 'mm';
-        if (axis === 'h') el.style.height = value + 'mm';
-        if (axis === 'w') el.style.width = value + 'mm';
-    });
+  if (!currentCoordinates[key]) return;
+  currentCoordinates[key][axis] = parseFloat(value) || 0;
+  saveCoordinates();
 
-    // Sincronizar con la barra de calibración si es el campo activo
-    if (activeFieldKey === key) {
-        const input = document.getElementById(`calib-${axis}`);
-        if (input && document.activeElement !== input) {
-            input.value = currentCoordinates[key][axis];
-        }
+  document.querySelectorAll(`.f-${key}`).forEach((el) => {
+    if (axis === "x") el.style.left = value + "mm";
+    if (axis === "y") el.style.top = value + "mm";
+    if (axis === "h") el.style.height = value + "mm";
+    if (axis === "w") el.style.width = value + "mm";
+  });
+
+  // Sincronizar con la barra de calibración si es el campo activo
+  if (activeFieldKey === key) {
+    const input = document.getElementById(`calib-${axis}`);
+    if (input && document.activeElement !== input) {
+      input.value = currentCoordinates[key][axis];
     }
+  }
 }
 
 function updateActiveFieldCoord(axis, value) {
-    if (!activeFieldKey) return;
-    updateCoordinateValue(activeFieldKey, axis, value);
+  if (!activeFieldKey) return;
+  updateCoordinateValue(activeFieldKey, axis, value);
 }
 
 function resetActiveField() {
-    if (!activeFieldKey) return;
-    resetCoordinate(activeFieldKey);
-    seleccionarCampo(activeFieldKey); // Refrescar UI
+  if (!activeFieldKey) return;
+  resetCoordinate(activeFieldKey);
+  seleccionarCampo(activeFieldKey); // Refrescar UI
 }
 
 function seleccionarCampo(key) {
-    activeFieldKey = key;
-    const bar = document.getElementById('calibration-bar');
-    const label = document.getElementById('calib-field-name');
-    const inputX = document.getElementById('calib-x');
-    const inputY = document.getElementById('calib-y');
-    const inputH = document.getElementById('calib-h');
-    const inputW = document.getElementById('calib-w');
+  activeFieldKey = key;
+  const bar = document.getElementById("calibration-bar");
+  const label = document.getElementById("calib-field-name");
+  const inputX = document.getElementById("calib-x");
+  const inputY = document.getElementById("calib-y");
+  const inputH = document.getElementById("calib-h");
+  const inputW = document.getElementById("calib-w");
 
-    if (!bar || !label) return;
+  if (!bar || !label) return;
 
-    if (key) {
-        bar.classList.remove('opacity-50');
-        bar.style.pointerEvents = 'auto';
-        label.textContent = `Campo: ${currentCoordinates[key].label}`;
-        inputX.value = currentCoordinates[key].x;
-        inputY.value = currentCoordinates[key].y;
-        inputH.value = currentCoordinates[key].h;
-        inputW.value = currentCoordinates[key].w || 50;
+  if (key) {
+    bar.classList.remove("opacity-50");
+    bar.style.pointerEvents = "auto";
+    label.textContent = `Campo: ${currentCoordinates[key].label}`;
+    inputX.value = currentCoordinates[key].x;
+    inputY.value = currentCoordinates[key].y;
+    inputH.value = currentCoordinates[key].h;
+    inputW.value = currentCoordinates[key].w || 50;
 
-        // Resaltar visualmente en el tarjetero
-        document.querySelectorAll('.card-field').forEach(el => el.classList.remove('active-field'));
-        document.querySelectorAll(`.f-${key}`).forEach(el => el.classList.add('active-field'));
-    } else {
-        bar.classList.add('opacity-50');
-        bar.style.pointerEvents = 'none';
-        label.textContent = 'Campo: ---';
-        inputX.value = '';
-        inputY.value = '';
-        inputH.value = '';
-        inputW.value = '';
-        document.querySelectorAll('.card-field').forEach(el => el.classList.remove('active-field'));
-    }
+    // Resaltar visualmente en el tarjetero
+    document
+      .querySelectorAll(".card-field")
+      .forEach((el) => el.classList.remove("active-field"));
+    document
+      .querySelectorAll(`.f-${key}`)
+      .forEach((el) => el.classList.add("active-field"));
+  } else {
+    bar.classList.add("opacity-50");
+    bar.style.pointerEvents = "none";
+    label.textContent = "Campo: ---";
+    inputX.value = "";
+    inputY.value = "";
+    inputH.value = "";
+    inputW.value = "";
+    document
+      .querySelectorAll(".card-field")
+      .forEach((el) => el.classList.remove("active-field"));
+  }
 }
 
 function handleFieldMouseDown(e, key) {
-    const fieldEl = e.currentTarget;
-    const rect = fieldEl.getBoundingClientRect();
-    
-    dragSubject = {
-        key: key,
-        startX: e.clientX,
-        startY: e.clientY,
-        initialX: currentCoordinates[key].x,
-        initialY: currentCoordinates[key].y
-    };
-    
-    seleccionarCampo(key);
-    
-    document.body.style.cursor = 'grabbing';
-    fieldEl.classList.add('dragging');
-    e.preventDefault();
+  const fieldEl = e.currentTarget;
+  const rect = fieldEl.getBoundingClientRect();
+
+  dragSubject = {
+    key: key,
+    startX: e.clientX,
+    startY: e.clientY,
+    initialX: currentCoordinates[key].x,
+    initialY: currentCoordinates[key].y,
+  };
+
+  seleccionarCampo(key);
+
+  document.body.style.cursor = "grabbing";
+  fieldEl.classList.add("dragging");
+  e.preventDefault();
 }
 
 function handleFieldMouseMove(e) {
-    if (!dragSubject) return;
+  if (!dragSubject) return;
 
-    // Calcular escala real: 140mm es el ancho de la tarjeta
-    const card = document.querySelector('.customer-card');
-    if (!card) return;
-    const pxToMm = TEMPLATE_CONFIGS[currentTemplateId].width / card.offsetWidth;
+  // Calcular escala real: 140mm es el ancho de la tarjeta
+  const card = document.querySelector(".customer-card");
+  if (!card) return;
+  const pxToMm = TEMPLATE_CONFIGS[currentTemplateId].width / card.offsetWidth;
 
-    const deltaX = (e.clientX - dragSubject.startX) * pxToMm;
-    const deltaY = (e.clientY - dragSubject.startY) * pxToMm;
+  const deltaX = (e.clientX - dragSubject.startX) * pxToMm;
+  const deltaY = (e.clientY - dragSubject.startY) * pxToMm;
 
-    const newX = Math.round((dragSubject.initialX + deltaX) * 2) / 2; // 0.5mm step
-    const newY = Math.round((dragSubject.initialY + deltaY) * 2) / 2;
+  const newX = Math.round((dragSubject.initialX + deltaX) * 2) / 2; // 0.5mm step
+  const newY = Math.round((dragSubject.initialY + deltaY) * 2) / 2;
 
-    updateCoordinateValue(dragSubject.key, 'x', newX);
-    updateCoordinateValue(dragSubject.key, 'y', newY);
+  updateCoordinateValue(dragSubject.key, "x", newX);
+  updateCoordinateValue(dragSubject.key, "y", newY);
 }
 
 function handleFieldMouseUp() {
-    if (!dragSubject) return;
-    
-    dragSubject = null;
-    document.body.style.cursor = 'default';
-    document.querySelectorAll('.card-field.dragging').forEach(el => el.classList.remove('dragging'));
+  if (!dragSubject) return;
+
+  dragSubject = null;
+  document.body.style.cursor = "default";
+  document
+    .querySelectorAll(".card-field.dragging")
+    .forEach((el) => el.classList.remove("dragging"));
+}
+
+function setRotation(angle) {
+  currentRotation = parseInt(angle);
+  localStorage.setItem("impresion_rotation", angle);
+  
+  // UI Updates (buttons)
+  document.querySelectorAll(".rotation-btn").forEach((btn) => {
+    btn.classList.toggle(
+      "active",
+      parseInt(btn.dataset.rotation) === currentRotation,
+    );
+  });
+
+  // Cambiar la vista previa de todas las tarjetas existentes
+  document.querySelectorAll('.customer-card').forEach(card => {
+    card.setAttribute('data-rotation', currentRotation);
+  });
+
+  // Si no hay tarjetas, podemos marcar el contenedor para que futuros renders lo sepan
+  // Aunque renderizarTarjetero ya usa currentRotation global.
+  
+  Ui.showToast(`Rotación: ${angle}°`, "info");
 }
 
 function setTemplateType(typeId, silent = false) {
-    if (!TEMPLATE_CONFIGS[typeId]) return;
-    currentTemplateId = typeId;
-    localStorage.setItem('impresion_current_template', typeId);
-    loadCoordinates(); 
-    
-    // UI Updates
-    document.querySelectorAll('.template-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.type === typeId);
-    });
-    
-    // Actualizar nombre de la pestaña de vista previa
-    const btnVista = document.getElementById('btnImpresionVista');
-    if (btnVista) {
-        btnVista.innerHTML = `<i class="bi bi-eye me-2"></i>Vista Previa ${TEMPLATE_CONFIGS[typeId].label}`;
-    }
+  if (!TEMPLATE_CONFIGS[typeId]) return;
+  currentTemplateId = typeId;
+  localStorage.setItem("impresion_current_template", typeId);
+  loadCoordinates();
 
-    // Update CSS Variables for card size
-    const root = document.documentElement;
-    root.style.setProperty('--card-width', `${TEMPLATE_CONFIGS[typeId].width}mm`);
-    root.style.setProperty('--card-height', `${TEMPLATE_CONFIGS[typeId].height}mm`);
+  // UI Updates
+  document.querySelectorAll(".template-btn").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.type === typeId);
+  });
 
-    const cocktailSection = document.getElementById('cocktail-metadata-section');
-    if (cocktailSection) {
-        if (typeId === 'cocktail') {
-            cocktailSection.classList.remove('d-none');
-            cocktailSection.style.display = 'flex'; 
-        } else {
-            cocktailSection.classList.add('d-none');
-            cocktailSection.style.display = 'none';
-        }
-    }
+  // Actualizar nombre de la pestaña de vista previa
+  const btnVista = document.getElementById("btnImpresionVista");
+  if (btnVista) {
+    btnVista.innerHTML = `<i class="bi bi-eye me-2"></i>Vista Previa ${TEMPLATE_CONFIGS[typeId].label}`;
+  }
 
-    // Marcar root con el tipo de plantilla para el CSS de la guía
-    const rootEl = document.getElementById('impresion-root');
-    if (rootEl) rootEl.dataset.template = typeId;
+  // Update CSS Variables for card size
+  const root = document.documentElement;
+  root.style.setProperty("--card-width", `${TEMPLATE_CONFIGS[typeId].width}mm`);
+  root.style.setProperty(
+    "--card-height",
+    `${TEMPLATE_CONFIGS[typeId].height}mm`,
+  );
 
-    if (lastParsedData.length > 0) {
-        renderizarTarjetero(lastParsedData);
+  const cocktailSection = document.getElementById("cocktail-metadata-section");
+  if (cocktailSection) {
+    if (typeId === "cocktail") {
+      cocktailSection.classList.remove("d-none");
+      cocktailSection.style.display = "flex";
+    } else {
+      cocktailSection.classList.add("d-none");
+      cocktailSection.style.display = "none";
     }
-    
-    seleccionarCampo(null);
-    if (!silent) {
-        Ui.showToast(`Cambiado a: ${TEMPLATE_CONFIGS[typeId].label}`);
-    }
+  }
+
+  // Marcar root con el tipo de plantilla para el CSS de la guía
+  const rootEl = document.getElementById("impresion-root");
+  if (rootEl) rootEl.dataset.template = typeId;
+
+  // Actualizar botones de rotación al cargar
+  document.querySelectorAll(".rotation-btn").forEach((btn) => {
+    btn.classList.toggle(
+      "active",
+      parseInt(btn.dataset.rotation) === currentRotation,
+    );
+  });
+
+  if (lastParsedData.length > 0) {
+    renderizarTarjetero(lastParsedData);
+  }
+
+  seleccionarCampo(null);
+  if (!silent) {
+    Ui.showToast(`Cambiado a: ${TEMPLATE_CONFIGS[typeId].label}`);
+  }
 }
 
-
 function updateNacionalidad(index, nac) {
-    if (lastParsedData[index]) {
-        lastParsedData[index].nacionalidad = nac;
-        renderizarTarjetero(lastParsedData); // Re-render for grouping
-    }
+  if (lastParsedData[index]) {
+    lastParsedData[index].nacionalidad = nac;
+    renderizarTarjetero(lastParsedData); // Re-render for grouping
+  }
 }
 
 function resetCoordinate(key) {
-    currentCoordinates[key] = JSON.parse(JSON.stringify(TEMPLATE_CONFIGS[currentTemplateId].coordinates[key]));
-    saveCoordinates();
-    
-    const coords = currentCoordinates[key];
-    document.querySelectorAll(`.f-${key}`).forEach(el => {
-        el.style.left = coords.x + 'mm';
-        el.style.top = coords.y + 'mm';
-        el.style.height = coords.h + 'mm';
-    });
-    
-    Ui.showToast(`Reseteado: ${TEMPLATE_CONFIGS[currentTemplateId].coordinates[key].label}`, "info");
+  currentCoordinates[key] = JSON.parse(
+    JSON.stringify(TEMPLATE_CONFIGS[currentTemplateId].coordinates[key]),
+  );
+  saveCoordinates();
+
+  const coords = currentCoordinates[key];
+  document.querySelectorAll(`.f-${key}`).forEach((el) => {
+    el.style.left = coords.x + "mm";
+    el.style.top = coords.y + "mm";
+    el.style.height = coords.h + "mm";
+  });
+
+  Ui.showToast(
+    `Reseteado: ${TEMPLATE_CONFIGS[currentTemplateId].coordinates[key].label}`,
+    "info",
+  );
 }
 
 function inyectarEstilosBase() {
-    document.querySelectorAll('[id^="styles-impresion-"]').forEach(el => el.remove());
-    const styleTag = document.createElement('style');
-    styleTag.id = 'styles-impresion';
-    styleTag.innerHTML = `
+  document
+    .querySelectorAll('[id^="styles-impresion-"]')
+    .forEach((el) => el.remove());
+  const styleTag = document.createElement("style");
+  styleTag.id = "styles-impresion";
+  styleTag.innerHTML = `
         .customer-card {
             width: var(--card-width, 140mm) !important;
             height: var(--card-height, 110mm) !important;
@@ -337,21 +423,98 @@ function inyectarEstilosBase() {
             box-shadow: 0 10px 30px rgba(0,0,0,0.1) !important;
             overflow: hidden !important;
             display: block !important;
+            transition: all 0.3s ease !important;
         }
+
+        /* Rotación 90 y 270 (Vertical) */
+        .customer-card[data-rotation="90"],
+        .customer-card[data-rotation="270"] {
+            width: var(--card-height, 110mm) !important;
+            height: var(--card-width, 140mm) !important;
+        }
+
         .customer-card.show-guide {
-            /* Guía para Tarjetero (Verde a la izquierda) */
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" viewBox="0 0 140 110"><rect x="0" y="0" width="62" height="110" fill="%236a9c3b" opacity="0.1"/><line x1="75" y1="0" x2="75" y2="110" stroke="red" stroke-width="0.5" opacity="0.3"/></svg>') !important;
             background-size: 100% 100% !important;
             background-repeat: no-repeat !important;
+            transition: background 0.3s ease !important;
         }
-        [data-template="cocktail"] .customer-card.show-guide {
-            /* Guía para Cocktail (Verde abajo) */
+
+        /* 0° - Default Landscape */
+        .customer-card[data-rotation="0"].show-guide {
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" viewBox="0 0 140 110"><rect x="0" y="0" width="62" height="110" fill="%236a9c3b" opacity="0.1"/><line x1="75" y1="0" x2="75" y2="110" stroke="red" stroke-width="0.5" opacity="0.3"/></svg>') !important;
+        }
+        [data-template="cocktail"] .customer-card[data-rotation="0"].show-guide {
             background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" viewBox="0 0 165 100"><rect x="0" y="80" width="165" height="20" fill="%236a9c3b" opacity="0.1"/><line x1="0" y1="40" x2="165" y2="40" stroke="red" stroke-width="0.2" opacity="0.2"/><line x1="0" y1="52" x2="165" y2="52" stroke="red" stroke-width="0.2" opacity="0.2"/></svg>') !important;
         }
+
+        /* 90° - Vertical (Rotate 90deg CW) */
+        /* Left side becomes Top */
+        .customer-card[data-rotation="90"].show-guide {
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" viewBox="0 0 110 140"><rect x="0" y="0" width="110" height="62" fill="%236a9c3b" opacity="0.1"/><line x1="0" y1="75" x2="110" y2="75" stroke="red" stroke-width="0.5" opacity="0.3"/></svg>') !important;
+        }
+        /* Bottom side becomes Left */
+        [data-template="cocktail"] .customer-card[data-rotation="90"].show-guide {
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" viewBox="0 0 100 165"><rect x="0" y="0" width="20" height="165" fill="%236a9c3b" opacity="0.1"/><line x1="60" y1="0" x2="60" y2="165" stroke="red" stroke-width="0.2" opacity="0.2"/><line x1="48" y1="0" x2="48" y2="165" stroke="red" stroke-width="0.2" opacity="0.2"/></svg>') !important;
+        }
+
+        /* 180° - Upside Down */
+        /* Left side becomes Right */
+        .customer-card[data-rotation="180"].show-guide {
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" viewBox="0 0 140 110"><rect x="78" y="0" width="62" height="110" fill="%236a9c3b" opacity="0.1"/><line x1="65" y1="0" x2="65" y2="110" stroke="red" stroke-width="0.5" opacity="0.3"/></svg>') !important;
+        }
+        /* Bottom side becomes Top */
+        [data-template="cocktail"] .customer-card[data-rotation="180"].show-guide {
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" viewBox="0 0 165 100"><rect x="0" y="0" width="165" height="20" fill="%236a9c3b" opacity="0.1"/><line x1="0" y1="60" x2="165" y2="60" stroke="red" stroke-width="0.2" opacity="0.2"/><line x1="0" y1="48" x2="165" y2="48" stroke="red" stroke-width="0.2" opacity="0.2"/></svg>') !important;
+        }
+
+        /* 270° - Vertical Reverse */
+        /* Left side becomes Bottom */
+        .customer-card[data-rotation="270"].show-guide {
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" viewBox="0 0 110 140"><rect x="0" y="78" width="110" height="62" fill="%236a9c3b" opacity="0.1"/><line x1="0" y1="65" x2="110" y2="65" stroke="red" stroke-width="0.5" opacity="0.3"/></svg>') !important;
+        }
+        /* Bottom side becomes Right */
+        [data-template="cocktail"] .customer-card[data-rotation="270"].show-guide {
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" viewBox="0 0 100 165"><rect x="80" y="0" width="20" height="165" fill="%236a9c3b" opacity="0.1"/><line x1="40" y1="0" x2="40" y2="165" stroke="red" stroke-width="0.2" opacity="0.2"/><line x1="52" y1="0" x2="52" y2="165" stroke="red" stroke-width="0.2" opacity="0.2"/></svg>') !important;
+        }
+
         .precision-container {
             position: relative;
             width: 100%;
             height: 100%;
+            transition: transform 0.3s ease;
+        }
+
+        /* Lógica de transformaciones para rotar el contenido */
+        /* Usamos translate + rotate de forma que siempre encaje en el nuevo contenedor */
+        
+        .customer-card[data-rotation="0"] .precision-container {
+            transform: none !important;
+        }
+
+        .customer-card[data-rotation="90"] .precision-container {
+            transform: rotate(90deg) translateY(-100%) !important;
+            transform-origin: top left !important;
+        }
+
+        .customer-card[data-rotation="180"] .precision-container {
+            transform: rotate(180deg) translate(-100%, -100%) !important;
+            transform-origin: top left !important;
+        }
+
+        .customer-card[data-rotation="270"] .precision-container {
+            transform: rotate(270deg) translateX(-100%) !important;
+            transform-origin: top left !important;
+        }
+
+        /* Corregir tamaños del contenedor interno para que coincidan con la lógica de % */
+        .customer-card .precision-container {
+            width: var(--card-width) !important;
+            height: var(--card-height) !important;
+        }
+
+        /* Bloquear eventos de ratón en las etiquetas para que no interfieran con el drag */
+        .field-label {
+            pointer-events: none !important;
         }
         .card-field {
             position: absolute;
@@ -435,446 +598,532 @@ function inyectarEstilosBase() {
         .nac-btn[data-nac="UK"].active { background: #0d6efd !important; }
         .nac-btn[data-nac="FR"].active { background: #0dcaf0 !important; }
     `;
-    document.head.appendChild(styleTag);
+  document.head.appendChild(styleTag);
 }
-
 
 /**
  * PARSER v1.28
  */
 function procesarDatosWord() {
-    const rawText = document.getElementById('txtWordData').value;
-    if (!rawText || rawText.trim().length < 10) {
-        Ui.showToast("Pega los datos primero", "warning");
-        return;
-    }
+  const rawText = document.getElementById("txtWordData").value;
+  if (!rawText || rawText.trim().length < 10) {
+    Ui.showToast("Pega los datos primero", "warning");
+    return;
+  }
 
-    const lines = rawText.split(/\r?\n/).filter(l => l.trim().length > 5);
-    const parsedData = [];
-    const dateRegex = /\b\d{2}[\.\/\-]\d{2}[\.\/\-]\d{2,4}\b/g;
+  const lines = rawText.split(/\r?\n/).filter((l) => l.trim().length > 5);
+  const parsedData = [];
+  const dateRegex = /\b\d{2}[\.\/\-]\d{2}[\.\/\-]\d{2,4}\b/g;
 
-    lines.forEach(line => {
-        // 1. Detección de Columnas por Tabulador (Pestañas de Word)
-        const tabs = line.split('\t');
-        const hasTabs = tabs.length >= 4;
+  lines.forEach((line) => {
+    // 1. Detección de Columnas por Tabulador (Pestañas de Word)
+    const tabs = line.split("\t");
+    const hasTabs = tabs.length >= 4;
 
-        let entry = {
-            nombre: "DESCONOCIDO",
-            habitacion: "",
-            pax: "1",
-            regime: "HD",
-            entrada: "",
-            salida: "",
-            agencia: "DIRECTO",
-            nacionalidad: "UK",
-            nacionalidadCierta: false
-        };
+    let entry = {
+      nombre: "DESCONOCIDO",
+      habitacion: "",
+      pax: "1",
+      regime: "HD",
+      entrada: "",
+      salida: "",
+      agencia: "DIRECTO",
+      nacionalidad: "UK",
+      nacionalidadCierta: false,
+    };
 
-        const dates = line.match(dateRegex);
-        if (!dates || dates.length < 2) return; // Línea inválida
+    const dates = line.match(dateRegex);
+    if (!dates || dates.length < 2) return; // Línea inválida
 
-        entry.entrada = dates[0];
-        entry.salida = dates[1];
+    entry.entrada = dates[0];
+    entry.salida = dates[1];
 
-        if (hasTabs) {
-            // LÓGICA POR COLUMNAS (Más fiable si viene de Word)
-            // Estructura típica: Habitacion | Tipo | Pax | ResID | Nombre | Llegada | Salida | Regimen | ...
-            // Buscamos cuál es cual basándonos en contenido
-            
-            tabs.forEach((col, idx) => {
-                const val = col.trim();
-                const valUpper = val.toUpperCase();
-                
-                // 1. Nombre (Campo con espacios y sin muchos números)
-                if (val.length > 8 && val.includes(" ") && !val.match(/\b\d{3,}\b/)) {
-                    // Si el nombre aún es desconocido o este parece más largo
-                    if (entry.nombre === "DESCONOCIDO") entry.nombre = val.toUpperCase();
-                }
-                
-                // 2. Habitación (Número de 3 dígitos usualmente, al principio)
-                if (val.match(/^\b\d{2,4}\b$/) && !entry.habitacion && idx < 3) {
-                    entry.habitacion = val;
-                }
+    if (hasTabs) {
+      // LÓGICA POR COLUMNAS (Más fiable si viene de Word)
+      // Estructura típica: Habitacion | Tipo | Pax | ResID | Nombre | Llegada | Salida | Regimen | ...
+      // Buscamos cuál es cual basándonos en contenido
 
-                // 3. Pax (Número de 1 o 2 dígitos solo)
-                if (val.match(/^\b\d{1,2}\b$/) && idx < 5 && val !== entry.habitacion) {
-                    entry.pax = val;
-                }
+      tabs.forEach((col, idx) => {
+        const val = col.trim();
+        const valUpper = val.toUpperCase();
 
-                // 4. Régimen
-                if (valUpper.match(/\b(MP|PC|TI|HD|AD|AL)\b/)) {
-                    let r = valUpper.match(/\b(MP|PC|TI|HD|AD|AL)\b/)[0];
-                    if (r === 'AD') r = 'HD';
-                    entry.regime = r;
-                }
-
-                // 5. Agencia (Búsqueda de palabras clave)
-                const kw = ["EXPEDIA", "BOOKING", "TUI", "JET2", "MTS", "HOTELBEDS", "VECI", "DIR", "SUNWEB", "SCHAUIN", "DERTOUR"];
-                if (kw.some(k => valUpper.includes(k))) {
-                    entry.agencia = val.substring(0, 20);
-                }
-            });
-        } else {
-            // LÓGICA FUZZY (Fallback para texto plano)
-            const firstDateIdx = line.indexOf(dates[0]);
-            const textBefore = line.substring(0, firstDateIdx).trim();
-            const textAfter = line.substring(line.lastIndexOf(dates[1]) + dates[1].length).toUpperCase();
-
-            // Régimen en el texto posterior - Soporta AD -> HD y repeticiones
-            const regimeMatch = textAfter.match(/\b(MP|PC|TI|HD|AD|AL)\b/);
-            if (regimeMatch) {
-                let r = regimeMatch[0];
-                if (r === 'AD') r = 'HD';
-                entry.regime = r;
-            }
-
-            // Números antes de la fecha
-            const numbers = textBefore.match(/\b\d+\b/g) || [];
-            
-            // Heurística crítica: Una habitación tiene 2-4 dígitos. 
-            // Un ID de reserva suele tener 5 o más.
-            const roomCandidates = numbers.filter(n => n.length >= 2 && n.length <= 4);
-            if (roomCandidates.length > 0) {
-                entry.habitacion = roomCandidates[0];
-            }
-
-            const paxCandidates = numbers.filter(n => n.length === 1 && n !== entry.habitacion);
-            if (paxCandidates.length > 0) {
-                entry.pax = paxCandidates[0];
-            }
-
-            // Nombre y Agencia
-            const parts = textBefore.split(/[ ]{2,}/).map(p => p.trim()).filter(p => p.length > 3);
-            parts.forEach(p => {
-                const pUpper = p.toUpperCase();
-                if (p.includes(" ") && !p.match(/\b\d{4,}\b/)) {
-                    entry.nombre = pUpper;
-                }
-                const kw = ["EXPEDIA", "BOOKING", "TUI", "JET2", "MTS", "HOTELBEDS", "VECI", "DIR", "SUNWEB", "SCHAUIN", "DERTOUR"];
-                if (kw.some(k => pUpper.includes(k))) {
-                    entry.agencia = p.substring(0, 20);
-                }
-            });
+        // 1. Nombre (Campo con espacios y sin muchos números)
+        if (val.length > 8 && val.includes(" ") && !val.match(/\b\d{3,}\b/)) {
+          // Si el nombre aún es desconocido o este parece más largo
+          if (entry.nombre === "DESCONOCIDO") entry.nombre = val.toUpperCase();
         }
 
-        // Determinar Nacionalidad Automática
-        const agencyUpper = entry.agencia.toUpperCase();
-        const toLists = APP_CONFIG.HOTEL?.TO_LISTS || { ES: [], DE: [], FR: [], UK: [] };
-        if (toLists.DE.some(kw => agencyUpper.includes(kw))) { entry.nacionalidad = 'DE'; entry.nacionalidadCierta = true; }
-        else if (toLists.ES.some(kw => agencyUpper.includes(kw))) { entry.nacionalidad = 'ES'; entry.nacionalidadCierta = true; }
-        else if (toLists.FR.some(kw => agencyUpper.includes(kw))) { entry.nacionalidad = 'FR'; entry.nacionalidadCierta = true; }
-        else if (toLists.UK.some(kw => agencyUpper.includes(kw))) { entry.nacionalidad = 'UK'; entry.nacionalidadCierta = true; }
+        // 2. Habitación (Número de 3 dígitos usualmente, al principio)
+        if (val.match(/^\b\d{2,4}\b$/) && !entry.habitacion && idx < 3) {
+          entry.habitacion = val;
+        }
 
-        parsedData.push(entry);
-    });
+        // 3. Pax (Número de 1 o 2 dígitos solo)
+        if (val.match(/^\b\d{1,2}\b$/) && idx < 5 && val !== entry.habitacion) {
+          entry.pax = val;
+        }
 
-    if (parsedData.length === 0) {
-        Ui.showToast("No se detectaron datos válidos.", "danger");
-        return;
+        // 4. Régimen
+        if (valUpper.match(/\b(MP|PC|TI|HD|AD|AL)\b/)) {
+          let r = valUpper.match(/\b(MP|PC|TI|HD|AD|AL)\b/)[0];
+          if (r === "AD") r = "HD";
+          entry.regime = r;
+        }
+
+        // 5. Agencia (Búsqueda de palabras clave)
+        const kw = [
+          "EXPEDIA",
+          "BOOKING",
+          "TUI",
+          "JET2",
+          "MTS",
+          "HOTELBEDS",
+          "VECI",
+          "DIR",
+          "SUNWEB",
+          "SCHAUIN",
+          "DERTOUR",
+        ];
+        if (kw.some((k) => valUpper.includes(k))) {
+          entry.agencia = val.substring(0, 20);
+        }
+      });
+    } else {
+      // LÓGICA FUZZY (Fallback para texto plano)
+      const firstDateIdx = line.indexOf(dates[0]);
+      const textBefore = line.substring(0, firstDateIdx).trim();
+      const textAfter = line
+        .substring(line.lastIndexOf(dates[1]) + dates[1].length)
+        .toUpperCase();
+
+      // Régimen en el texto posterior - Soporta AD -> HD y repeticiones
+      const regimeMatch = textAfter.match(/\b(MP|PC|TI|HD|AD|AL)\b/);
+      if (regimeMatch) {
+        let r = regimeMatch[0];
+        if (r === "AD") r = "HD";
+        entry.regime = r;
+      }
+
+      // Números antes de la fecha
+      const numbers = textBefore.match(/\b\d+\b/g) || [];
+
+      // Heurística crítica: Una habitación tiene 2-4 dígitos.
+      // Un ID de reserva suele tener 5 o más.
+      const roomCandidates = numbers.filter(
+        (n) => n.length >= 2 && n.length <= 4,
+      );
+      if (roomCandidates.length > 0) {
+        entry.habitacion = roomCandidates[0];
+      }
+
+      const paxCandidates = numbers.filter(
+        (n) => n.length === 1 && n !== entry.habitacion,
+      );
+      if (paxCandidates.length > 0) {
+        entry.pax = paxCandidates[0];
+      }
+
+      // Nombre y Agencia
+      const parts = textBefore
+        .split(/[ ]{2,}/)
+        .map((p) => p.trim())
+        .filter((p) => p.length > 3);
+      parts.forEach((p) => {
+        const pUpper = p.toUpperCase();
+        if (p.includes(" ") && !p.match(/\b\d{4,}\b/)) {
+          entry.nombre = pUpper;
+        }
+        const kw = [
+          "EXPEDIA",
+          "BOOKING",
+          "TUI",
+          "JET2",
+          "MTS",
+          "HOTELBEDS",
+          "VECI",
+          "DIR",
+          "SUNWEB",
+          "SCHAUIN",
+          "DERTOUR",
+        ];
+        if (kw.some((k) => pUpper.includes(k))) {
+          entry.agencia = p.substring(0, 20);
+        }
+      });
     }
 
-    renderizarTarjetero(parsedData);
-    lastParsedData = parsedData;
-
-    if (currentTemplateId === 'cocktail' && parsedData.length > 0) {
-        autoCalcularFechaCocktail(parsedData[0].entrada);
+    // Determinar Nacionalidad Automática
+    const agencyUpper = entry.agencia.toUpperCase();
+    const toLists = APP_CONFIG.HOTEL?.TO_LISTS || {
+      ES: [],
+      DE: [],
+      FR: [],
+      UK: [],
+    };
+    if (toLists.DE.some((kw) => agencyUpper.includes(kw))) {
+      entry.nacionalidad = "DE";
+      entry.nacionalidadCierta = true;
+    } else if (toLists.ES.some((kw) => agencyUpper.includes(kw))) {
+      entry.nacionalidad = "ES";
+      entry.nacionalidadCierta = true;
+    } else if (toLists.FR.some((kw) => agencyUpper.includes(kw))) {
+      entry.nacionalidad = "FR";
+      entry.nacionalidadCierta = true;
+    } else if (toLists.UK.some((kw) => agencyUpper.includes(kw))) {
+      entry.nacionalidad = "UK";
+      entry.nacionalidadCierta = true;
     }
 
-    document.getElementById('btnImpresionVista')?.click();
+    parsedData.push(entry);
+  });
+
+  if (parsedData.length === 0) {
+    Ui.showToast("No se detectaron datos válidos.", "danger");
+    return;
+  }
+
+  renderizarTarjetero(parsedData);
+  lastParsedData = parsedData;
+
+  if (currentTemplateId === "cocktail" && parsedData.length > 0) {
+    autoCalcularFechaCocktail(parsedData[0].entrada);
+  }
+
+  document.getElementById("btnImpresionVista")?.click();
 }
 
 function syncCocktailMetadata() {
-    // Si estamos en cocktail, refrescar el tarjetero preview para ver cambios de meta
-    if (currentTemplateId === 'cocktail' && lastParsedData.length > 0) {
-        renderizarTarjetero(lastParsedData);
-    }
+  // Si estamos en cocktail, refrescar el tarjetero preview para ver cambios de meta
+  if (currentTemplateId === "cocktail" && lastParsedData.length > 0) {
+    renderizarTarjetero(lastParsedData);
+  }
 }
 
 function autoCalcularFechaCocktail(fechaEntradaStr) {
-    if (!fechaEntradaStr) return;
-    
-    // Intentar parsear fecha (DD/MM/YYYY o DD.MM.YY)
-    const parts = fechaEntradaStr.split(/[\.\/\-]/);
-    if (parts.length < 2) return;
-    
-    let day = parseInt(parts[0]);
-    let month = parseInt(parts[1]) - 1;
-    let year = parts[2] ? (parts[2].length === 2 ? 2000 + parseInt(parts[2]) : parseInt(parts[2])) : new Date().getFullYear();
-    
-    const fechaBase = new Date(year, month, day);
-    if (isNaN(fechaBase.getTime())) return;
+  if (!fechaEntradaStr) return;
 
-    const cocktailConfig = APP_CONFIG.HOTEL?.COCKTAIL_CONFIG || { DIA: 5, HORA: '19:00' };
-    const proximoDia = calcularProximoDia(fechaBase, cocktailConfig.DIA);
-    
-    // Formato YYYY-MM-DD para el input date
-    const yyyy = proximoDia.getFullYear();
-    const mm = String(proximoDia.getMonth() + 1).padStart(2, '0');
-    const dd = String(proximoDia.getDate()).padStart(2, '0');
-    
-    cocktailMetadata.fecha = `${yyyy}-${mm}-${dd}`;
-    
-    const inputFecha = document.getElementById('cocktail-fecha');
-    if (inputFecha) inputFecha.value = cocktailMetadata.fecha;
-    
-    const inputHora = document.getElementById('cocktail-hora');
-    if (inputHora) inputHora.value = cocktailMetadata.hora;
-    
-    const inputLugar = document.getElementById('cocktail-lugar');
-    if (inputLugar) inputLugar.value = cocktailMetadata.lugar;
-    
-    syncCocktailMetadata();
+  // Intentar parsear fecha (DD/MM/YYYY o DD.MM.YY)
+  const parts = fechaEntradaStr.split(/[\.\/\-]/);
+  if (parts.length < 2) return;
+
+  let day = parseInt(parts[0]);
+  let month = parseInt(parts[1]) - 1;
+  let year = parts[2]
+    ? parts[2].length === 2
+      ? 2000 + parseInt(parts[2])
+      : parseInt(parts[2])
+    : new Date().getFullYear();
+
+  const fechaBase = new Date(year, month, day);
+  if (isNaN(fechaBase.getTime())) return;
+
+  const cocktailConfig = APP_CONFIG.HOTEL?.COCKTAIL_CONFIG || {
+    DIA: 5,
+    HORA: "19:00",
+  };
+  const proximoDia = calcularProximoDia(fechaBase, cocktailConfig.DIA);
+
+  // Formato YYYY-MM-DD para el input date
+  const yyyy = proximoDia.getFullYear();
+  const mm = String(proximoDia.getMonth() + 1).padStart(2, "0");
+  const dd = String(proximoDia.getDate()).padStart(2, "0");
+
+  cocktailMetadata.fecha = `${yyyy}-${mm}-${dd}`;
+
+  const inputFecha = document.getElementById("cocktail-fecha");
+  if (inputFecha) inputFecha.value = cocktailMetadata.fecha;
+
+  const inputHora = document.getElementById("cocktail-hora");
+  if (inputHora) inputHora.value = cocktailMetadata.hora;
+
+  const inputLugar = document.getElementById("cocktail-lugar");
+  if (inputLugar) inputLugar.value = cocktailMetadata.lugar;
+
+  syncCocktailMetadata();
 }
 
 function renderizarTarjetero(data) {
-    const container = document.getElementById('cards-container');
-    const lblTotal = document.getElementById('lblTotalCards');
-    if (!container) return;
-    
-    container.innerHTML = '';
-    lblTotal.textContent = data.length;
+  const container = document.getElementById("cards-container");
+  const lblTotal = document.getElementById("lblTotalCards");
+  if (!container) return;
 
-    // Si es Cocktail, mostrar controles de lotes por nacionalidad
-    if (currentTemplateId === 'cocktail') {
-        renderControlesLotes(data);
-    }
+  container.innerHTML = "";
+  lblTotal.textContent = data.length;
 
-    data.forEach((item, index) => {
-        const div = document.createElement('div');
-        div.className = 'customer-card show-guide'; // Guía siempre visible
-        div.dataset.index = index;
-        
-        const precisionContainer = document.createElement('div');
-        precisionContainer.className = 'precision-container';
+  // Si es Cocktail, mostrar controles de lotes por nacionalidad
+  if (currentTemplateId === "cocktail") {
+    renderControlesLotes(data);
+  }
 
-        // Determinar coordenadas a usar
-        const coordsToUse = TEMPLATE_CONFIGS[currentTemplateId].coordinates;
+  data.forEach((item, index) => {
+    const div = document.createElement("div");
+    div.className = "customer-card show-guide";
+    div.dataset.index = index;
+    div.setAttribute("data-rotation", currentRotation);
 
-        Object.keys(coordsToUse).forEach(key => {
-            const coords = coordsToUse[key];
-            let value = item[key] || '';
-            
-            // Valores especiales para cocktail
-            if (currentTemplateId === 'cocktail') {
-                if (key === 'nombre_invitado') value = item.nombre || '';
-                if (key === 'fecha_cocktail') {
-                    const parts = cocktailMetadata.fecha.split('-');
-                    value = parts.length === 3 ? `${parts[2]}/${parts[1]}` : cocktailMetadata.fecha;
-                }
-                if (key === 'hora_cocktail') value = cocktailMetadata.hora;
-                if (key === 'lugar_cocktail') value = `"${cocktailMetadata.lugar}"`;
-            }
+    const precisionContainer = document.createElement("div");
+    precisionContainer.className = "precision-container";
+    // Asegurar que el contenedor interno tenga el tamaño base para la rotación
+    precisionContainer.style.width = TEMPLATE_CONFIGS[currentTemplateId].width + "mm";
+    precisionContainer.style.height = TEMPLATE_CONFIGS[currentTemplateId].height + "mm";
 
-            const fieldWrapper = document.createElement('div');
-            fieldWrapper.className = `card-field f-${key}`;
-            fieldWrapper.style.left = `${coords.x}mm`;
-            fieldWrapper.style.top = `${coords.y}mm`;
-            fieldWrapper.style.height = `${coords.h}mm`;
-            const widthValue = coords.w || (TEMPLATE_CONFIGS[currentTemplateId].width - coords.x);
-            fieldWrapper.style.width = `${widthValue}mm`;
+    // Determinar coordenadas a usar
+    const coordsToUse = TEMPLATE_CONFIGS[currentTemplateId].coordinates;
 
-            fieldWrapper.innerHTML = `
+    Object.keys(coordsToUse).forEach((key) => {
+      const coords = coordsToUse[key];
+      let value = item[key] || "";
+
+      // Valores especiales para cocktail
+      if (currentTemplateId === "cocktail") {
+        if (key === "nombre_invitado") value = item.nombre || "";
+        if (key === "fecha_cocktail") {
+          const parts = cocktailMetadata.fecha.split("-");
+          value =
+            parts.length === 3
+              ? `${parts[2]}/${parts[1]}`
+              : cocktailMetadata.fecha;
+        }
+        if (key === "hora_cocktail") value = cocktailMetadata.hora;
+        if (key === "lugar_cocktail") {
+          const trans = getTranslatedLugar(cocktailMetadata.lugar, item.nacionalidad);
+          value = `"${trans}"`;
+        }
+      }
+
+      const fieldWrapper = document.createElement("div");
+      fieldWrapper.className = `card-field f-${key}`;
+      fieldWrapper.style.left = `${coords.x}mm`;
+      fieldWrapper.style.top = `${coords.y}mm`;
+      fieldWrapper.style.height = `${coords.h}mm`;
+      const widthValue =
+        coords.w || TEMPLATE_CONFIGS[currentTemplateId].width - coords.x;
+      fieldWrapper.style.width = `${widthValue}mm`;
+
+      fieldWrapper.innerHTML = `
                 <span class="field-label">${coords.label}:</span>
                 <span class="field-value" contenteditable="true" data-key="${key}">${value}</span>
             `;
 
-            fieldWrapper.addEventListener('mousedown', (e) => {
-                if (e.target.classList.contains('field-value')) return;
-                handleFieldMouseDown(e, key);
-            });
+      fieldWrapper.addEventListener("mousedown", (e) => {
+        if (e.target.classList.contains("field-value")) return;
+        handleFieldMouseDown(e, key);
+      });
 
-            fieldWrapper.addEventListener('click', (e) => {
-                if (e.target.classList.contains('field-value')) return;
-                seleccionarCampo(key);
-            });
+      fieldWrapper.addEventListener("click", (e) => {
+        if (e.target.classList.contains("field-value")) return;
+        seleccionarCampo(key);
+      });
 
-            const valEl = fieldWrapper.querySelector('.field-value');
-            
-            // Auto-ajustar fuente después de inyectar en el DOM
-            setTimeout(() => autoAjustarFuente(valEl), 50);
+      const valEl = fieldWrapper.querySelector(".field-value");
 
-            valEl.addEventListener('input', (e) => {
-                const newValue = e.target.textContent;
-                
-                // Auto-ajustar mientras se escribe
-                autoAjustarFuente(e.target);
+      // Auto-ajustar fuente después de inyectar en el DOM
+      setTimeout(() => autoAjustarFuente(valEl), 50);
 
-                if (currentTemplateId === 'tarjetero') {
-                    data[index][key] = newValue;
-                } else if (key === 'nombre_invitado') {
-                    data[index].nombre = newValue;
-                }
-                autoAjustarFuente(e.target);
-            });
+      valEl.addEventListener("input", (e) => {
+        const newValue = e.target.textContent;
 
-            precisionContainer.appendChild(fieldWrapper);
-        });
+        // Auto-ajustar mientras se escribe
+        autoAjustarFuente(e.target);
 
-        // Control de Nacionalidad para Cocktail
-        if (currentTemplateId === 'cocktail') {
-            const nacSelector = document.createElement('div');
-            nacSelector.className = 'nac-selector no-print';
-            
-            const nacs = [
-                { id: 'ES', label: 'ES' },
-                { id: 'DE', label: 'DE' },
-                { id: 'UK', label: 'UK' },
-                { id: 'FR', label: 'FR' }
-            ];
-
-            const agencySpan = document.createElement('span');
-            const colorClass = item.nacionalidadCierta ? 'bg-light text-dark border' : 'bg-warning text-dark border-warning shadow-sm';
-            agencySpan.className = `me-2 badge ${colorClass} fw-normal`;
-            agencySpan.style.fontSize = '0.6rem';
-            agencySpan.textContent = item.agencia || 'DIRECTO';
-            if (!item.nacionalidadCierta) agencySpan.title = "Nacionalidad incierta (por defecto UK). Por favor revisa.";
-            nacSelector.appendChild(agencySpan);
-            
-            nacs.forEach(n => {
-                const btn = document.createElement('button');
-                btn.className = `nac-btn ${item.nacionalidad === n.id ? 'active' : ''}`;
-                btn.dataset.nac = n.id;
-                btn.textContent = n.label;
-                btn.onclick = () => window.updateNacionalidad(index, n.id);
-                nacSelector.appendChild(btn);
-            });
-            div.appendChild(nacSelector);
+        if (currentTemplateId === "tarjetero") {
+          data[index][key] = newValue;
+        } else if (key === "nombre_invitado") {
+          data[index].nombre = newValue;
         }
+        autoAjustarFuente(e.target);
+      });
 
-        div.appendChild(precisionContainer);
-        container.appendChild(div);
-
-        setTimeout(() => {
-            div.querySelectorAll('.field-value').forEach(el => autoAjustarFuente(el));
-        }, 10);
+      precisionContainer.appendChild(fieldWrapper);
     });
 
+    // Control de Nacionalidad para Cocktail
+    if (currentTemplateId === "cocktail") {
+      const nacSelector = document.createElement("div");
+      nacSelector.className = "nac-selector no-print";
+
+      const nacs = [
+        { id: "ES", label: "ES" },
+        { id: "DE", label: "DE" },
+        { id: "UK", label: "UK" },
+        { id: "FR", label: "FR" },
+      ];
+
+      const agencySpan = document.createElement("span");
+      const colorClass = item.nacionalidadCierta
+        ? "bg-light text-dark border"
+        : "bg-warning text-dark border-warning shadow-sm";
+      agencySpan.className = `me-2 badge ${colorClass} fw-normal`;
+      agencySpan.style.fontSize = "0.6rem";
+      agencySpan.textContent = item.agencia || "DIRECTO";
+      if (!item.nacionalidadCierta)
+        agencySpan.title =
+          "Nacionalidad incierta (por defecto UK). Por favor revisa.";
+      nacSelector.appendChild(agencySpan);
+
+      nacs.forEach((n) => {
+        const btn = document.createElement("button");
+        btn.className = `nac-btn ${item.nacionalidad === n.id ? "active" : ""}`;
+        btn.dataset.nac = n.id;
+        btn.textContent = n.label;
+        btn.onclick = () => window.updateNacionalidad(index, n.id);
+        nacSelector.appendChild(btn);
+      });
+      div.appendChild(nacSelector);
+    }
+
+    div.appendChild(precisionContainer);
+    container.appendChild(div);
+
+    setTimeout(() => {
+      div
+        .querySelectorAll(".field-value")
+        .forEach((el) => autoAjustarFuente(el));
+    }, 10);
+  });
 }
 
 function renderControlesLotes(data) {
-    const container = document.getElementById('cards-container');
-    const lotesDiv = document.createElement('div');
-    lotesDiv.className = 'w-100 mb-4 no-print d-flex gap-2 justify-content-center p-3 bg-light rounded border';
-    
-    const countNac = (nac) => data.filter(i => i.nacionalidad === nac).length;
+  const container = document.getElementById("cards-container");
+  const lotesDiv = document.createElement("div");
+  lotesDiv.className =
+    "w-100 mb-4 no-print d-flex gap-2 justify-content-center p-3 bg-light rounded border";
 
-    const nacs = [
-        { id: 'ES', label: 'España', btn: 'danger' },
-        { id: 'DE', label: 'Alemania', btn: 'warning' },
-        { id: 'UK', label: 'Inglaterra', btn: 'primary' },
-        { id: 'FR', label: 'Francia', btn: 'info' }
-    ];
+  const countNac = (nac) => data.filter((i) => i.nacionalidad === nac).length;
 
-    nacs.forEach(n => {
-        const count = countNac(n.id);
-        const btn = document.createElement('button');
-        btn.className = `btn btn-${n.btn} fw-bold`;
-        btn.disabled = count === 0;
-        btn.innerHTML = `<i class="bi bi-printer me-2"></i> ${n.label} (${count})`;
-        btn.onclick = () => imprimirLote(n.id);
-        lotesDiv.appendChild(btn);
-    });
+  const nacs = [
+    { id: "ES", label: "España", btn: "danger" },
+    { id: "DE", label: "Alemania", btn: "warning" },
+    { id: "UK", label: "Inglaterra", btn: "primary" },
+    { id: "FR", label: "Francia", btn: "info" },
+  ];
 
-    container.appendChild(lotesDiv);
+  nacs.forEach((n) => {
+    const count = countNac(n.id);
+    const btn = document.createElement("button");
+    btn.className = `btn btn-${n.btn} fw-bold`;
+    btn.disabled = count === 0;
+    btn.innerHTML = `<i class="bi bi-printer me-2"></i> ${n.label} (${count})`;
+    btn.onclick = () => imprimirLote(n.id);
+    lotesDiv.appendChild(btn);
+  });
+
+  container.appendChild(lotesDiv);
 }
 
 function imprimirLote(nacId) {
-    const dataToPrint = lastParsedData.filter(i => i.nacionalidad === nacId);
-    if (dataToPrint.length === 0) return;
-    ejecutarImpresionAislada(dataToPrint);
+  const dataToPrint = lastParsedData.filter((i) => i.nacionalidad === nacId);
+  if (dataToPrint.length === 0) return;
+  ejecutarImpresionAislada(dataToPrint);
 }
 
 function ejecutarImpresionAislada(forceData = null) {
-    const data = forceData || lastParsedData;
-    if (!data || data.length === 0) {
-        Ui.showToast("No hay datos para imprimir", "warning");
-        return;
-    }
+  const data = forceData || lastParsedData;
+  if (!data || data.length === 0) {
+    Ui.showToast("No hay datos para imprimir", "warning");
+    return;
+  }
 
-    const offX = parseFloat(document.getElementById('nudgeX')?.value || 0);
-    const offY = parseFloat(document.getElementById('nudgeY')?.value || 0);
-    const isCenterA4 = true; // Forzado por defecto
+  const offX = parseFloat(document.getElementById("nudgeX")?.value || 0);
+  const offY = parseFloat(document.getElementById("nudgeY")?.value || 0);
+  const isCenterA4 = true; // Forzado por defecto
 
-    const cardsHtml = [];
-    const template = TEMPLATE_CONFIGS[currentTemplateId];
-    const coordsToUse = template.coordinates;
+  const cardsHtml = [];
+  const template = TEMPLATE_CONFIGS[currentTemplateId];
+  const coordsToUse = template.coordinates;
 
-    // A4 Portrait Dimensions (Standard feed 210mm wide)
-    const A4_WIDTH = 210;
-    const A4_HEIGHT = 297;
-    
-    // Calculate auto-center offset if enabled
+  // A4 Portrait Dimensions (Standard feed 210mm wide)
+  const A4_WIDTH = 210;
+  const A4_HEIGHT = 297;
+
+  // Calculate auto-center offset if enabled
     let finalOffX = offX;
     let finalOffY = offY;
     let finalPageSize = `${template.width}mm ${template.height}mm landscape`;
     let containerWidth = template.width;
     let containerHeight = template.height;
 
+    // Adjust for rotation
+    const isVertical = currentRotation === 90 || currentRotation === 270;
+    const printWidth = isVertical ? template.height : template.width;
+    const printHeight = isVertical ? template.width : template.height;
+
     if (isCenterA4) {
-        // Centrar horizontalmente en Portrait: (210 - Ancho Tarjeta) / 2
-        const autoOffX = (A4_WIDTH - template.width) / 2;
+        // Centrar horizontalmente en Portrait: (210 - Ancho de lo que imprimimos) / 2
+        const autoOffX = (A4_WIDTH - printWidth) / 2;
         finalOffX += autoOffX;
         finalPageSize = "A4 portrait";
         containerWidth = A4_WIDTH;
         containerHeight = A4_HEIGHT;
     }
 
-    data.forEach(item => {
-        let fields = '';
-        Object.keys(coordsToUse).forEach(key => {
-            const coords = coordsToUse[key];
-            let value = item[key] || '';
-            
-            if (currentTemplateId === 'cocktail') {
-                if (key === 'nombre_invitado') value = item.nombre || '';
-                if (key === 'fecha_cocktail') {
-                    const parts = cocktailMetadata.fecha.split('-');
-                    if (parts.length === 3) {
-                        value = `${parts[2]}/${parts[1]}`;
-                    } else {
-                        value = cocktailMetadata.fecha;
-                    }
-                }
-                if (key === 'hora_cocktail') value = cocktailMetadata.hora;
-                if (key === 'lugar_cocktail') value = `"${cocktailMetadata.lugar}"`;
-            }
+  data.forEach((item) => {
+    let fields = "";
+    Object.keys(coordsToUse).forEach((key) => {
+      const coords = coordsToUse[key];
+      let value = item[key] || "";
 
-            const widthValue = coords.w || (template.width - coords.x);
-            
-            // Estimación de fuente para impresión (since we can't measure scrollWidth easily)
-            // 13pt base. Si el texto > ancho disponible, reducimos.
-            const chars = String(value).length;
-            const estimatedWidthMm = chars * 2.5; // Heurística: 2.5mm por carácter en Arial 13pt Bold
-            let fontSize = 13;
-            if (estimatedWidthMm > widthValue) {
-                fontSize = Math.max(6, Math.floor(13 * (widthValue / estimatedWidthMm)));
-            }
+      if (currentTemplateId === "cocktail") {
+        if (key === "nombre_invitado") value = item.nombre || "";
+        if (key === "fecha_cocktail") {
+          const parts = cocktailMetadata.fecha.split("-");
+          if (parts.length === 3) {
+            value = `${parts[2]}/${parts[1]}`;
+          } else {
+            value = cocktailMetadata.fecha;
+          }
+        }
+        if (key === "hora_cocktail") value = cocktailMetadata.hora;
+        if (key === "lugar_cocktail") {
+          const trans = getTranslatedLugar(cocktailMetadata.lugar, item.nacionalidad);
+          value = `"${trans}"`;
+        }
+      }
 
-            fields += `
+      const widthValue = coords.w || template.width - coords.x;
+
+      // Estimación de fuente para impresión (since we can't measure scrollWidth easily)
+      // 13pt base. Si el texto > ancho disponible, reducimos.
+      const chars = String(value).length;
+      const estimatedWidthMm = chars * 2.5; // Heurística: 2.5mm por carácter en Arial 13pt Bold
+      let fontSize = 13;
+      if (estimatedWidthMm > widthValue) {
+        fontSize = Math.max(
+          6,
+          Math.floor(13 * (widthValue / estimatedWidthMm)),
+        );
+      }
+
+      fields += `
                 <div style="position: absolute; left: ${coords.x}mm; top: ${coords.y}mm; height: ${coords.h}mm; width: ${widthValue}mm; display: flex; align-items: center; white-space: nowrap; overflow: hidden;">
                     <span style="font-family: Arial, sans-serif; font-weight: bold; color: black; text-transform: uppercase; font-size: ${fontSize}pt; line-height: 1;">
                         ${value}
                     </span>
                 </div>`;
-        });
-        
+    });
+
         // El contenedor de la tarjeta mantiene su tamaño, pero lo movemos dentro del "papel" final
+        let rotationStyle = '';
+        if (currentRotation === 90) rotationStyle = `transform: rotate(90deg) translate(0, -${template.height}mm); transform-origin: top left;`;
+        if (currentRotation === 180) rotationStyle = `transform: rotate(180deg); transform-origin: center;`;
+        if (currentRotation === 270) rotationStyle = `transform: rotate(270deg) translate(-${template.width}mm, 0); transform-origin: top left;`;
+
         cardsHtml.push(`
             <div style="width: ${containerWidth}mm; height: ${containerHeight}mm; page-break-after: always; position: relative; overflow: hidden; background: white;">
-                <div style="position: absolute; top: ${finalOffY}mm; left: ${finalOffX}mm; width: ${template.width}mm; height: ${template.height}mm;">
+                <div style="position: absolute; top: ${finalOffY}mm; left: ${finalOffX}mm; width: ${template.width}mm; height: ${template.height}mm; ${rotationStyle}">
                     ${fields}
                 </div>
             </div>
         `);
-    });
+  });
 
-    const printWin = window.open('', '_blank', 'width=800,height=600');
-    if (!printWin) {
-        Ui.showToast("El navegador bloqueó la ventana emergente.", "danger");
-        return;
-    }
+  const printWin = window.open("", "_blank", "width=800,height=600");
+  if (!printWin) {
+    Ui.showToast("El navegador bloqueó la ventana emergente.", "danger");
+    return;
+  }
 
-    printWin.document.write(`
+  printWin.document.write(`
         <!DOCTYPE html>
         <html>
         <head>
@@ -886,7 +1135,7 @@ function ejecutarImpresionAislada(forceData = null) {
             </style>
         </head>
         <body>
-            ${cardsHtml.join('')}
+            ${cardsHtml.join("")}
             <script>
                 window.onload = function() {
                     setTimeout(() => { window.focus(); window.print(); }, 500);
@@ -895,33 +1144,44 @@ function ejecutarImpresionAislada(forceData = null) {
         </body>
         </html>
     `);
-    printWin.document.close();
+  printWin.document.close();
 }
 
 function autoAjustarFuente(el) {
-    const maxWidth = el.parentElement.offsetWidth - 10;
-    let size = 13;
-    el.style.fontSize = size + 'pt';
-    while (el.scrollWidth > maxWidth && size > 6) {
-        size -= 0.5;
-        el.style.fontSize = size + 'pt';
-    }
+  const maxWidth = el.parentElement.offsetWidth - 10;
+  let size = 13;
+  el.style.fontSize = size + "pt";
+  while (el.scrollWidth > maxWidth && size > 6) {
+    size -= 0.5;
+    el.style.fontSize = size + "pt";
+  }
 }
 
 function calcularProximoDia(fechaBase, diaObjetivo) {
-    const proxima = new Date(fechaBase);
-    const dayOfWeek = proxima.getDay(); // 0-6 (Dom-Sab)
-    
-    // Calculamos los días hasta el objetivo
-    let daysToAdd = (diaObjetivo - dayOfWeek + 7) % 7;
-    
-    // Si la llegada es el mismo día, ¿poner el mismo día o el siguiente de la semana que viene?
-    // User dice "siguiente a la llegada", así que si llega el viernes y el cocktail es el viernes,
-    // quizás sea el mismo día o el siguiente. Asumiremos que si es 0, sumamos 7 para que sea el "siguiente".
-    if (daysToAdd === 0) daysToAdd = 7;
-    
-    proxima.setDate(proxima.getDate() + daysToAdd);
-    return proxima;
+  const proxima = new Date(fechaBase);
+  const dayOfWeek = proxima.getDay(); // 0-6 (Dom-Sab)
+
+  // Calculamos los días hasta el objetivo
+  let daysToAdd = (diaObjetivo - dayOfWeek + 7) % 7;
+
+  // Si la llegada es el mismo día, ¿poner el mismo día o el siguiente de la semana que viene?
+  // User dice "siguiente a la llegada", así que si llega el viernes y el cocktail es el viernes,
+  // quizás sea el mismo día o el siguiente. Asumiremos que si es 0, sumamos 7 para que sea el "siguiente".
+  if (daysToAdd === 0) daysToAdd = 7;
+
+  proxima.setDate(proxima.getDate() + daysToAdd);
+  return proxima;
+}
+
+function getTranslatedLugar(nombreES, nacId) {
+  const list = APP_CONFIG.HOTEL?.COCKTAIL_LUGARES || [];
+  const item = list.find((l) => l.es.toLowerCase() === nombreES.toLowerCase());
+  if (!item) return nombreES;
+
+  if (nacId === "DE") return item.de || item.es;
+  if (nacId === "UK") return item.en || item.es;
+  if (nacId === "FR") return item.fr || item.es;
+  return item.es;
 }
 
 window.inicializarImpresion = inicializarImpresion;

@@ -66,7 +66,11 @@
     <div id="app-layout" class="container py-4">
 
         <!-- App Header Panel -->
-        <div class="app-header-panel text-center">
+        <div id="app-header" class="app-header-panel text-center" onclick="Router.handleHeaderClick(event)" style="cursor: pointer;">
+            <!-- Indicadores de navegación laterales -->
+            <div id="header-indicator-left" class="position-absolute top-0 start-0 ms-3 mt-1 small text-primary fw-bold d-none" style="z-index: 5;"></div>
+            <div id="header-indicator-right" class="position-absolute top-0 end-0 me-3 mt-1 small text-primary fw-bold d-none" style="z-index: 5;"></div>
+            
             <h1 class="display-5 fw-bold mb-2">Recepción Suite</h1>
             <p class="mb-0">by A. Jesús</p>
         </div>
@@ -291,9 +295,9 @@
                     </div>
 
                     <div class="col-6 col-md">
-                        <a href="#" onclick="navegarA('#aplicaciones-content')" class="btn-shortcut shortcut-dark"
-                        data-bs-toggle="tooltip" data-bs-title="Abrir Lanzador de Aplicaciones">
-                            <i class="bi bi-grid-3x3-gap-fill"></i>
+                        <a href="#" onclick="navegarA('#configuracion-content')" class="btn-shortcut shortcut-dark"
+                        data-bs-toggle="tooltip" data-bs-title="Herramientas y Configuración">
+                            <i class="bi bi-gear-fill"></i>
                             <span>Apps & Herramientas</span>
                         </a>
                     </div>
@@ -998,12 +1002,6 @@
     </div>
   </div>
 </div>
-            </div>
-            <div class="tab-pane fade" id="lost-found-content" role="tabpanel">
-                <div class="text-center p-5">
-                    <div class="spinner-border text-primary" role="status"></div>
-                    <p class="mt-2 text-muted">Cargando Objetos Perdidos...</p>
-                </div>
             </div>
 
             <div class="tab-pane fade" id="cobro-content" role="tabpanel">
@@ -1768,7 +1766,7 @@
     </div>
     <div class="report-info-right">
         <div><strong>Fecha:</strong> <span id="print-date-atenciones"></span></div>
-        <div><strong>Generado por:</strong> <span id="print-repc-nombre-atenciones"></span></div>
+        <div><strong>Generado por:</strong> <span id="atenciones-footer-nombre"></span></div>
         <div class="text-muted" style="font-size: 7pt; margin-top: 5px;">Documento Interno de Uso Operativo</div>
     </div>
 </div>

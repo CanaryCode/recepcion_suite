@@ -1,7 +1,7 @@
-import { APP_CONFIG } from '../core/Config.js';
+import { APP_CONFIG } from '../core/Config.js?v=V144_FIX_FINAL';
 import { agendaService } from '../services/AgendaService.js';
-import { Utils } from '../core/Utils.js';
-import { Ui } from '../core/Ui.js';
+import { Utils } from '../core/Utils.js?v=V144_FIX_FINAL';
+import { Ui } from '../core/Ui.js?v=V144_FIX_FINAL';
 
 /**
  * MÓDULO DE AGENDA DE CONTACTOS (agenda.js)
@@ -29,16 +29,23 @@ export async function inicializarAgenda() {
     // 2. CONFIGURAR VISTAS (Conmutador)
     Ui.setupViewToggle({
         buttons: [
-            { id: 'btnVistaTrabajoAgenda', viewId: 'formAgenda-col', onShow: () => {
-                const listCol = document.getElementById('agenda-list-col');
-                document.querySelector('.row')?.classList.remove('d-none'); // Show main row
-                if(listCol) { listCol.classList.remove('col-12'); listCol.classList.add('col-md-8'); }
-            }},
             { id: 'btnVistaListaAgenda', viewId: 'formAgenda-col', onShow: () => {
                 const listCol = document.getElementById('agenda-list-col');
-                document.querySelector('.row')?.classList.remove('d-none'); // Show main row
+                document.querySelector('.row')?.classList.remove('d-none');
+                document.getElementById('agenda-grid-view')?.classList.add('d-none');
                 if(listCol) { listCol.classList.remove('col-md-8'); listCol.classList.add('col-12'); }
                 document.getElementById('formAgenda-col')?.classList.add('d-none');
+            }},
+            { id: 'btnVistaTrabajoAgenda', viewId: 'formAgenda-col', onShow: () => {
+                const listCol = document.getElementById('agenda-list-col');
+                document.querySelector('.row')?.classList.remove('d-none');
+                document.getElementById('agenda-grid-view')?.classList.add('d-none');
+                if(listCol) { listCol.classList.remove('col-12'); listCol.classList.add('col-md-8'); }
+            }},
+            { id: 'btnVistaRackAgenda', viewId: 'agenda-grid-view', onShow: () => {
+                document.querySelector('.row')?.classList.add('d-none');
+                document.getElementById('agenda-grid-view')?.classList.remove('d-none');
+                renderGridAgenda();
             }}
         ]
     });
@@ -410,6 +417,64 @@ function renderListaContactos(append = false) {
 }
 
 /**
+ * RENDERIZAR VISTA DE RACK (TARJETAS)
+ */
+function renderGridAgenda() {
+    const grid = document.getElementById('agendaItemsGrid');
+    if (!grid) return;
+
+    grid.innerHTML = '';
+    
+    if (currentFilteredContacts.length === 0) {
+        grid.innerHTML = '<div class="col-12 text-center p-5 text-muted">No se encontraron contactos para mostrar en el rack.</div>';
+        return;
+    }
+
+    currentFilteredContacts.forEach(c => {
+        const col = document.createElement('div');
+        col.className = 'col-sm-6 col-md-4 col-xl-3';
+        
+        const favIcon = c.favorito ? '<i class="bi bi-star-fill text-warning position-absolute top-0 end-0 m-2"></i>' : '';
+        const vinculoClass = { "Empresa": "bg-secondary", "Cliente": "bg-info", "Hotel": "bg-primary", "Otro": "bg-light text-dark border" }[c.vinculo] || "bg-dark";
+        
+        const tels = (c.telefonos || []).map(t => `
+            <div class="small d-flex justify-content-between">
+                <span class="text-muted text-uppercase x-small fw-bold">${t.tipo}:</span>
+                <span class="fw-bold text-primary">${t.tipo === 'Tel' ? (t.flag || '') + ' ' + (t.prefijo || '') : ''} ${t.numero}</span>
+            </div>
+        `).join('');
+
+        col.innerHTML = `
+            <div class="card h-100 shadow-sm border-0 room-card position-relative overflow-hidden" onclick="prepararEdicionAgenda(${c.id})">
+                ${favIcon}
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="avatar-circle bg-light text-primary me-2 d-flex align-items-center justify-content-center" style="width:35px; height:35px; border-radius:50%; font-size: 1.2rem;">
+                            <i class="bi bi-person-fill"></i>
+                        </div>
+                        <div class="overflow-hidden">
+                            <h6 class="mb-0 text-truncate fw-bold">${c.nombre}</h6>
+                            <span class="badge ${vinculoClass} x-small" style="font-size: 0.6rem;">${c.vinculo}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="tel-container border-top pt-2 mt-1">
+                        ${tels}
+                    </div>
+
+                    ${c.email ? `<div class="mt-2 small text-truncate text-muted"><i class="bi bi-envelope me-1"></i>${c.email}</div>` : ''}
+                    ${c.comentarios ? `<div class="mt-2 x-small fst-italic text-secondary text-truncate">${c.comentarios}</div>` : ''}
+                </div>
+                <div class="card-footer bg-transparent border-0 text-end p-2 opacity-50">
+                    <span class="x-small fw-bold text-uppercase" style="font-size:0.6rem;">${c.categoria}</span>
+                </div>
+            </div>
+        `;
+        grid.appendChild(col);
+    });
+}
+
+/**
  * RENDERIZAR FILA DE CONTACTO (Helper para renderTable)
  */
 function renderFilaContacto(c) {
@@ -552,34 +617,23 @@ window.imprimirAgenda = function() {
     const user = Utils.validateUser();
     if (!user) return;
 
-    // Lógica de Impresión Atómica - ESTABILIZACIÓN NUCLEAR V2
-    const appLayout = document.getElementById('app-layout');
-    const navbar = document.getElementById('navbar-container');
-    const reportHeader = document.querySelector('.report-header-print');
-    
-    // 1. Ocultar el layout principal y preparar cabecera
-    if (appLayout) appLayout.classList.add('d-none', 'd-print-none');
-    if (navbar) navbar.classList.add('d-none', 'd-print-none');
-    
-    const now = new Date();
-    const dateStr = now.toLocaleDateString() + ' ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    
-    const pDate = document.getElementById('print-date-agenda');
-    if (pDate) pDate.textContent = dateStr;
+    if (window.PrintService) {
+        const isRackActive = !document.getElementById('agenda-grid-view').classList.contains('d-none');
+        const now = new Date();
+        const dateStr = now.toLocaleDateString();
 
-    // 2. Forzar que el reporte sea lo ÚNICO en la página
-    if (reportHeader) {
-        reportHeader.classList.remove('d-none');
-        reportHeader.classList.add('d-print-block');
-    }
-
-    window.print();
-
-    // Restaurar para visualización en pantalla
-    if (appLayout) appLayout.classList.remove('d-none', 'd-print-none');
-    if (navbar) navbar.classList.remove('d-none', 'd-print-none');
-    if (reportHeader) {
-        reportHeader.classList.add('d-none');
-        reportHeader.classList.remove('d-print-block');
+        if (isRackActive) {
+            // Imprimir Rack de Agenda (Tipo Foto)
+            PrintService.printElementAsImage('agenda-grid-view', `Rack de Contactos - ${dateStr}`);
+        } else {
+            // Imprimir Lista o Tabla
+            if (document.getElementById('table-agenda')) {
+                 PrintService.printElement('table-agenda', `Agenda de Contactos - ${dateStr}`);
+            } else {
+                 PrintService.printElement('agendaCuerpo', `Agenda de Contactos - ${dateStr}`);
+            }
+        }
+    } else {
+        window.print();
     }
 };

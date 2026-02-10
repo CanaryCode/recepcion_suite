@@ -41,11 +41,8 @@ function renderView() {
             
             <div class="d-flex gap-2">
                 <div class="btn-print-wrapper d-flex gap-2">
-                    <button class="btn btn-primary btn-sm fw-bold shadow-sm" onclick="window.print()" data-bs-toggle="tooltip" title="Imprimir Vista Actual">
+                    <button class="btn btn-primary btn-sm fw-bold shadow-sm" onclick="imprimirVistaVales()" data-bs-toggle="tooltip" title="Imprimir Vista Actual">
                         <i class="bi bi-printer me-2"></i>Imprimir
-                    </button>
-                    <button class="btn btn-success btn-sm fw-bold shadow-sm px-3 border-2" onclick="window.cerrarCajaDefinitivo()">
-                        <i class="bi bi-check2-circle me-1"></i>CERRAR CAJA (Contabilizar)
                     </button>
                 </div>
             </div>
@@ -194,6 +191,7 @@ function renderView() {
     window.updateFirmadoVale = updateFirmadoVale;
     window.imprimirTicketVale = imprimirTicketVale;
     window.eliminarValeHistorico = eliminarValeHistorico;
+    window.imprimirVistaVales = imprimirVistaVales;
 
     resetFiltrosVales();
     document.getElementById('formNuevoVale').addEventListener('submit', handleCreateVale);
@@ -406,29 +404,66 @@ function imprimirTicketVale(id) {
     const vale = valesService.getById(id);
     if (!vale) return;
 
-    const w = window.open('', 'PRINT', 'height=600,width=400');
-    w.document.write(`
-        <html><body>
-            <div style="font-family:monospace; width:280px; text-align:center;">
-                <h3>HOTEL GAROÉ</h3><hr><h4>VALE DE CAJA</h4>
-                <div style="text-align:left; font-size:12px;">
-                    <p>FECHA: ${new Date(vale.fecha_creacion).toLocaleString()}</p>
-                    <p>EMITIDO POR: <strong>${vale.usuario || 'Anónimo'}</strong></p>
-                    <p>RECEPTOR: ${vale.receptor}</p>
-                    <p>CONCEPTO: ${vale.concepto}</p>
-                    <h2 style="text-align:right;">${Utils.formatCurrency(vale.importe)}</h2>
-                </div>
-                <div style="margin-top: 60px;">
-                    <div style="border-top:1px solid #000; width:180px; text-align:center; font-size:10px; padding-top:5px; margin: 0 auto 60px auto;">Firma Receptor</div>
-                    <div style="border-top:1px solid #000; width:180px; text-align:center; font-size:10px; padding-top:5px; margin: 0 auto 60px auto;">Firma Recepcionista</div>
-                    <div style="border-top:1px solid #000; width:180px; text-align:center; font-size:10px; padding-top:5px; margin: 0 auto 20px auto;">Firma Dirección</div>
-                </div>
-                <p style="font-size:9px; margin-top:30px;">Documento interno de control</p>
+    const html = `
+        <html>
+        <head>
+            <title>Vale de Caja #${vale.id}</title>
+            <style>
+                @page { size: 80mm auto; margin: 0; }
+                body { font-family: 'Courier New', monospace; width: 280px; margin: 0 auto; padding: 10px; text-align: center; }
+                h3, h4 { margin: 5px 0; }
+                .text-left { text-align: left; font-size: 12px; margin-top: 15px; }
+                .amount { text-align: right; font-size: 18px; font-weight: bold; margin: 10px 0; }
+                .signatures { margin-top: 40px; }
+                .sig-line { border-top: 1px solid #000; width: 180px; margin: 0 auto 30px auto; padding-top: 5px; font-size: 10px; }
+                .footer { font-size: 9px; margin-top: 20px; font-style: italic; }
+            </style>
+        </head>
+        <body>
+            <h3>HOTEL GAROÉ</h3>
+            <hr>
+            <h4>VALE DE CAJA</h4>
+            <div class="text-left">
+                <p><strong>FECHA:</strong> ${new Date(vale.fecha_creacion).toLocaleString()}</p>
+                <p><strong>EMITIDO POR:</strong> ${vale.usuario || 'Anónimo'}</p>
+                <p><strong>RECEPTOR:</strong> ${vale.receptor}</p>
+                <p><strong>CONCEPTO:</strong> ${vale.concepto}</p>
+                <div class="amount">${Utils.formatCurrency(vale.importe)}</div>
             </div>
-        </body></html>
-    `);
-    w.document.close();
-    setTimeout(() => { w.print(); w.close(); }, 300);
+            <div class="signatures">
+                <div class="sig-line">Firma Receptor</div>
+                <div class="sig-line">Firma Recepcionista</div>
+                <div class="sig-line" style="margin-bottom:10px;">Firma Dirección</div>
+            </div>
+            <div class="footer">Documento interno de control - Reception Suite v2</div>
+        </body>
+        </html>
+    `;
+
+    if (window.PrintService) {
+        PrintService.printHTML(html);
+    } else {
+        // Fallback Legacy
+        const w = window.open('', 'PRINT', 'height=600,width=400');
+        w.document.write(html);
+        w.document.close();
+        setTimeout(() => { w.print(); w.close(); }, 300);
+    }
+}
+
+function imprimirVistaVales() {
+    if (window.PrintService) {
+        // Detectar vista activa
+        const isHistorico = !document.getElementById('vista-vales-historico').classList.contains('d-none');
+        if (isHistorico) {
+            PrintService.printElement('vista-vales-historico', `Histórico de Vales - ${Utils.getTodayISO()}`);
+        } else {
+            // Imprimir formulario de creación (raro, pero posible)
+            PrintService.printElement('vista-vales-crear', 'Nuevo Vale de Caja');
+        }
+    } else {
+        window.print();
+    }
 }
 
 async function eliminarValeHistorico(id) {

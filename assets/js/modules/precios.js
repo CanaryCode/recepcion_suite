@@ -1,7 +1,7 @@
 import { preciosService } from '../services/PreciosService.js';
 import { Utils } from '../core/Utils.js';
 import { Ui } from '../core/Ui.js';
-import { APP_CONFIG } from '../core/Config.js';
+import { APP_CONFIG } from "../core/Config.js?v=V144_FIX_FINAL";
 
 /**
  * MÓDULO DE LISTA DE PRECIOS (precios.js)
@@ -361,10 +361,49 @@ export function abrirSelectorIconos(inputId = null, productId = null) {
 // ==========================================
 
 function imprimirPrecios() {
-    const user = Utils.validateUser();
-    if (!user) return;
-
-    Utils.printSection('print-date-precios', 'print-repc-nombre-precios', user);
+    if (window.PrintService) {
+        const rows = document.getElementById('tabla-precios-print').innerHTML;
+        const html = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Lista de Precios</title>
+                <style>
+                    body { font-family: 'Segoe UI', sans-serif; padding: 20px; }
+                    table { width: 100%; border-collapse: collapse; }
+                    th { background: #f8f9fa; padding: 10px; text-align: left; border-bottom: 2px solid #dee2e6; }
+                    td { padding: 8px; border-bottom: 1px solid #dee2e6; }
+                    .text-end { text-align: right; }
+                    .text-center { text-align: center; }
+                    h1 { color: #0d6efd; margin-bottom: 5px; }
+                </style>
+            </head>
+            <body>
+                <h1>Lista de Precios</h1>
+                <p style="color: #666; margin-bottom: 20px;">Hotel Garoé - ${Utils.getTodayISO()}</p>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th width="50" class="text-center">Ícono</th>
+                            <th>Nombre</th>
+                            <th>Descripción</th>
+                            <th width="80" class="text-end">Precio</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows}
+                    </tbody>
+                </table>
+            </body>
+            </html>
+        `;
+        PrintService.printHTML(html);
+    } else {
+        const user = Utils.validateUser();
+        if (!user) return;
+        Utils.printSection('print-date-precios', 'print-repc-nombre-precios', user);
+    }
 }
 
 // Exportaciones para el HTML (OnClicks)

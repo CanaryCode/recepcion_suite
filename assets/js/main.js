@@ -1,90 +1,151 @@
 // --- STARTUP ---
 
 // --- IMPORTACIÓN DE MÓDULOS OPERATIVOS ---
+// --- IMPORTACIÓN DE MÓDULOS OPERATIVOS ---
+// --- IMPORTACIÓN DE MÓDULOS OPERATIVOS ---
 // Cada módulo gestiona una funcionalidad específica (Agenda, Caja, etc.)
-import { inicializarAgenda } from './modules/agenda.js';
-import { inicializarCaja } from './modules/caja.js';
-import { inicializarCobro } from './modules/cobro.js';
-import { Ui } from './core/Ui.js'; // Import Ui FIRST
+import { inicializarAgenda } from './modules/agenda.js?v=V144_FIX_FINAL';
+import { inicializarCaja } from './modules/caja.js?v=V144_FIX_FINAL';
+import { inicializarCobro } from './modules/cobro.js?v=V144_FIX_FINAL';
+import { Ui } from './core/Ui.js?v=V144_FIX_FINAL'; // Import Ui FIRST
 
-import { clock } from './modules/clock.js';
-import { inicializarAtenciones } from './modules/atenciones.js';
-import { inicializarSafe } from './modules/safe.js'; // Force Reload
-import { inicializarDespertadores } from './modules/despertadores.js';
-import { inicializarDesayuno } from './modules/desayuno.js';
-import { inicializarEstancia } from './modules/estancia.js';
-import { inicializarNovedades } from './modules/novedades.js';
-import { inicializarCenaFria } from './modules/cena_fria.js';
-import { inicializarRiu } from './modules/riu.js'; // Force Reload
-import { inicializarAyuda } from './modules/ayuda.js';
-import { inicializarTransfers } from './modules/transfers.js'; // Force Reload
-import { inicializarNotasPermanentes } from './modules/notas_permanentes.js';
-import { inicializarPrecios } from './modules/precios.js';
-import { inicializarSystemAlarms } from './modules/alarms.js';
-import { inicializarSystemAlarmsUI } from './modules/system_alarms_ui.js';
-import { inicializarLostFound } from './modules/lost_found.js';
-import { inicializarRack } from './modules/rack.js';
-import { inicializarConfiguracion } from './modules/configuracion.js';
-import { Excursiones } from './modules/excursiones.js';
-import { ReservasInstalaciones } from './modules/reservas_instalaciones.js';
-import { Gallery } from './modules/gallery.js';
-import { IconSelector } from './core/IconSelector.js';
+import { clock } from './modules/clock.js?v=V144_FIX_FINAL';
+import { inicializarAtenciones } from './modules/atenciones.js?v=V144_FIX_FINAL';
+import { inicializarSafe } from './modules/safe.js?v=V144_FIX_FINAL'; // Force Reload
+import { inicializarDespertadores } from './modules/despertadores.js?v=V144_FIX_FINAL';
+import { inicializarDesayuno } from './modules/desayuno.js?v=V144_FIX_FINAL';
+import { inicializarEstancia } from './modules/estancia.js?v=V144_FIX_FINAL';
+import { inicializarNovedades } from './modules/novedades.js?v=V144_FIX_FINAL';
+import { inicializarCenaFria } from './modules/cena_fria.js?v=V144_FIX_FINAL';
+import { inicializarRiu } from './modules/riu.js?v=V144_FIX_FINAL'; // Force Reload
+import { inicializarAyuda } from './modules/ayuda.js?v=V144_FIX_FINAL';
+import { inicializarTransfers } from './modules/transfers.js?v=V144_FIX_FINAL'; // Force Reload
+import { inicializarNotasPermanentes } from './modules/notas_permanentes.js?v=V144_FIX_FINAL';
+import { inicializarPrecios } from './modules/precios.js?v=V144_FIX_FINAL';
+import { inicializarSystemAlarms } from './modules/alarms.js?v=V144_FIX_FINAL';
+import { inicializarSystemAlarmsUI } from './modules/system_alarms_ui.js?v=V144_FIX_FINAL';
+import { inicializarLostFound } from './modules/lost_found.js?v=V144_FIX_FINAL';
+import { inicializarRack } from './modules/rack.js?v=V144_FIX_FINAL';
+import { inicializarConfiguracion } from './modules/configuracion.js?v=V144_FIX_FINAL';
+import { Excursiones } from './modules/excursiones.js?v=V144_FIX_FINAL';
+import { ReservasInstalaciones } from './modules/reservas_instalaciones.js?v=V144_FIX_FINAL';
+import { Gallery } from './modules/gallery.js?v=V144_FIX_FINAL';
+import { IconSelector } from './core/IconSelector.js?v=V144_FIX_FINAL';
 
 // --- SISTEMAS CORE (NÚCLEO) ---
-import { APP_CONFIG, Config } from './core/Config.js'; // Cargador de configuración
-import { Api } from './core/Api.js';
-import { Modal } from './core/Modal.js';              // Gestor de ventanas modales
-import { Router } from './core/Router.js';            // Gestor de navegación entre pestañas
-import { CompLoader } from './core/CompLoader.js';    // Cargador dinámico de plantillas HTML
-import { Search } from './core/Search.js';            // Buscador global de módulos
-import { sessionService } from './services/SessionService.js'; // Gestor de usuario logueado
-import { Utils } from './core/Utils.js';              // Utilidades generales (formateo, etc.)
-import { migrateLostFoundImages } from '../../migrate_images.js';
-import { RoomDetailModal } from './core/RoomDetailModal.js'; // Modal Global de Habitación
+import { APP_CONFIG, Config } from './core/Config.js?v=V144_FIX_FINAL';
+import { Api } from './core/Api.js?v=V144_FIX_FINAL';
+import { Modal } from './core/Modal.js?v=V144_FIX_FINAL';
+import { Router } from './core/Router.js?v=V144_FIX_FINAL';
+import { CompLoader } from './core/CompLoader.js?v=V144_FIX_FINAL';
+import { Search } from './core/Search.js?v=V144_FIX_FINAL';
+import { sessionService } from './services/SessionService.js?v=V144_FIX_FINAL';
+import { Utils } from './core/Utils.js?v=V144_FIX_FINAL';
+import { migrateLostFoundImages } from '../../migrate_images.js?v=V144_FIX_FINAL';
+import { RoomDetailModal } from './core/RoomDetailModal.js?v=V144_FIX_FINAL';
+import './core/PrintService.js?v=V144_FIX_FINAL';
 
-// Expose Utils globally for inline HTML events (like togglePassword)
+// Global debug helper
+window.clearConfigOverride = () => {
+    localStorage.removeItem('app_config_override');
+    location.reload();
+};
+
+// Expose Essentials globally for non-module scripts and inline events
 window.Utils = Utils;
+window.sessionService = sessionService;
+window.APP_CONFIG = APP_CONFIG;
+window.Ui = Ui;
+window.Router = Router;
+window.bootstrap = bootstrap; // Critical for core/legacy access to tooltips/modals
+
+// Global Tooltip Cleanup Helper
+window.hideAllTooltips = () => {
+    document.querySelectorAll('.tooltip').forEach(t => t.remove());
+    // Robust cleanup using Bootstrap API if available
+    if (window.bootstrap?.Tooltip) {
+        const tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+        tooltips.forEach(el => {
+            const instance = bootstrap.Tooltip.getInstance(el);
+            if (instance) instance.hide();
+        });
+    }
+};
 
 /**
  * SPOTIFY FOOTER PLAYER LOGIC
  */
 window.initFooterSpotify = () => {
-    let url = APP_CONFIG.HOTEL?.SPOTIFY_URL;
+    const playlists = APP_CONFIG.HOTEL?.SPOTIFY_PLAYLISTS || [];
     const container = document.getElementById('spotify-footer-player');
     const iframe = document.getElementById('spotify-footer-iframe');
-    const playerBody = container ? container.querySelector('.spotify-player-body') : null;
+    const switcher = document.getElementById('spotify-playlist-switcher');
     
-    // 1. Limpiar y validar
-    if (!url || typeof url !== 'string') {
-        url = "https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM3M"; // Fallback: Relaxing Music
-    }
-    url = url.trim();
-
-    // 2. Extraer ID y Tipo de forma robusta
-    let embedUrl = url;
-    // Regex mejorada para capturar IDs con guiones o más complejos
-    const match = url.match(/(playlist|album|track)\/([a-zA-Z0-9\-_]{15,})/);
-    
-    if (match) {
-        const type = match[1];
-        const id = match[2];
-        embedUrl = `https://open.spotify.com/embed/${type}/${id}?utm_source=generator`;
-    } else if (!url.includes('/embed/')) {
-        // Si no detectamos el patrón pero no es embed, intentamos un parche básico
-        embedUrl = url.replace('spotify.com/', 'spotify.com/embed/');
+    // 1. Determinar URL inicial
+    let initialUrl = "https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM3M"; // Fallback
+    if (playlists.length > 0) {
+        initialUrl = playlists[0].url;
     }
 
-    if (iframe) {
-        // Atributos críticos ANTES del src para evitar bloqueos de DRM
-        iframe.setAttribute('allow', 'autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture');
-        iframe.setAttribute('loading', 'lazy');
-        iframe.style.borderRadius = '12px';
+    // 2. Renderizar Selector si hay múltiples listas
+    if (switcher) {
+        if (playlists.length >= 1) {
+            switcher.classList.remove('d-none');
+            switcher.innerHTML = playlists.map(p => `
+                <button class="btn btn-sm btn-success border-0 px-2 py-0 text-truncate" 
+                        style="max-width: 120px; font-size: 0.65rem; border-radius: 4px;"
+                        onclick="window.switchSpotifyPlaylist('${p.url}')"
+                        title="${p.label}">
+                    <i class="bi bi-music-note-list me-1"></i>${p.label}
+                </button>
+            `).join('');
+        } else {
+            switcher.classList.add('d-none');
+        }
+    }
+
+    window.switchSpotifyPlaylist(initialUrl);
+};
+
+window.switchSpotifyPlaylist = (url) => {
+    const iframe = document.getElementById('spotify-footer-iframe');
+    if (!iframe || !url || typeof url !== 'string') return;
+
+    let embedUrl = url.trim();
+
+    // 1. Si ya es un embed, lo dejamos como está
+    if (embedUrl.includes('/embed/')) {
+        // Asegurarse de que sea HTTPS y tenga los parámetros adecuados si se desea
+    } else {
+        // 2. Intentar extraer Tipo e ID (Soporta locales como /intl-es/ y parámetros de tracking)
+        const match = embedUrl.match(/(playlist|album|track|artist)\/([a-zA-Z0-9\-_]{15,})/);
         
-        // Construcción limpia
-        iframe.src = embedUrl;
-
+        if (match) {
+            const type = match[1];
+            const id = match[2];
+            embedUrl = `https://open.spotify.com/embed/${type}/${id}`;
+        } else {
+            // 3. Intento de reemplazo genérico si falla el regex
+            embedUrl = embedUrl.replace('open.spotify.com/', 'open.spotify.com/embed/');
+        }
     }
 
+    // Limpiar trackers extras que a veces Spotify no digiere bien en el embed
+    if (embedUrl.includes('?')) {
+        embedUrl = embedUrl.split('?')[0];
+    }
+
+    // Evitar recarga si la URL resultante es idéntica
+    // Nota: El navegador puede normalizar el src, así que comparamos con cuidado
+    const currentSrc = iframe.getAttribute('src');
+    if (currentSrc === embedUrl) return;
+
+    iframe.setAttribute('allow', 'autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture');
+    iframe.setAttribute('loading', 'lazy');
+    iframe.style.borderRadius = '12px';
+    
+    console.log(`[Spotify] Switching to: ${embedUrl}`);
+    iframe.src = embedUrl;
 };
 
 window.toggleSpotifyFooter = () => {

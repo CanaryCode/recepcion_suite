@@ -1,4 +1,4 @@
-import { APP_CONFIG } from '../core/Config.js';
+import { APP_CONFIG } from "../core/Config.js?v=V144_FIX_FINAL";
 import { Utils } from '../core/Utils.js';
 import { despertadorService } from '../services/DespertadorService.js';
 import { sessionService } from '../services/SessionService.js';
@@ -365,56 +365,19 @@ window.borrarAlarmaDesdeModal = async (hab) => {
 // ============================================================================
 
 function imprimirDespertadores() {
-    const user = sessionService.getUser();
-    if (!user) {
-        Ui.showToast("⚠️ No hay usuario seleccionado. Selecciona tu nombre en el menú superior.", "warning");
-        return;
-    }
-
-    // Lógica de Impresión Atómica - ESTABILIZACIÓN NUCLEAR V2
-    const appLayout = document.getElementById('app-layout');
-    const navbar = document.getElementById('navbar-container');
-    const reportHeader = document.querySelector('.report-header-print');
-    const workView = document.getElementById('despertadores-trabajo');
-    const rackView = document.getElementById('despertadores-rack');
-    
-    // 1. Ocultar el layout principal y preparar cabecera
-    if (appLayout) appLayout.classList.add('d-none', 'd-print-none');
-    if (navbar) navbar.classList.add('d-none', 'd-print-none');
-    
-    const now = new Date();
-    const dateStr = now.toLocaleDateString() + ' ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    
-    const pDate = document.getElementById('print-date-despertadores');
-    const pName = document.getElementById('print-repc-nombre-despertadores');
-    if (pDate) pDate.textContent = dateStr;
-    if (pName) pName.textContent = user;
-
-    // 2. Forzar que el reporte sea lo ÚNICO en la página
-    if (reportHeader) {
-        reportHeader.classList.remove('d-none');
-        reportHeader.classList.add('d-print-block');
-    }
-    
-    // Forzar visibilidad de la tabla si por casualidad estamos en rack
-    if (workView) workView.classList.remove('d-none');
-    if (rackView) rackView.classList.add('d-none', 'd-print-none');
-
-    window.print();
-
-    // Restaurar para visualización en pantalla
-    if (appLayout) appLayout.classList.remove('d-none', 'd-print-none');
-    if (navbar) navbar.classList.remove('d-none', 'd-print-none');
-    if (reportHeader) {
-        reportHeader.classList.add('d-none');
-        reportHeader.classList.remove('d-print-block');
-    }
-    
-    // Si estábamos en rack, restaurar rack
-    const isRackActive = document.getElementById('btnVistaRackDesp')?.classList.contains('active');
-    if (isRackActive) {
-        if (workView) workView.classList.add('d-none');
-        if (rackView) rackView.classList.remove('d-none');
+    if (window.PrintService) {
+        const isRackActive = !document.getElementById('despertadores-rack').classList.contains('d-none');
+        
+        if (isRackActive) {
+            // Imprimir Vista de Rack (Tipo Foto)
+            window.PrintService.printElementAsImage('despertadores-rack', 'Rack de Despertadores');
+        } else {
+            // Imprimir Vista de Trabajo (Lista + Header)
+            // Usamos el contenedor padre para incluir el header de impresión del template
+            window.PrintService.printElement('despertadores-content', 'Reporte de Despertadores');
+        }
+    } else {
+        window.print();
     }
 }
 

@@ -1,9 +1,9 @@
-import { APP_CONFIG } from '../core/Config.js';
-import { riuService } from '../services/RiuService.js';
-import { Utils } from '../core/Utils.js';
-import { Ui } from '../core/Ui.js';
-import { sessionService } from '../services/SessionService.js';
-import { PdfService } from '../core/PdfService.js';
+import { APP_CONFIG } from "../core/Config.js?v=V144_FIX_FINAL";
+import { riuService } from '../services/RiuService.js?v=V144_FIX_FINAL';
+import { Utils } from '../core/Utils.js?v=V144_FIX_FINAL';
+import { Ui } from '../core/Ui.js?v=V144_FIX_FINAL';
+import { sessionService } from '../services/SessionService.js?v=V144_FIX_FINAL';
+import { PdfService } from '../core/PdfService.js?v=V144_FIX_FINAL';
 
 /**
  * MÓDULO DE GESTIÓN RIU CLASS (riu.js)
@@ -101,7 +101,6 @@ export async function inicializarRiu() {
     // Cargar datos iniciales
     await limpiarClientesCaducados();
     establecerFechasPorDefecto();
-    mostrarClientes();
 }
 
 /**
@@ -212,6 +211,10 @@ async function renderVistaRackRiu() {
             rackCont.appendChild(box);
         }
     });
+    
+    // Inicializar tooltips del rack
+    Ui.initTooltips(rackCont);
+    
     actualizarEstadisticas(clientes);
 }
 
@@ -406,67 +409,95 @@ function generarReporteHTML(clientes, ocupacion, totalHab) {
  * IMPRIMIR REPORTE RIU CLASS (PdfService)
  * Genera un informe PDF profesional con el estado actual de la ocupación RIU.
  */
+/**
+ * GENERAR CONTENIDO LIMPIO PARA REPORTE
+ * Crea un clon del listado RIU sin formularios ni botones para impresión/PDF.
+ */
+function generarContenidoLimpioRiu() {
+    const reportHeader = document.querySelector('.report-header-print');
+    const workView = document.getElementById('riu-trabajo');
+    const user = sessionService.getUser();
+    
+    const printContainer = document.createElement('div');
+    
+    // 1. Clonar cabecera de reporte
+    if (reportHeader) {
+        const headerClone = reportHeader.cloneNode(true);
+        headerClone.classList.remove('d-none', 'd-print-block');
+        headerClone.style.display = 'block';
+        headerClone.style.marginBottom = '20px';
+        headerClone.style.borderBottom = '2px solid #0d6efd';
+        headerClone.style.paddingBottom = '10px';
+        
+        const pDate = headerClone.querySelector('#print-date-riu');
+        const pName = headerClone.querySelector('#print-repc-nombre-riu');
+        const now = new Date();
+        if (pDate) pDate.textContent = now.toLocaleDateString() + ' ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        if (pName) pName.textContent = user;
+        
+        printContainer.appendChild(headerClone);
+    }
+
+    // 2. Clonar la tabla (excluyendo lo innecesario)
+    if (workView) {
+        const workClone = workView.cloneNode(true);
+        const form = workClone.querySelector('#formCliente');
+        if (form) form.style.display = 'none';
+        workClone.querySelectorAll('.btn, .no-print, .module-toolbar').forEach(el => el.style.display = 'none');
+        printContainer.appendChild(workClone);
+    }
+    
+    return printContainer;
+}
+
+/**
+ * IMPRIMIR REPORTE RIU CLASS (PrintService)
+ * Abre el diálogo de impresión estándar del navegador.
+ */
 async function imprimirRiu() {
+    const isRack = document.getElementById('btnVistaRackRiu')?.classList.contains('active');
+    
+    if (isRack) {
+        if (window.PrintService) {
+            PrintService.printElementAsImage('riu-rack', `Rack RIU Class - ${Utils.getTodayISO()}`);
+        } else {
+            window.print();
+        }
+        return;
+    }
+
+    if (window.PrintService) {
+        const contenido = generarContenidoLimpioRiu();
+        PrintService.printHTML(contenido.innerHTML, `Informe RIU Class - ${Utils.getTodayISO()}`);
+    } else {
+        window.print();
+    }
+}
+
+/**
+ * GUARDAR PDF RIU CLASS (PdfService)
+ * Genera y descarga un archivo PDF profesional.
+ */
+async function guardarRiuPDF() {
     const user = sessionService.getUser();
     if (!user) {
         Ui.showToast("⚠️ No hay usuario seleccionado.", "warning");
         return;
     }
 
-    // Lógica de Impresión Atómica - ESTABILIZACIÓN NUCLEAR V2
-    const appLayout = document.getElementById('app-layout');
-    const navbar = document.getElementById('navbar-container');
-    const reportHeader = document.querySelector('.report-header-print');
-    const workView = document.getElementById('riu-trabajo');
-    const rackView = document.getElementById('riu-rack');
-    
-    // 1. Ocultar el layout principal y preparar cabecera
-    if (appLayout) appLayout.classList.add('d-none', 'd-print-none');
-    if (navbar) navbar.classList.add('d-none', 'd-print-none');
-    
-    const now = new Date();
-    const dateStr = now.toLocaleDateString() + ' ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    
-    const pDate = document.getElementById('print-date-riu');
-    const pName = document.getElementById('print-repc-nombre-riu');
-    if (pDate) pDate.textContent = dateStr;
-    if (pName) pName.textContent = user;
+    const contenido = generarContenidoLimpioRiu();
 
-    // 2. Forzar que el reporte sea lo ÚNICO en la página
-    if (reportHeader) {
-        reportHeader.classList.remove('d-none');
-        reportHeader.classList.add('d-print-block');
-    }
-    
-    // Forzar visibilidad de la tabla
-    if (workView) workView.classList.remove('d-none');
-    if (rackView) rackView.classList.add('d-none', 'd-print-none');
-
-    // Intentar PDF si es posible, de lo contrario window.print()
     const pdfExito = await PdfService.generateReport({
         title: "INFORME DE CONTROL RIU CLASS",
         author: user,
-        htmlContent: `<div style="padding: 10px;">${workView ? workView.innerHTML : 'No Content'}</div>`,
+        element: contenido,
         filename: `REPORT_RIU_${Utils.getTodayISO()}.pdf`
     });
 
-    if (!pdfExito) {
-        window.print();
-    }
-
-    // Restaurar para visualización en pantalla
-    if (appLayout) appLayout.classList.remove('d-none', 'd-print-none');
-    if (navbar) navbar.classList.remove('d-none', 'd-print-none');
-    if (reportHeader) {
-        reportHeader.classList.add('d-none');
-        reportHeader.classList.remove('d-print-block');
-    }
-    
-    // Restaurar vista previa
-    const isRackActive = document.getElementById('btnVistaRackRiu')?.classList.contains('active');
-    if (isRackActive) {
-        if (workView) workView.classList.add('d-none');
-        if (rackView) rackView.classList.remove('d-none');
+    if (pdfExito) {
+        Ui.showToast("PDF generado correctamente.", "success");
+    } else {
+        Ui.showToast("Error al generar PDF.", "danger");
     }
 }
 
@@ -493,3 +524,4 @@ window.limpiarSalidasHoyManual = limpiarSalidasHoyManual;
 window.enviarEmailDirecto = enviarEmailDirecto;
 window.cambiarVistaRiu = cambiarVistaRiu;
 window.imprimirRiu = imprimirRiu;
+window.guardarRiuPDF = guardarRiuPDF;

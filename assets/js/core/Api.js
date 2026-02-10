@@ -1,4 +1,4 @@
-import { APP_CONFIG } from './Config.js';
+import { APP_CONFIG } from './Config.js?v=V144_FIX_FINAL';
 
 /**
  * SERVICIO DE COMUNICACIÓN (Api)

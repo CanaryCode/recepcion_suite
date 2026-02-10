@@ -6,11 +6,11 @@
  * del día con el panel de control (Dashboard).
  */
 
-import { Utils } from '../core/Utils.js';
-import { APP_CONFIG } from '../core/Config.js';
-import { Ui } from '../core/Ui.js';
-import { transfersService } from '../services/TransfersService.js';
-import { PdfService } from '../core/PdfService.js';
+import { Utils } from '../core/Utils.js?v=V144_FIX_FINAL';
+import { APP_CONFIG } from "../core/Config.js?v=V144_FIX_FINAL";
+import { Ui } from '../core/Ui.js?v=V144_FIX_FINAL';
+import { transfersService } from '../services/TransfersService.js?v=V144_FIX_FINAL';
+import { PdfService } from '../core/PdfService.js?v=V144_FIX_FINAL';
 
 let transferParaImprimir = null; // Objeto temporal para el ticket
 
@@ -417,44 +417,50 @@ window.imprimirTransferTicket = (id) => {
     document.getElementById('print_transfer_notas').textContent = item.notas || 'Sin observaciones';
 
     // Lógica de Impresión Atómica - ESTABILIZACIÓN NUCLEAR V2
-    const appLayout = document.getElementById('app-layout');
-    const navbar = document.getElementById('navbar-container');
-    const ticketPrint = document.getElementById('print-transfer-ticket');
-    const listHeaderWrap = document.querySelector('.report-header-print');
-    
-    // 1. Ocultar el layout principal y cabecera de reporte
-    if (appLayout) appLayout.classList.add('d-none', 'd-print-none');
-    if (navbar) navbar.classList.add('d-none', 'd-print-none');
-    if (listHeaderWrap) listHeaderWrap.classList.add('d-none', 'd-print-none');
-    
-    // 2. Forzar que el ticket sea lo ÚNICO en la página
-    if (ticketPrint) {
-        ticketPrint.classList.remove('d-none');
-        ticketPrint.classList.add('d-print-block');
-        ticketPrint.style.setProperty('display', 'block', 'important');
-        ticketPrint.style.setProperty('visibility', 'visible', 'important');
-        ticketPrint.style.setProperty('position', 'absolute', 'important');
-        ticketPrint.style.setProperty('top', '0', 'important');
-        ticketPrint.style.setProperty('left', '0', 'important');
-        ticketPrint.style.setProperty('width', '100%', 'important');
-    }
+    // Lógica de Impresión de Ticket - ESTABILIZACIÓN Iframe
+    const ticketHTML = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Ticket de Transfer</title>
+            <style>
+                @page { margin: 0; size: 80mm 150mm; }
+                body { font-family: 'Courier New', Courier, monospace; padding: 20px; font-size: 14px; margin: 0; background: #fff; color: #000; }
+                .d-none { display: none !important; }
+                .text-center { text-align: center; }
+                .fw-bold { font-weight: bold; }
+                .fs-4 { font-size: 1.5rem; }
+                .mb-3 { margin-bottom: 1rem; }
+                .border-bottom { border-bottom: 1px dashed #000; padding-bottom: 10px; margin-bottom: 10px; }
+            </style>
+        </head>
+        <body>
+            <div class="text-center fw-bold fs-4 mb-3">TRANSFER</div>
+            <div class="border-bottom">
+                <div>Fecha/Date: <strong>${Utils.formatDate(item.fecha)}</strong></div>
+                <div>Hora/Time: <strong>${item.hora}</strong></div>
+            </div>
+            <div class="border-bottom">
+                <div>${item.externo ? 'CLIENTE:' : 'HABITACIÓN:'}</div>
+                <div class="fs-4 fw-bold">${item.externo ? (item.nombre_cliente || 'EXTERNO') : item.habitacion}</div>
+            </div>
+            <div class="mb-3">
+                <div>Destino: <strong>${item.destino}</strong></div>
+                <div>Tipo: <strong>${item.tipo}</strong></div>
+                <div>Pax: <strong>${item.pax}</strong></div>
+            </div>
+            ${item.notas ? `<div class="mb-3">Notas: ${item.notas}</div>` : ''}
+            <div class="text-center" style="margin-top: 30px; font-size: 10px;">
+                Reception Suite v2
+            </div>
+        </body>
+        </html>
+    `;
 
-    window.print();
-
-    // Restaurar para visualización en pantalla
-    if (appLayout) appLayout.classList.remove('d-none', 'd-print-none');
-    if (navbar) navbar.classList.remove('d-none', 'd-print-none');
-    if (listHeaderWrap) listHeaderWrap.classList.remove('d-none', 'd-print-none');
-    
-    if (ticketPrint) {
-        ticketPrint.classList.add('d-none');
-        ticketPrint.classList.remove('d-print-block');
-        ticketPrint.style.display = '';
-        ticketPrint.style.visibility = '';
-        ticketPrint.style.position = '';
-        ticketPrint.style.top = '';
-        ticketPrint.style.left = '';
-        ticketPrint.style.width = '';
+    if (window.PrintService) {
+        PrintService.printHTML(ticketHTML);
+    } else {
+        window.print(); // Fallback malo
     }
 };
 
@@ -466,22 +472,29 @@ window.filtrarTransfers = mostrarTransfers;
  */
 async function imprimirTransfers() {
     const user = Utils.validateUser();
-    if (!user) return;
+    if (!user) {
+        Ui.showToast("Debe identificar al usuario activo.", "warning");
+        return;
+    }
     
-    // Preparar metadatos de cabecera
-    Ui.preparePrintReport({
-        dateId: 'print-date-transfers',
-        memberId: 'print-repc-nombre-transfers',
-        memberName: user
-    });
+    if (window.PrintService) {
+        // Imprimimos la tabla de lista
+        // Buscamos el contenedor de tabla o la tabla en sí
+        // En transfers.html la tabla suele ser #tablaTransfersVisual o similar. 
+        // En el render se usa 'tablaTransfersCuerpo' que es el TBODY.
+        // Necesitamos la TABLE completa. Asumiremos que el ID es 'table-transfers' (estándar Ui.enableTableSorting)
+        
+        const tableId = 'table-transfers';
+        if (document.getElementById(tableId)) {
+            PrintService.printElement(tableId, `Listado de Transfers - ${Utils.getTodayISO()}`);
+        } else {
+            // Fallback al contenedor de vista lista
+            PrintService.printElement('transfers-lista-view', 'Listado de Transfers');
+        }
 
-    // Aseguramos que el ticket esté oculto al imprimir la lista
-    const ticketPrint = document.getElementById('print-transfer-ticket');
-    if (ticketPrint) ticketPrint.classList.add('d-print-none');
-
-    window.print();
-
-    if (ticketPrint) ticketPrint.classList.remove('d-print-none');
+    } else {
+        window.print();
+    }
 }
 window.imprimirTransfers = imprimirTransfers;
 

@@ -1,8 +1,9 @@
-import { Utils } from "../core/Utils.js";
-import { Ui } from "../core/Ui.js";
-import { lostFoundService } from "../services/LostFoundService.js";
-import { MediaPicker } from "../core/MediaPicker.js";
-import { MediaService } from "../services/MediaService.js";
+import { Utils } from '../core/Utils.js?v=V144_FIX_FINAL';
+import { Ui } from '../core/Ui.js?v=V144_FIX_FINAL';
+import { APP_CONFIG } from "../core/Config.js?v=V144_FIX_FINAL";
+import { lostFoundService } from "../services/LostFoundService.js?v=V144_FIX_FINAL";
+import { MediaPicker } from "../core/MediaPicker.js?v=V144_FIX_FINAL";
+import { MediaService } from "../services/MediaService.js?v=V144_FIX_FINAL";
 
 /**
  * MÓDULO DE OBJETOS PERDIDOS (lost_found.js)
@@ -48,11 +49,11 @@ export const lostFoundModule = {
             serviceIdField: 'id',
             mapData: (data) => ({
                 id: data.lost_found_id || '',
-                objeto: data.lost_found_objeto,
-                lugar: data.lost_found_lugar,
-                quien: data.lost_found_quien,
-                estado: data.lost_found_estado,
-                comments: data.lost_found_comments,
+                objeto: data.lost_found_objeto || 'Desconocido',
+                lugar: data.lost_found_lugar || 'No especificado',
+                quien: data.lost_found_quien || 'Anónimo',
+                estado: data.lost_found_estado || 'Almacenado',
+                comments: data.lost_found_comments || '',
                 imagenes: currentImageArray.filter(img => img && typeof img === 'string'),
                 fecha: data.lost_found_fecha || Utils.getTodayISO()
             }),
@@ -79,14 +80,19 @@ export const lostFoundModule = {
     async renderRecentList() {
         const items = await lostFoundService.getItems();
         // Sort by date/id descending, take last 5
-        const recent = [...items].sort((a, b) => b.id - a.id).slice(0, 5);
+        const recent = [...items].sort((a, b) => b.id.localeCompare(a.id)).slice(0, 5);
 
         Ui.renderTable('lostFoundRecentBody', recent, (item) => `
-            <tr>
+            <tr style="cursor: pointer;" onclick="lostFoundModule.openDetail('${item.id}')">
                 <td>${Utils.formatDate(item.fecha)}</td>
                 <td class="fw-bold">${item.objeto}</td>
                 <td><small>${item.lugar}</small></td>
                 <td>${this.getStatusBadge(item.estado)}</td>
+                <td class="text-end no-print">
+                    <button class="btn btn-xs btn-outline-warning border-0" title="Imprimir Ticket" onclick="event.stopPropagation(); lostFoundModule.printTicket('${item.id}')">
+                        <i class="bi bi-printer"></i>
+                    </button>
+                </td>
             </tr>
         `, 'Ningún objeto registrado recientemente.');
     },
@@ -106,7 +112,7 @@ export const lostFoundModule = {
         });
 
         // Default Sort (Newest first)
-        filtered.sort((a, b) => b.id - a.id);
+        filtered.sort((a, b) => b.id.localeCompare(a.id));
 
         // Update Total Badge
         const badge = document.getElementById('lostFoundTotalBadge');
@@ -135,10 +141,13 @@ export const lostFoundModule = {
                 </td>
                 <td class="text-center">${this.getStatusBadge(item.estado)}</td>
                 <td class="text-center no-print">
-                    <button class="btn btn-sm btn-outline-primary border-0" onclick="event.stopPropagation(); lostFoundModule.editItem('${item.id}')">
+                    <button class="btn btn-sm btn-outline-warning border-0" title="Imprimir Ticket" onclick="event.stopPropagation(); lostFoundModule.printTicket('${item.id}')">
+                        <i class="bi bi-printer"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-primary border-0" title="Editar" onclick="event.stopPropagation(); lostFoundModule.editItem('${item.id}')">
                         <i class="bi bi-pencil"></i>
                     </button>
-                    <button class="btn btn-sm btn-outline-danger border-0" onclick="event.stopPropagation(); lostFoundModule.deleteItem('${item.id}')">
+                    <button class="btn btn-sm btn-outline-danger border-0" title="Eliminar" onclick="event.stopPropagation(); lostFoundModule.deleteItem('${item.id}')">
                         <i class="bi bi-trash"></i>
                     </button>
                 </td>
@@ -214,25 +223,23 @@ export const lostFoundModule = {
         const item = typeof id === 'string' ? await lostFoundService.getById(id) : id;
         if (!item) return;
 
-        const printWindow = window.open('', '_blank', 'width=400,height=600');
-        if (!printWindow) return;
-
-        const hotelName = "RIU HOTELS & RESORTS"; // Podría venir de Config.js
+        const hotelName = "RIU HOTELS & RESORTS"; 
         const dateStr = Utils.formatDate(item.fecha);
 
-        printWindow.document.write(`
+        const ticketHTML = `
+            <!DOCTYPE html>
             <html>
                 <head>
                     <title>Ticket de Almacenamiento #${item.id}</title>
                     <style>
-                        @page { margin: 0; size: 80mm 100mm; }
-                        body { font-family: 'Courier New', Courier, monospace; padding: 20px; font-size: 14px; text-align: center; }
-                        .hotel { font-weight: bold; font-size: 16px; margin-bottom: 20px; text-transform: uppercase; }
+                        @page { margin: 0; size: 80mm auto; }
+                        html, body { margin: 0; padding: 0; width: 80mm; }
+                        body { font-family: 'Courier New', Courier, monospace; padding: 15px; font-size: 13px; text-align: center; background: #fff; color: #000; }
+                        .hotel { font-weight: bold; font-size: 15px; margin-bottom: 15px; text-transform: uppercase; }
                         .title { font-size: 18px; margin: 10px 0; border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 10px 0; }
                         .info { text-align: left; margin: 15px 0; }
                         .id { font-size: 24px; font-weight: bold; margin: 15px 0; display: block; }
                         .footer { margin-top: 30px; font-size: 10px; font-style: italic; }
-                        @media print { .no-print { display: none; } }
                     </style>
                 </head>
                 <body>
@@ -251,12 +258,47 @@ export const lostFoundModule = {
                     </div>
                 </body>
             </html>
-        `);
-        printWindow.document.close();
-        setTimeout(() => {
-            printWindow.print();
-            printWindow.close();
-        }, 500);
+        `;
+
+        // Usar Servicio Centralizado si existe, para impresión limpia y aislada
+        if (window.PrintService) {
+            window.PrintService.printHTML(ticketHTML);
+        } else {
+            // Fallback Legacy
+            const printWindow = window.open('', '_blank', 'width=400,height=600');
+            if (printWindow) {
+                printWindow.document.write(ticketHTML);
+                printWindow.document.close();
+                setTimeout(() => {
+                    printWindow.print();
+                    printWindow.close();
+                }, 500);
+            }
+        }
+    },
+
+    /**
+     * IMPRIMIR REPORTE DE LA VISTA ACTUAL
+     * Detecta si estamos en el Formulario (Trabajo) o en la Lista y genera el reporte.
+     */
+    printReport() {
+        const isTrabajoActive = !document.getElementById('lost-found-trabajo').classList.contains('d-none');
+        
+        if (isTrabajoActive) {
+            // Imprimir Formulario de Trabajo (Reporte de Edición/Creación)
+            if (window.PrintService) {
+                window.PrintService.printElement('lost-found-trabajo', 'Formulario - Objetos Perdidos');
+            } else {
+                window.print();
+            }
+        } else {
+            // Imprimir Listado Completo
+            if (window.PrintService) {
+                window.PrintService.printElement('lost-found-lista', 'Listado de Objetos Perdidos');
+            } else {
+                window.print();
+            }
+        }
     },
 
     async handleFileSelection(event) {

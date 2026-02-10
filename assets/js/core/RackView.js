@@ -1,4 +1,4 @@
-import { APP_CONFIG } from './Config.js';
+import { APP_CONFIG } from './Config.js?v=V144_FIX_FINAL';
 
 /**
  * VISTA STANDARD DE RACK (RackView)
@@ -53,6 +53,8 @@ export const RackView = {
             }
 
             if (shouldShowFloor && floorContent.length > 0) {
+                 html += `<div class="rack-floor-container" data-planta="${r.planta}">`;
+                 
                  // Render Header Planta
                 if (floorRenderer) {
                     html += floorRenderer(r.planta);
@@ -68,6 +70,8 @@ export const RackView = {
                 html += '<div class="d-flex flex-wrap gap-2 justify-content-center">';
                 html += floorContent.join('');
                 html += '</div>';
+                
+                html += '</div>'; // End rack-floor-container
             }
         });
 

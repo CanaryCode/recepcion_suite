@@ -1,6 +1,6 @@
-import { APP_CONFIG } from '../core/Config.js';
-import { Utils } from '../core/Utils.js';
-import { Ui } from '../core/Ui.js';
+import { APP_CONFIG } from '../core/Config.js?v=V144_FIX_FINAL';
+import { Utils } from '../core/Utils.js?v=V144_FIX_FINAL';
+import { Ui } from '../core/Ui.js?v=V144_FIX_FINAL';
 import { safeService } from '../services/SafeService.js';
 import { sessionService } from '../services/SessionService.js';
 
@@ -239,12 +239,17 @@ function imprimirSafe() {
     const user = Utils.validateUser();
     if (!user) return;
 
-    Ui.preparePrintReport({
-        dateId: 'print-date-safe',
-        memberId: 'print-repc-nombre-safe',
-        memberName: user
-    });
-    window.print();
+    if (window.PrintService) {
+        // Imprimir la tabla de activos si estamos en esa vista
+        const isRack = document.getElementById('btnVistaRackSafe').classList.contains('active');
+        if (isRack) {
+             PrintService.printElementAsImage('rack-safe-habitaciones', `Rack de Cajas Fuertes - ${Utils.getTodayISO()}`);
+        } else {
+             PrintService.printElement('tablaSafeActivos', `Alquileres de Cajas Fuertes - ${Utils.getTodayISO()}`);
+        }
+    } else {
+        window.print();
+    }
 }
 
 window.prepararEdicionSafe = (hab) => {
@@ -277,50 +282,66 @@ window.imprimirSafeTicket = (hab) => {
     const data = safeService.getByHab(hab);
     if (!data) return;
 
-    // Poblar campos del ticket
-    document.getElementById('print_safe_hab').textContent = data.habitacion;
-    document.getElementById('print_safe_fecha_inicio').textContent = Utils.formatDate(data.fechaInicio);
-    document.getElementById('print_safe_nombre').textContent = data.nombre;
+    // Generar HTML para Ticket Térmico (80mm)
+    const ticketHTML = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Ticket Caja Fuerte ${hab}</title>
+            <style>
+                @page { size: 80mm auto; margin: 0; }
+                body { font-family: 'Courier New', monospace; width: 100%; margin: 0; padding: 15px; box-sizing: border-box; font-size: 14px; }
+                .header { text-align: center; border-bottom: 2px dashed #000; padding-bottom: 10px; margin-bottom: 15px; }
+                .title { font-size: 1.2em; font-weight: bold; margin: 5px 0; }
+                .info-row { display: flex; justify-content: space-between; margin-bottom: 8px; }
+                .label { font-weight: bold; }
+                .big-room { font-size: 2em; text-align: center; font-weight: bold; margin: 15px 0; border: 2px solid #000; padding: 5px; }
+                .footer { text-align: center; margin-top: 30px; font-size: 0.8em; font-style: italic; }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <div>HOTEL GAROÉ</div>
+                <div class="title">ALQUILER CAJA FUERTE</div>
+                <div>${Utils.formatDate(data.fechaInicio)}</div>
+            </div>
 
-    // Lógica de Impresión Atómica - ESTABILIZACIÓN NUCLEAR V2
-    const appLayout = document.getElementById('app-layout');
-    const navbar = document.getElementById('navbar-container');
-    const ticketPrint = document.getElementById('print-safe-ticket');
-    const listHeader = document.querySelector('.report-header-print');
-    
-    // 1. Ocultar el layout principal y cabecera de reporte
-    if (appLayout) appLayout.classList.add('d-none', 'd-print-none');
-    if (navbar) navbar.classList.add('d-none', 'd-print-none');
-    if (listHeader) listHeader.classList.add('d-none', 'd-print-none');
-    
-    // 2. Forzar que el ticket sea lo ÚNICO en la página
-    if (ticketPrint) {
-        ticketPrint.classList.remove('d-none');
-        ticketPrint.classList.add('d-print-block');
-        ticketPrint.style.setProperty('display', 'block', 'important');
-        ticketPrint.style.setProperty('visibility', 'visible', 'important');
-        ticketPrint.style.setProperty('position', 'absolute', 'important');
-        ticketPrint.style.setProperty('top', '0', 'important');
-        ticketPrint.style.setProperty('left', '0', 'important');
-        ticketPrint.style.setProperty('width', '100%', 'important');
-    }
+            <div class="big-room">HAB ${data.habitacion}</div>
 
-    window.print();
+            <div class="info-row">
+                <span class="label">Titular:</span>
+                <span>${data.nombre}</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Desde:</span>
+                <span>${Utils.formatDate(data.fechaInicio)}</span>
+            </div>
+            
+            ${data.comentario ? `<div style="margin-top:10px; font-style:italic;">"${data.comentario}"</div>` : ''}
 
-    // Restaurar para visualización en pantalla
-    if (appLayout) appLayout.classList.remove('d-none', 'd-print-none');
-    if (navbar) navbar.classList.remove('d-none', 'd-print-none');
-    if (listHeader) listHeader.classList.remove('d-none', 'd-print-none');
-    
-    if (ticketPrint) {
-        ticketPrint.classList.add('d-none');
-        ticketPrint.classList.remove('d-print-block');
-        ticketPrint.style.display = '';
-        ticketPrint.style.visibility = '';
-        ticketPrint.style.position = '';
-        ticketPrint.style.top = '';
-        ticketPrint.style.left = '';
-        ticketPrint.style.width = '';
+            <div style="margin-top: 40px; border-top: 1px solid #000; padding-top: 5px; text-align: center; width: 80%; margin-left: auto; margin-right: auto;">
+                Firma Huésped
+            </div>
+
+            <div class="footer">
+                <p>Por favor, conserve este ticket.<br>Reception Suite</p>
+            </div>
+        </body>
+        </html>
+    `;
+
+    if (window.PrintService) {
+        PrintService.printHTML(ticketHTML);
+    } else {
+        // Legacy fallback logic simplified/removed as printHTML is robust
+        // But keeping a minimal fallback just in case
+        console.warn("PrintService not found, using window.print fallback");
+        // Populate DOM simply for fallback... 
+        // Actually, let's just use the old helper populating logic if needed, 
+        // but replacing the WHOLE function means I should provide a complete alternative 
+        // or just window.print() if I can't inject.
+        // Given the goal is standardization, I rely on PrintService.
+        alert("Error: PrintService no disponible."); 
     }
 };
 

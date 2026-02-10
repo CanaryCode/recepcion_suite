@@ -11,39 +11,37 @@
  * Este módulo se encarga de leer esos archivos e inyectarlos en la página.
  */
 
+import { APP_CONFIG } from './Config.js?v=V144_FIX_FINAL';
+
 export const CompLoader = {
     /**
      * Carga un único archivo HTML dentro de un contenedor (div).
      * @param {string} id - El ID del div donde se meterá el HTML.
      * @param {string} path - La ruta del archivo .html a cargar.
      */
-    loadComponent: async (id, path) => {
+    loadComponent: async (id, path, retries = 2) => {
         try {
-            // Buscar el contenedor
             const container = document.getElementById(id);
-            if (!container) {
-                console.warn(`CompLoader: No se encontró el contenedor con ID '${id}'`);
-                return;
+            if (!container) return;
+
+            let lastError = null;
+            for (let i = 0; i <= retries; i++) {
+                try {
+                    const response = await fetch(`${path}?v=${APP_CONFIG.VERSION || 'V112'}`);
+                    if (!response.ok) throw new Error(`HTTP ${response.status}: ${path}`);
+                    
+                    const html = await response.text();
+                    container.innerHTML = html;
+                    return; // Éxito
+                } catch (err) {
+                    lastError = err;
+                    if (i < retries) {
+                        console.warn(`CompLoader: Reintentando [${id}] (${i + 1}/${retries})...`);
+                        await new Promise(r => setTimeout(r, 500 * (i + 1)));
+                    }
+                }
             }
-
-            // OPTIMIZACIÓN: Si ya tiene contenido (inyectado manualmente en index.html), no recargar.
-            // Esto mejora drásticamente la velocidad de arranque (Zero-Layout-Shift).
-            // REVERTIDO: Usuario reporta bucle/issues. Volvemos a carga forzada.
-            /* 
-            if (container.innerHTML.trim().length > 10) {
-                // console.log(`CompLoader: Saltando carga de [${id}], ya tiene contenido pre-inyectado.`);
-                return;
-            }
-            */
-
-            // Realizar la petición web para obtener el archivo con cache-busting
-            const response = await fetch(`${path}?v=V112`);
-            if (!response.ok) throw new Error(`No se pudo cargar el archivo: ${path}`);
-            
-            // Convertir la respuesta a texto puro (HTML)
-            const html = await response.text();
-            container.innerHTML = html;
-
+            throw lastError;
         } catch (error) {
             console.error(`Error crítico cargando el componente [${id}]:`, error);
         }

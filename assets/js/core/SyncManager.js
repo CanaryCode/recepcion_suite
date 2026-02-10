@@ -1,6 +1,6 @@
-import { APP_CONFIG } from './Config.js';
-import { LocalStorage } from './LocalStorage.js';
-import { Api } from './Api.js';
+import { APP_CONFIG } from './Config.js?v=V144_FIX_FINAL';
+import { LocalStorage } from './LocalStorage.js?v=V144_FIX_FINAL';
+import { Api } from './Api.js?v=V144_FIX_FINAL';
 
 /**
  * GESTOR DE SINCRONIZACIÓN (SyncManager)

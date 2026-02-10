@@ -1,4 +1,4 @@
-import { APP_CONFIG } from '../core/Config.js';
+import { APP_CONFIG } from "../core/Config.js?v=V144_FIX_FINAL";
 import { Utils } from '../core/Utils.js';
 import { Ui } from '../core/Ui.js';
 import { reservasInstalacionesService } from '../services/ReservasInstalacionesService.js';
@@ -183,25 +183,13 @@ export const ReservasInstalaciones = {
         const user = Utils.validateUser() || 'Recepción';
         const title = currentView === 'lista' ? 'Reporte de Reservas de Instalaciones' : 'Reporte de Disponibilidad de Instalaciones';
         
-        // Preparar cabecera de reporte
-        Ui.preparePrintReport({
-            dateId: 'print-date-inst',
-            memberId: 'print-repc-nombre-inst',
-            memberName: user
-        });
-
-        const reportTitle = document.querySelector('.report-header-print h2');
-        if (reportTitle) reportTitle.textContent = title;
-
-        // Asegurar que el ticket individual esté oculto al imprimir el listado
-        const ticket = document.getElementById('print-reserva-ticket');
-        if (ticket) ticket.classList.add('d-print-none');
-
-        // Asegurar que la cabecera general sea visible
-        const reportHeader = document.querySelector('.report-header-print');
-        if (reportHeader) reportHeader.classList.remove('d-print-none');
-
-        window.print();
+        if (window.PrintService) {
+            // Determinar ID del contenedor a imprimir
+            const containerId = currentView === 'lista' ? 'view-reserva-lista' : 'view-reserva-horarios';
+            PrintService.printElement(containerId, title);
+        } else {
+            window.print();
+        }
     },
 
     imprimirTicket(id = null) {
@@ -224,73 +212,88 @@ export const ReservasInstalaciones = {
 
         const esExterno = !!data.externo;
         const autor = data.autor || Utils.validateUser() || 'Recepción';
-
-        // Poblado del Ticket Individual
-        document.getElementById('p-res-fecha').textContent = Utils.formatDate(data.fecha);
-        document.getElementById('p-res-hora').textContent = `${data.hora_inicio} - ${data.hora_fin}`;
-        document.getElementById('p-res-inst').textContent = data.instalacion;
-        document.getElementById('p-res-pax').textContent = data.pax || 1;
-        document.getElementById('p-res-autor').textContent = autor;
-        document.getElementById('p-res-notas').textContent = data.observaciones || 'Sin observaciones adicionales.';
         
         // Generar Código de Verificación (Algoritmo simple pero visual)
         const hash = (data.id || Date.now()).toString().slice(-4);
         const code = `RS-${data.instalacion.substring(0,2).toUpperCase()}-${hash}`;
-        document.getElementById('p-res-codigo').textContent = code;
 
-        const wrapHab = document.getElementById('p-res-hab');
-        const wrapExt = document.getElementById('p-wrap-ext');
-        const spanNombre = document.getElementById('p-res-nombre');
+        const nombreCliente = esExterno ? (data.nombre_cliente || 'EXTERNO') : `Habitación ${data.habitacion || '000'}`;
+        
+        const html = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Reserva ${code}</title>
+                <style>
+                    @page { size: A4; margin: 20mm; }
+                    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; line-height: 1.6; }
+                    .header { text-align: center; border-bottom: 2px solid #0d6efd; padding-bottom: 20px; margin-bottom: 30px; }
+                    .header h1 { margin: 0; color: #0d6efd; font-size: 24px; text-transform: uppercase; }
+                    .header p { margin: 5px 0 0; color: #666; font-size: 14px; }
+                    
+                    .reserva-box { border: 1px solid #ddd; border-radius: 8px; padding: 20px; background: #f9f9f9; margin-bottom: 30px; }
+                    .row { display: flex; margin-bottom: 15px; border-bottom: 1px dashed #eee; padding-bottom: 5px; }
+                    .label { width: 140px; font-weight: bold; color: #555; }
+                    .value { flex: 1; font-weight: 500; }
+                    
+                    .big-code { text-align: center; font-size: 28px; font-weight: bold; letter-spacing: 2px; color: #333; border: 2px dashed #ccc; padding: 10px; margin: 20px 0; background: #fff; }
+                    
+                    .footer { text-align: center; margin-top: 50px; font-size: 12px; color: #888; border-top: 1px solid #eee; padding-top: 20px; }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>Comprobante de Reserva</h1>
+                    <p>Instalaciones y Servicios - Hotel Garoé</p>
+                </div>
 
-        if (esExterno) {
-            wrapHab.parentElement.classList.add('d-none');
-            wrapExt.classList.remove('d-none');
-            spanNombre.textContent = data.nombre_cliente || 'EXTERNO';
+                <div class="reserva-box">
+                    <div class="row">
+                        <div class="label">Instalación:</div>
+                        <div class="value" style="font-size: 18px; color: #0d6efd;">${data.instalacion}</div>
+                    </div>
+                    <div class="row">
+                        <div class="label">Titular:</div>
+                        <div class="value">${nombreCliente}</div>
+                    </div>
+                    <div class="row">
+                        <div class="label">Fecha:</div>
+                        <div class="value">${Utils.formatDate(data.fecha)}</div>
+                    </div>
+                    <div class="row">
+                        <div class="label">Horario:</div>
+                        <div class="value">${data.hora_inicio} - ${data.hora_fin}</div>
+                    </div>
+                    <div class="row">
+                        <div class="label">Pax:</div>
+                        <div class="value">${data.pax || 1} Personas</div>
+                    </div>
+                    <div class="row" style="border:0;">
+                        <div class="label">Observaciones:</div>
+                        <div class="value" style="font-style: italic;">${data.observaciones || 'Sin observaciones.'}</div>
+                    </div>
+                </div>
+
+                <div class="big-code">${code}</div>
+
+                <div style="margin-top: 40px; display: flex; justify-content: space-between;">
+                    <div style="width: 40%; border-top: 1px solid #000; padding-top: 5px; text-align: center; font-size: 12px;">Firma Recepcionista<br>(${autor})</div>
+                    <div style="width: 40%; border-top: 1px solid #000; padding-top: 5px; text-align: center; font-size: 12px;">Firma Cliente</div>
+                </div>
+
+                <div class="footer">
+                    <p>Gracias por utilizar nuestras instalaciones.</p>
+                    <p>Reception Suite v2 - Generado el ${new Date().toLocaleString()}</p>
+                </div>
+            </body>
+            </html>
+        `;
+
+        if (window.PrintService) {
+            PrintService.printHTML(html);
         } else {
-            wrapHab.parentElement.classList.remove('d-none');
-            wrapExt.classList.add('d-none');
-            wrapHab.textContent = data.habitacion || '000';
-        }
-
-        // Lógica de Impresión Atómica - ESTABILIZACIÓN NUCLEAR V2
-        const appLayout = document.getElementById('app-layout');
-        const navbar = document.getElementById('navbar-container');
-        const ticket = document.getElementById('print-reserva-ticket');
-        const reportHeader = document.querySelector('.report-header-print');
-        
-        // 1. Ocultar el layout principal y cabecera de reporte
-        if (appLayout) appLayout.classList.add('d-none', 'd-print-none');
-        if (navbar) navbar.classList.add('d-none', 'd-print-none');
-        if (reportHeader) reportHeader.classList.add('d-none', 'd-print-none');
-        
-        // 2. Forzar que el ticket sea lo ÚNICO en la página
-        if (ticket) {
-            ticket.classList.remove('d-none');
-            ticket.classList.add('d-print-block');
-            ticket.style.setProperty('display', 'block', 'important');
-            ticket.style.setProperty('visibility', 'visible', 'important');
-            ticket.style.setProperty('position', 'absolute', 'important');
-            ticket.style.setProperty('top', '0', 'important');
-            ticket.style.setProperty('left', '0', 'important');
-            ticket.style.setProperty('width', '100%', 'important');
-        }
-
-        window.print();
-
-        // Restaurar para visualización en pantalla
-        if (appLayout) appLayout.classList.remove('d-none', 'd-print-none');
-        if (navbar) navbar.classList.remove('d-none', 'd-print-none');
-        if (reportHeader) reportHeader.classList.remove('d-none', 'd-print-none');
-        
-        if (ticket) {
-            ticket.classList.add('d-none');
-            ticket.classList.remove('d-print-block');
-            ticket.style.display = '';
-            ticket.style.visibility = '';
-            ticket.style.position = '';
-            ticket.style.top = '';
-            ticket.style.left = '';
-            ticket.style.width = '';
+            console.warn("PrintService no disponible.");
+            alert("No se puede imprimir: PrintService inactivo.");
         }
     },
 

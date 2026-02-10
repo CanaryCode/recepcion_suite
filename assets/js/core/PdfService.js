@@ -1,4 +1,4 @@
-import { APP_CONFIG } from './Config.js';
+import { APP_CONFIG } from './Config.js?v=V144_FIX_FINAL';
 import { Utils } from './Utils.js';
 
 /**
@@ -29,12 +29,22 @@ export const PdfService = {
         const hotelName = APP_CONFIG.HOTEL?.NOMBRE || "HOTEL GAROÉ";
 
         // 1. Construir el HTML completo como STRING (Evita fugas de CSS y PDFs en blanco)
-        // Eliminamos la cabecera genérica de PdfService porque Caja ya trae su propio header profesional
-        // Reducimos el padding general al mínimo (0 10mm) para aprovechar el folio
+        // Incluimos Bootstrap y estilos globales para fidelidad visual total
         const baseStyles = `
+            <link rel="stylesheet" href="assets/vendor/bootstrap.min.css">
+            <link rel="stylesheet" href="assets/vendor/bootstrap-icons.css">
+            <link rel="stylesheet" href="assets/css/styles.css">
             <style>
-                .pdf-root { font-family: Arial, sans-serif; color: #333; padding: 0mm; margin: 0; }
-                .pdf-report-body { padding: 0; margin: 0; }
+                body { background: white !important; }
+                .pdf-root { font-family: 'Inter', Arial, sans-serif; color: #333; padding: 0; margin: 0; background: white; }
+                .pdf-report-body { padding: 10mm; margin: 0; background: white; }
+                /* Forzar visibilidad de badges y tablas en el PDF */
+                .badge { border: 1px solid #ddd; }
+                table { width: 100% !important; border-collapse: collapse; margin-bottom: 1rem; }
+                th, td { padding: 8px; border-bottom: 1px solid #dee2e6; text-align: left; }
+                .bg-riu-class { background-color: #0d6efd !important; color: white !important; }
+                .bg-riu-oro { background-color: #ffc107 !important; color: black !important; }
+                .bg-riu-diamante { background-color: #212529 !important; color: white !important; }
             </style>
         `;
 
@@ -48,28 +58,31 @@ export const PdfService = {
 
         let finalBodyHtml = "";
         if (element) {
-            const clone = element.cloneNode(true);
-            clone.classList.remove('d-none', 'd-print-none', 'd-print-block', 'fade');
-            clone.style.display = 'block';
-            clone.style.visibility = 'visible';
-            finalBodyHtml = clone.outerHTML;
+            // Si nos pasan un elemento, lo usamos directamente (ya viene clonado/limpio de ser necesario)
+            finalBodyHtml = element.innerHTML;
         } else {
             finalBodyHtml = htmlContent || "";
         }
 
-        const unifiedHtml = `<div class="pdf-root">${baseStyles}<div class="pdf-report-body">${finalBodyHtml}</div>${footerHtml}`;
+        const unifiedHtml = `<div class="pdf-root">${baseStyles}<div class="pdf-report-body">${finalBodyHtml}</div>${footerHtml}</div>`;
 
         // 2. Configuración de html2pdf
+        // Optimización: Limpieza de tooltips antes de generar
+        if (Ui.hideAllTooltips) Ui.hideAllTooltips();
+        
         const opt = {
-            margin: [5, 10, 10, 10], // Reducimos margen superior de 10 a 5mm
-            filename: filename || `${title.replace(/\s+/g, '_')}_${Utils.getTodayISO()}.pdf`,
+            margin: [5, 10, 10, 10], 
+            filename: filename || `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`,
             image: { type: 'jpeg', quality: 0.98 },
             html2canvas: { 
                 scale: 2, 
                 useCORS: true,
-                letterRendering: false, // Desactivado para mayor compatibilidad
+                letterRendering: false, 
                 logging: false,
-                backgroundColor: '#ffffff'
+                backgroundColor: '#ffffff',
+                ignoreElements: (node) => {
+                    return node.tagName === 'IFRAME'; 
+                }
             },
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true }
         };

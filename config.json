@@ -40,7 +40,19 @@
       "Domingo",
       "Antonio"
     ],
-    "SPOTIFY_URL": "https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM3M",
+    "SPOTIFY_PLAYLISTS": [
+      { "label": "Relaxing Music", "url": "https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM3M" }
+    ],
+    "COCKTAIL_LUGARES": [
+      { "es": "Terraza del restaurante", "en": "Restaurant Terrace", "de": "Restaurantterrasse", "fr": "Terrasse du restaurant", "default": true },
+      { "es": "Salón la paz", "en": "Paz Lounge", "de": "Paz Lounge", "fr": "Salon la paix", "default": false },
+      { "es": "Jardín del restaurante", "en": "Restaurant Garden", "de": "Restaurantgarten", "fr": "Jardin du restaurant", "default": false },
+      { "es": "Piscina", "en": "Pool area", "de": "Poolbereich", "fr": "Piscine", "default": false }
+    ],
+    "COCKTAIL_CONFIG": {
+      "DIA": 5,
+      "HORA": "19:00"
+    },
     "INSTALACIONES": []
   },
   "AGENDA": {

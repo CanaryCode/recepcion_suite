@@ -1,4 +1,4 @@
-import { APP_CONFIG } from '../core/Config.js';
+import { APP_CONFIG } from "../core/Config.js?v=V144_FIX_FINAL";
 import { Utils } from '../core/Utils.js';
 import { Ui } from '../core/Ui.js';
 import { novedadesService } from '../services/NovedadesService.js';
@@ -18,22 +18,20 @@ import { sessionService } from '../services/SessionService.js';
 export async function inicializarNovedades() {
     await novedadesService.init();
 
+    await novedadesService.init();
+
     // 1. CONFIGURAR VISTAS (Conmutador)
+    // Fix: Usamos un ID dummy para la vista "Solo Novedades" para que setupViewToggle
+    // oculte automáticamente "novedades-formulario" (que pertenece al btnTrabajo) al cambiar.
     Ui.setupViewToggle({
         buttons: [
-            { id: 'btnVistaTrabajoNov', viewId: 'novedades-formulario', onShow: () => {} },
-            { id: 'btnVistaSoloNov', viewId: 'novedades-formulario', onShow: () => {
-                document.getElementById('novedades-formulario').classList.add('d-none');
-            }}
+            { id: 'btnVistaTrabajoNov', viewId: 'novedades-formulario' },
+            { id: 'btnVistaSoloNov', viewId: 'novedades-solo-dummy' }
         ]
     });
-    // Fix: La "Vista Solo" r0eamente oculta el formulario
-    document.getElementById('btnVistaSoloNov')?.addEventListener('click', () => {
-        document.getElementById('novedades-formulario').classList.add('d-none');
-    });
-    document.getElementById('btnVistaTrabajoNov')?.addEventListener('click', () => {
-        document.getElementById('novedades-formulario').classList.remove('d-none');
-    });
+
+    // Validar estado inicial explícito si fuera necesario, pero Ui.setupViewToggle ya lo hace.
+
 
     // 2. CONFIGURAR FORMULARIO (Asistente)
     Ui.handleFormSubmission({
@@ -302,38 +300,19 @@ function imprimirNovedades() {
     const user = Utils.validateUser();
     if (!user) return;
 
-    // Lógica de Impresión Atómica - ESTABILIZACIÓN NUCLEAR V2
-    const appLayout = document.getElementById('app-layout');
-    const navbar = document.getElementById('navbar-container');
-    const reportHeader = document.querySelector('.report-header-print');
-    
-    // 1. Ocultar el layout principal y preparar cabecera
-    if (appLayout) appLayout.classList.add('d-none', 'd-print-none');
-    if (navbar) navbar.classList.add('d-none', 'd-print-none');
-    
-    const now = new Date();
-    const dateStr = now.toLocaleDateString() + ' ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    
-    const pDate = document.getElementById('print-date-novedades');
-    const pName = document.getElementById('print-repc-nombre-novedades');
-    if (pDate) pDate.textContent = dateStr;
-    if (pName) pName.textContent = user;
-
-    // 2. Forzar que el reporte sea lo ÚNICO en la página (usando el contenedor del módulo si es necesario, 
-    // pero aquí el header está fuera del flujo principal en el template)
-    if (reportHeader) {
-        reportHeader.classList.remove('d-none');
-        reportHeader.classList.add('d-print-block');
-    }
-
-    window.print();
-
-    // Restaurar para visualización en pantalla
-    if (appLayout) appLayout.classList.remove('d-none', 'd-print-none');
-    if (navbar) navbar.classList.remove('d-none', 'd-print-none');
-    if (reportHeader) {
-        reportHeader.classList.add('d-none');
-        reportHeader.classList.remove('d-print-block');
+    // 2. Usar Servicio Centralizado (Estrategia Iframe)
+    if (window.PrintService) {
+        const dateStr = new Date().toLocaleDateString();
+        // Intentar imprimir el cuerpo de la tabla o el contenedor de la lista
+        const table = document.getElementById('table-novedades'); // ID probable de la tabla
+        if (table) {
+            PrintService.printElement('table-novedades', `Libro de Novedades - ${dateStr}`);
+        } else {
+             // Fallback al contenedor general
+            PrintService.printElement('novedades-formulario', `Libro de Novedades - ${dateStr}`);
+        }
+    } else {
+        window.print();
     }
 }
 

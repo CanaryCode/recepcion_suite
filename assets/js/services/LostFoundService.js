@@ -10,18 +10,11 @@ class LostFoundService extends BaseService {
         super('riu_lost_found', []);
         
         /**
-         * Esquema de validación
-         * id: timestamp
-         * fecha: ISO string
-         * objeto: nombre/descripción
-         * lugar: donde se encontró
-         * quien: recepcionista o camarera que lo encontró
-         * estado: 'Almacenado', 'Entregado', 'Donado', 'Desechado'
-         * imagen: base64 o ruta
-         * comentarios: notas adicionales
+         * ESQUEMA DE DATOS
+         * El ID ahora es alfanumérico (Ej: LF-20240520-X8J)
          */
         this.schema = {
-            id: 'string', // Cambiado a string para el nuevo algoritmo
+            id: 'string',
             fecha: 'string',
             objeto: 'string',
             lugar: 'string',
@@ -31,7 +24,8 @@ class LostFoundService extends BaseService {
     }
 
     /**
-     * ALGORITMO DE ID INVENTADO: LF-YYYYMMDD-XXXX
+     * GENERAR ID PERSONALIZADO
+     * Formato: LF-YYYYMMDD-RANDOM(4)
      */
     generateCustomId() {
         const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
@@ -40,41 +34,47 @@ class LostFoundService extends BaseService {
     }
 
     /**
-     * OBTENER TODOS LOS REGISTROS
+     * OBTENER TODOS LOS OBJETOS
      */
     getItems() {
         return this.getAll();
     }
 
     /**
-     * GUARDAR/ACTUALIZAR REGISTRO
+     * GUARDAR O ACTUALIZAR OBJETO
+     * Centraliza la lógica de generación de ID y limpieza de datos.
      */
     async saveItem(item) {
         if (!item.id || item.id === '') {
             item.id = this.generateCustomId();
         }
         
-        // Asegurar que imagenes sea un array
+        // Asegurar campos opcionales
+        item.comments = item.comments || '';
         if (!Array.isArray(item.imagenes)) {
             item.imagenes = item.imagenes ? [item.imagenes] : [];
         }
 
+        console.log("[LostFoundService] Saving item:", item);
         return this.update(item.id, item);
     }
 
     /**
-     * ELIMINAR REGISTRO
+     * ELIMINAR OBJETO
      */
     async removeItem(id) {
         return this.delete(id);
     }
 
     /**
-     * SOBRESCRITURA DE setByKey
-     * Garantiza que siempre se use saveItem para procesar el ID custom
+     * ALIAS PARA COMPATIBILIDAD CON Ui.handleFormSubmission
      */
     async setByKey(key, value, idField = 'id') {
         return this.saveItem(value);
+    }
+
+    async removeByKey(key, idField = 'id') {
+        return this.delete(key, idField);
     }
 }
 

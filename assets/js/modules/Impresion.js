@@ -1,6 +1,6 @@
-import { APP_CONFIG } from "../core/Config.js";
-import { Utils } from "../core/Utils.js";
-import { Ui } from "../core/Ui.js";
+import { APP_CONFIG } from "../core/Config.js?v=V144_FIX_FINAL";
+import { Utils } from "../core/Utils.js?v=V144_FIX_FINAL";
+import { Ui } from "../core/Ui.js?v=V144_FIX_FINAL";
 
 /**
  * MÓDULO DE IMPRESIÓN DINÁMICA - ISOLATED WINDOW ENGINE
@@ -55,9 +55,14 @@ let currentRotation = parseInt(
 let activeFieldKey = null;
 
 export async function inicializarImpresion() {
-  if (window.__impresion_initialized) return;
+  const root = document.getElementById("impresion-root");
+  if (!root) return;
 
-  let root = document.getElementById("impresion-root");
+  // Si ya está inicializado, solo refrescamos elementos dependientes de la config
+  if (window.__impresion_initialized) {
+    refreshConfigDependentElements();
+    return;
+  }
   if (!root) {
     const tab = document.getElementById("impresion-content");
     if (tab) {
@@ -108,24 +113,8 @@ export async function inicializarImpresion() {
         cocktailMetadata.lugar = e.target.value;
         syncCocktailMetadata();
       });
-    // Initial Metadata from Config
-    const lugares = APP_CONFIG.HOTEL?.COCKTAIL_LUGARES || [];
-    const selectLugar = document.getElementById("cocktail-lugar");
-    if (selectLugar) {
-        selectLugar.innerHTML = lugares.map(l => `<option value="${l.es}">${l.es}</option>`).join('');
-    }
-
-    const lugarDefault = lugares.find(l => l.default) || lugares[0];
-    const cocktailConfig = APP_CONFIG.HOTEL?.COCKTAIL_CONFIG || {
-      DIA: 5,
-      HORA: "19:00",
-    };
-    cocktailMetadata.hora = cocktailConfig.HORA;
-    cocktailMetadata.lugar = lugarDefault ? lugarDefault.es : "Salón la paz";
-    if (selectLugar) selectLugar.value = cocktailMetadata.lugar;
-
     // Initial state
-    syncCocktailMetadata();
+    refreshConfigDependentElements();
     setTemplateType(currentTemplateId, true);
 
     window.ejecutarImpresionIframe = ejecutarImpresionAislada;
@@ -138,6 +127,8 @@ export async function inicializarImpresion() {
     window.setRotation = setRotation;
     window.updateNacionalidad = updateNacionalidad;
     window.imprimirLote = imprimirLote;
+
+    refreshConfigDependentElements();
 
     // Global mouse events for dragging
     document.addEventListener("mousemove", handleFieldMouseMove);
@@ -318,8 +309,79 @@ function setRotation(angle) {
 
   // Si no hay tarjetas, podemos marcar el contenedor para que futuros renders lo sepan
   // Aunque renderizarTarjetero ya usa currentRotation global.
-  
-  Ui.showToast(`Rotación: ${angle}°`, "info");
+}
+
+function refreshConfigDependentElements() {
+  const lugares = APP_CONFIG.HOTEL?.COCKTAIL_LUGARES || [];
+  const selectLugar = document.getElementById("cocktail-lugar");
+  const inputHora = document.getElementById("cocktail-hora");
+  const cocktailConfig = APP_CONFIG.HOTEL?.COCKTAIL_CONFIG || {
+    DIA: 5,
+    HORA: "19:00",
+  };
+
+  // 1. Refresh Places Dropdown
+  if (selectLugar) {
+    const backupValue = selectLugar.value;
+    
+    // Clean and rebuild
+    selectLugar.innerHTML = "";
+    lugares.forEach(l => {
+      const opt = document.createElement("option");
+      opt.value = l.es;
+      opt.textContent = l.es;
+      selectLugar.appendChild(opt);
+    });
+
+    const lugarDefault = lugares.find((l) => l.default) || lugares[0];
+    const defaultValue = lugarDefault ? lugarDefault.es : "";
+
+    // Si no había nada seleccionado (primera vez) o el valor actual ya no es válido, usamos defecto
+    if (!backupValue || !lugares.some((l) => l.es === backupValue)) {
+      selectLugar.value = defaultValue;
+    } else {
+      selectLugar.value = backupValue;
+    }
+    cocktailMetadata.lugar = selectLugar.value;
+  }
+
+  // 2. Refresh Time
+  if (inputHora) {
+    // Si la hora está vacía o es el valor fallback de JS, actualizamos con la config
+    if (
+      !cocktailMetadata.hora ||
+      cocktailMetadata.hora === "" ||
+      cocktailMetadata.hora === "19:00"
+    ) {
+      cocktailMetadata.hora = cocktailConfig.HORA;
+    }
+    inputHora.value = cocktailMetadata.hora;
+  }
+
+  // 3. Proactive Date Refresh
+  const inputFecha = document.getElementById("cocktail-fecha");
+  if (inputFecha) {
+    if (!cocktailMetadata.fecha || cocktailMetadata.fecha === "") {
+      const nextDate = getProximoCocktailDate(cocktailConfig.DIA);
+      cocktailMetadata.fecha = nextDate.toISOString().split("T")[0];
+    }
+    inputFecha.value = cocktailMetadata.fecha;
+  }
+
+  // 4. Sincronizar cambios en las tarjetas si ya hay datos
+  syncCocktailMetadata();
+}
+
+function getProximoCocktailDate(targetDay) {
+  const now = new Date();
+  const resultDate = new Date();
+  const currentDay = now.getDay(); // 0 (Dom) a 6 (Sab)
+
+  let daysUntil = targetDay - currentDay;
+  if (daysUntil < 0) daysUntil += 7;
+
+  resultDate.setDate(now.getDate() + daysUntil);
+  return resultDate;
 }
 
 function setTemplateType(typeId, silent = false) {
@@ -328,15 +390,15 @@ function setTemplateType(typeId, silent = false) {
   localStorage.setItem("impresion_current_template", typeId);
   loadCoordinates();
 
-  // UI Updates
-  document.querySelectorAll(".template-btn").forEach((btn) => {
+  // Actualizar UI de pestañas
+  document.querySelectorAll(".template-tab-btn").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.type === typeId);
   });
 
-  // Actualizar nombre de la pestaña de vista previa
+  // Actualizar nombre de la pestaña de vista previa si existiera el botón externo (opcional)
   const btnVista = document.getElementById("btnImpresionVista");
   if (btnVista) {
-    btnVista.innerHTML = `<i class="bi bi-eye me-2"></i>Vista Previa ${TEMPLATE_CONFIGS[typeId].label}`;
+    btnVista.innerHTML = `<i class="bi bi-eye me-2"></i>Vista Previa`;
   }
 
   // Update CSS Variables for card size
@@ -346,17 +408,6 @@ function setTemplateType(typeId, silent = false) {
     "--card-height",
     `${TEMPLATE_CONFIGS[typeId].height}mm`,
   );
-
-  const cocktailSection = document.getElementById("cocktail-metadata-section");
-  if (cocktailSection) {
-    if (typeId === "cocktail") {
-      cocktailSection.classList.remove("d-none");
-      cocktailSection.style.display = "flex";
-    } else {
-      cocktailSection.classList.add("d-none");
-      cocktailSection.style.display = "none";
-    }
-  }
 
   // Marcar root con el tipo de plantilla para el CSS de la guía
   const rootEl = document.getElementById("impresion-root");
@@ -375,9 +426,6 @@ function setTemplateType(typeId, silent = false) {
   }
 
   seleccionarCampo(null);
-  if (!silent) {
-    Ui.showToast(`Cambiado a: ${TEMPLATE_CONFIGS[typeId].label}`);
-  }
 }
 
 function updateNacionalidad(index, nac) {
@@ -597,6 +645,85 @@ function inyectarEstilosBase() {
         .nac-btn[data-nac="DE"].active { background: #ffc107 !important; color: black !important; }
         .nac-btn[data-nac="UK"].active { background: #0d6efd !important; }
         .nac-btn[data-nac="FR"].active { background: #0dcaf0 !important; }
+
+        .template-tab-btn {
+            position: relative !important;
+            z-index: 1 !important; /* Force low priority relative to main navigation */
+            border: none !important;
+            background: transparent !important;
+            padding: 10px 20px !important;
+            border-bottom: 3px solid transparent !important;
+            color: #6c757d !important;
+            transition: all 0.3s ease !important;
+        }
+        .template-tab-btn.active {
+            color: #0d6efd !important;
+            border-bottom-color: #0d6efd !important;
+            background: rgba(13, 110, 253, 0.05) !important;
+        }
+        .template-tab-btn:hover:not(.active) {
+            background: #f8f9fa !important;
+        }
+
+        /* Selection Toggle Fixes */
+        .form-switch .form-check-input {
+            cursor: pointer !important;
+            background-color: #fff !important;
+            border-color: #dee2e6 !important;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='rgba(0, 0, 0, 0.25)'/%3e%3c/svg%3e") !important;
+        }
+        .form-switch .form-check-input:checked {
+            background-color: #0d6efd !important;
+            border-color: #0d6efd !important;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e") !important;
+        }
+        .form-switch .form-check-input:indeterminate {
+            background-color: #0d6efd !important;
+            border-color: #0d6efd !important;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M6 10h8'/%3e%3c/svg%3e") !important;
+        }
+
+        /* Numbering and Selection Overlay */
+        .card-selection-overlay {
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            pointer-events: none !important;
+            z-index: 100 !important;
+        }
+        .card-number-badge {
+            position: absolute !important;
+            top: 5px !important;
+            left: 5px !important;
+            background: rgba(0,0,0,0.6) !important;
+            color: white !important;
+            padding: 2px 8px !important;
+            border-radius: 20px !important;
+            font-size: 0.7rem !important;
+            font-weight: bold !important;
+            pointer-events: none !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
+        }
+        .card-checkbox-wrapper {
+            position: absolute !important;
+            top: 5px !important;
+            left: 45px !important;
+            pointer-events: all !important;
+        }
+        .card-checkbox {
+            width: 18px !important;
+            height: 18px !important;
+            cursor: pointer !important;
+        }
+        .customer-card.unselected {
+            opacity: 0.4 !important;
+            filter: grayscale(0.8) !important;
+        }
+        .customer-card.unselected .precision-container {
+            pointer-events: none !important;
+        }
     `;
   document.head.appendChild(styleTag);
 }
@@ -630,6 +757,7 @@ function procesarDatosWord() {
       agencia: "DIRECTO",
       nacionalidad: "UK",
       nacionalidadCierta: false,
+      selected: true,
     };
 
     const dates = line.match(dateRegex);
@@ -785,7 +913,8 @@ function procesarDatosWord() {
   renderizarTarjetero(parsedData);
   lastParsedData = parsedData;
 
-  if (currentTemplateId === "cocktail" && parsedData.length > 0) {
+  // Si hay datos, auto-calcular fecha cocktail basada en el primer registro
+  if (parsedData.length > 0) {
     autoCalcularFechaCocktail(parsedData[0].entrada);
   }
 
@@ -972,6 +1101,27 @@ function renderizarTarjetero(data) {
       div.appendChild(nacSelector);
     }
 
+    // Numbering and Checkbox
+    const selectionOverlay = document.createElement("div");
+    selectionOverlay.className = "card-selection-overlay no-print";
+    selectionOverlay.innerHTML = `
+        <div class="card-number-badge">#${index + 1}</div>
+        <div class="card-checkbox-wrapper">
+            <input type="checkbox" class="card-checkbox" ${item.selected ? "checked" : ""} />
+        </div>
+    `;
+
+    const checkbox = selectionOverlay.querySelector(".card-checkbox");
+    checkbox.onclick = (e) => {
+        e.stopPropagation();
+        item.selected = checkbox.checked;
+        div.classList.toggle("unselected", !item.selected);
+        syncSelectionSummary();
+    };
+
+    if (!item.selected) div.classList.add("unselected");
+
+    div.appendChild(selectionOverlay);
     div.appendChild(precisionContainer);
     container.appendChild(div);
 
@@ -981,6 +1131,37 @@ function renderizarTarjetero(data) {
         .forEach((el) => autoAjustarFuente(el));
     }, 10);
   });
+  
+  syncSelectionSummary();
+}
+
+/**
+ * SELECCIONAR TODO / NINGUNO
+ * @param {boolean} val 
+ */
+function selectAll(val) {
+    if (!lastParsedData || lastParsedData.length === 0) return;
+    lastParsedData.forEach(item => item.selected = val);
+    renderizarTarjetero(lastParsedData);
+}
+
+/**
+ * SINCRONIZAR RESUMEN Y TOGGLE
+ */
+function syncSelectionSummary() {
+    const total = lastParsedData.length;
+    const selected = lastParsedData.filter(i => i.selected).length;
+    
+    const lbl = document.getElementById("lblTotalCards");
+    if (lbl) {
+        lbl.innerText = `${selected} / ${total}`;
+    }
+
+    const toggle = document.getElementById("toggleSelectAll");
+    if (toggle) {
+        toggle.checked = selected === total && total > 0;
+        toggle.indeterminate = selected > 0 && selected < total;
+    }
 }
 
 function renderControlesLotes(data) {
@@ -990,6 +1171,7 @@ function renderControlesLotes(data) {
     "w-100 mb-4 no-print d-flex gap-2 justify-content-center p-3 bg-light rounded border";
 
   const countNac = (nac) => data.filter((i) => i.nacionalidad === nac).length;
+  const countSelectedNac = (nac) => data.filter((i) => i.nacionalidad === nac && i.selected).length;
 
   const nacs = [
     { id: "ES", label: "España", btn: "danger" },
@@ -999,11 +1181,18 @@ function renderControlesLotes(data) {
   ];
 
   nacs.forEach((n) => {
-    const count = countNac(n.id);
+    const total = countNac(n.id);
+    const selected = countSelectedNac(n.id);
     const btn = document.createElement("button");
     btn.className = `btn btn-${n.btn} fw-bold`;
-    btn.disabled = count === 0;
-    btn.innerHTML = `<i class="bi bi-printer me-2"></i> ${n.label} (${count})`;
+    btn.disabled = total === 0;
+    
+    let label = `${n.label} (${total})`;
+    if (selected < total) {
+        label = `${n.label} (${selected}/${total})`;
+    }
+    
+    btn.innerHTML = `<i class="bi bi-printer me-2"></i> ${label}`;
     btn.onclick = () => imprimirLote(n.id);
     lotesDiv.appendChild(btn);
   });
@@ -1018,7 +1207,9 @@ function imprimirLote(nacId) {
 }
 
 function ejecutarImpresionAislada(forceData = null) {
-  const data = forceData || lastParsedData;
+  // Siempre filtramos por seleccionados
+  const data = (forceData || lastParsedData).filter(i => i.selected);
+  
   if (!data || data.length === 0) {
     Ui.showToast("No hay datos para imprimir", "warning");
     return;
@@ -1178,10 +1369,15 @@ function getTranslatedLugar(nombreES, nacId) {
   const item = list.find((l) => l.es.toLowerCase() === nombreES.toLowerCase());
   if (!item) return nombreES;
 
-  if (nacId === "DE") return item.de || item.es;
-  if (nacId === "UK") return item.en || item.es;
-  if (nacId === "FR") return item.fr || item.es;
+  const nac = (nacId || "").toUpperCase();
+
+  if (nac === "DE") return item.de || item.es;
+  if (nac === "UK" || nac === "EN") return item.en || item.es;
+  if (nac === "FR") return item.fr || item.es;
   return item.es;
 }
 
 window.inicializarImpresion = inicializarImpresion;
+window.setTemplateType = setTemplateType;
+window.updateNacionalidad = updateNacionalidad;
+window.selectAll = selectAll;

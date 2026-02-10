@@ -29,10 +29,14 @@
                 data-bs-toggle="tooltip" data-bs-title="Enviar informe por Email">
             <i class="bi bi-envelope me-2"></i>Enviar Reporte
         </button>
-        <div class="btn-print-wrapper">
+        <div class="btn-print-wrapper d-flex gap-2">
+            <button class="btn btn-outline-primary btn-sm fw-bold shadow-sm" onclick="guardarRiuPDF()"
+                data-bs-toggle="tooltip" data-bs-title="Guardar listado como PDF">
+                <i class="bi bi-file-earmark-pdf me-2"></i>PDF
+            </button>
             <button class="btn btn-primary btn-sm fw-bold shadow-sm" onclick="imprimirRiu()"
                 data-bs-toggle="tooltip" data-bs-title="Imprimir Listado de Miembros RIU">
-                <i class="bi bi-printer me-2"></i>Imprimir Listado
+                <i class="bi bi-printer me-2"></i>Imprimir
             </button>
         </div>
     </div>

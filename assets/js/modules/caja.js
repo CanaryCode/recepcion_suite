@@ -1,4 +1,4 @@
-import { APP_CONFIG } from "../core/Config.js";
+import { APP_CONFIG } from "../core/Config.js?v=V144_FIX_FINAL";
 import { Utils } from "../core/Utils.js";
 import { Ui } from "../core/Ui.js";
 import { sessionService } from "../services/SessionService.js";
@@ -549,25 +549,8 @@ function calcularCaja() {
   updateUIValue("total_caja", totalTesoreria);
   updateUIValue("recaudacion_caja", recaudacion);
 
-  // --- SINCRONIZACIÓN CON VISTA DE IMPRESIÓN (NUEVO) ---
-  updateUIValue("print_total_caja_main", totalTesoreria);
-  updateUIValue("print_total_efectivo", totalEfectivo);
-  updateUIValue("print_subtotal_otros", totalOtros);
-  updateUIValue("print_recaudacion_final", recaudacion);
-
-  updateUIValue("print_vales_total", totalVales);
-  updateUIValue("print_desembolsos_total", desembolsos);
-  updateUIValue("print_sellos_total", totalSellos);
-  updateUIValue("print_safe_total", safe);
-  updateUIValue("print_fondo_total", -Math.abs(fondoCajaValue)); // Mostrar como negativo en reporte
-  updateUIValue("print_monedas_extra_total", extra);
-
-  // Generar resúmenes COMPLETOS para impresión (Incluso ceros)
-  generarResumenDineroImpresion("billetes-container", "print-billetes-summary", true);
-  generarResumenDineroImpresion("monedas-container", "print-monedas-summary", true);
-
-  // Sincronizar Conceptos Dinámicos (+ Concepto)
-  sincronizarConceptosDinamicosImpresion();
+  // --- SINCRONIZACIÓN CON VISTA DE IMPRESIÓN (ROBUSTA) ---
+  // No hay llamada a clonarDatosAPantallaImpresion aquí.
 
   // Persistir metadatos (Debounced para evitar escritura en cada tecla - FIX PERFORMANCE)
   if (saveTimeout) clearTimeout(saveTimeout);
@@ -600,6 +583,8 @@ function sincronizarConceptosDinamicosImpresion() {
 let saveTimeout = null;
 
 function generarResumenDineroImpresion(sourceContainerId, targetContainerId, mostrarTodos = false) {
+  // Función mantenida por compatibilidad si se llama desde otro sitio, 
+  // pero ahora usamos la lógica de generarHTMLReporte para mayor seguridad en el flujo principal.
   const target = document.getElementById(targetContainerId);
   if (!target) return;
   
@@ -778,44 +763,293 @@ async function cerrarCajaDefinitivo() {
     }
 }
 
-function sincronizarMetadatosReporte() {
+// ============================================================================
+// IMPRESIÓN (ESTRATEGIA DE INYECCIÓN DINÁMICA)
+// ============================================================================
+
+/**
+ * Genera el HTML completo del reporte basado en el estado actual.
+ * @returns {string} HTML string del reporte formateado para A4.
+ */
+/**
+ * Genera el DOCUMENTO HTML COMPLETO para impresión en Iframe Aislado.
+ * NO depende de estilos externos. Todo el CSS es interno.
+ */
+function generarDocumentoImpresion() {
   const user = sessionService.getUser();
-  if (!user) return false;
-
-  // Asegurar que los datos están calculados
-  calcularCaja();
-
-  const now = new Date();
-  const dateStr = now.toLocaleDateString() + ' ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const userName = user ? user.nombre : "---";
+  const fecha = document.getElementById("caja_fecha")?.value || "---";
+  const turno = document.getElementById("caja_turno")?.value || "---";
+  const comentarios = document.getElementById("caja_comentarios_cierre")?.value || "";
   
-  const pDate = document.getElementById('print-date-caja');
-  const pName = document.getElementById('print-repc-nombre-caja');
-  if (pDate) pDate.textContent = dateStr;
-  if (pName) pName.textContent = user;
+  // Totales
+  const totalCaja = document.getElementById("total_caja")?.textContent || "0.00€";
+  const totalEfectivo = document.getElementById("total_efectivo")?.textContent || "0.00€";
+  const subtotalOtros = document.getElementById("subtotal_otros")?.textContent || "0.00€";
+  const recaudacion = document.getElementById("recaudacion_caja")?.textContent || "0.00€";
 
-  const btnCerrar = document.getElementById('btn-caja-cerrar-definitivo');
-  if (btnCerrar) btnCerrar.disabled = true;
+  // Helpers internos
+  const getListItems = (containerId) => {
+    const items = [];
+    document.querySelectorAll(`#${containerId} .input-group`).forEach(row => {
+      const input = row.querySelector('input');
+      const valor = input?.dataset.valor || '0';
+      const cant = parseFloat(input?.value || 0);
+      const total = Utils.formatCurrency(cant * parseFloat(valor));
+      if (cant > 0) {
+        items.push(`
+          <tr>
+             <td style="padding: 2px 0; border-bottom: 1px dotted #ccc;">${cant} x ${valor}€</td>
+             <td style="padding: 2px 0; border-bottom: 1px dotted #ccc; text-align: right; font-weight: bold;">${total}</td>
+          </tr>
+        `);
+      }
+    });
+    return items.length ? `<table style="width:100%; font-size: 9pt;">${items.join('')}</table>` : '<div style="color: #999; font-size: 8pt; font-style: italic;">Sin efectivo</div>';
+  };
 
-  return true;
+  const billetesHTML = getListItems("billetes-container");
+  const monedasHTML = getListItems("monedas-container");
+
+  // Otros Conceptos
+  const valesTotal = document.getElementById("caja_vales_total")?.value || "0.00";
+  const desembolsosTotal = document.getElementById("caja_desembolsos")?.value || "0.00";
+  const sellosTotal = document.getElementById("caja_sellos_total_lbl")?.textContent || "0.00€";
+  const safeTotal = document.getElementById("caja_safe")?.value || "0.00";
+  const extraTotal = document.getElementById("caja_monedas_extra")?.value || "0.00";
+  const fondoTotal = document.getElementById("input_fondo_arqueo")?.value || "-2000.00€";
+
+  const renderListDetails = (list) => {
+      if (!list || list.length === 0) return '';
+      return list.map(item => `
+        <div style="display: flex; justify-content: space-between; font-size: 8pt; color: #555; margin-left: 10px;">
+            <span>${item.desc || item.concepto || 'Item'}</span>
+            <span>${Utils.formatCurrency(item.importe)}</span>
+        </div>
+      `).join('');
+  };
+  const valesDetails = renderListDetails(listaVales);
+  const desembolsoDetails = renderListDetails(listaDesembolsos);
+
+  // Dinámicos
+  let dynamicHTML = "";
+  document.querySelectorAll('.dynamic-concept').forEach(div => {
+     const name = div.querySelector('.concept-name')?.value || "Varios";
+     const val = div.querySelector('.concept-value')?.value || "0.00";
+     if (parseFloat(val) !== 0) {
+          dynamicHTML += `
+            <tr>
+                <td style="padding: 4px 0; border-bottom: 1px solid #eee;"><i style="margin-right: 5px;">+</i>${name}</td>
+                <td style="padding: 4px 0; border-bottom: 1px solid #eee; text-align: right; font-weight: bold;">${Utils.formatCurrency(parseFloat(val))}</td>
+            </tr>`;
+     }
+  });
+
+
+  // RETORNAMOS EL DOCUMENTO HTML COMPLETO
+  return `
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+      <meta charset="UTF-8">
+      <title>Cierre de Caja</title>
+      <style>
+        @page { size: A4; margin: 10mm; }
+        body { 
+          font-family: 'Segoe UI', Arial, sans-serif; 
+          margin: 0; 
+          padding: 0; 
+          color: #000; 
+          background: #fff;
+          font-size: 10pt; /* Base font size */
+        }
+        table { border-collapse: collapse; width: 100%; }
+        h1 { margin: 0; font-size: 20pt; color: #0d6efd; }
+        .header-soft { color: #666; font-size: 9pt; }
+        .section-title { 
+            background: #f8f9fa; 
+            padding: 5px 8px; 
+            border-bottom: 2px solid #ddd; 
+            font-weight: 700; 
+            font-size: 10pt;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .text-end { text-align: right; }
+        .fw-bold { font-weight: 700; }
+        
+        .box-tesoreria {
+            background: #f1f8ff; 
+            border: 1px solid #cfe2ff; 
+            padding: 15px; 
+            border-radius: 8px; 
+            text-align: center; 
+            margin-bottom: 20px;
+        }
+        .box-produccion {
+            margin-top: 15px; 
+            padding: 10px; 
+            background: #e2f3e5; 
+            border: 1px solid #badbcc; 
+            border-radius: 6px;
+        }
+        .comments-box {
+            border: 1px solid #ccc;
+            padding: 10px;
+            min-height: 100px;
+            white-space: pre-wrap;
+            font-family: inherit;
+        }
+      </style>
+    </head>
+    <body>
+      
+      <!-- HEADER -->
+      <table style="border-bottom: 2px solid #0d6efd; margin-bottom: 20px;">
+        <tr>
+          <td style="vertical-align: bottom; padding-bottom: 10px;">
+            <h1>CIERRE DE CAJA</h1>
+            <div class="header-soft">Hotel Garoé - Módulo de Recepción</div>
+          </td>
+          <td class="text-end" style="vertical-align: bottom; padding-bottom: 10px;">
+            <div><strong>Fecha:</strong> ${fecha}</div>
+            <div><strong>Turno:</strong> ${turno}</div>
+            <div><strong>Responsable:</strong> ${userName}</div>
+          </td>
+        </tr>
+      </table>
+
+      <!-- LAYOUT PRINCIPAL -->
+      <table>
+        <tr>
+          <!-- IZQUIERDA -->
+          <td style="width: 60%; vertical-align: top; padding-right: 20px; border-right: 1px solid #eee;">
+            
+            <!-- EFECTIVO -->
+            <div class="section-title">DETALLE DE EFECTIVO</div>
+            <table style="margin-bottom: 20px;">
+              <tr>
+                <td style="vertical-align: top; width: 48%;">
+                    <div style="font-weight:bold; font-size:9pt; border-bottom:1px solid #ccc; margin-bottom:5px;">BILLETES</div>
+                    ${billetesHTML}
+                </td>
+                <td style="width: 4%;"></td>
+                <td style="vertical-align: top; width: 48%;">
+                    <div style="font-weight:bold; font-size:9pt; border-bottom:1px solid #ccc; margin-bottom:5px;">MONEDAS</div>
+                    ${monedasHTML}
+                </td>
+              </tr>
+            </table>
+
+            <!-- OTROS -->
+            <div class="section-title">OTROS CONCEPTOS</div>
+            <table style="font-size: 10pt;">
+               <tr>
+                 <td style="padding: 4px 0; border-bottom: 1px solid #eee;">Vales Registrados:</td>
+                 <td class="text-end fw-bold" style="padding: 4px 0; border-bottom: 1px solid #eee;">${valesTotal}€</td>
+               </tr>
+               ${valesDetails ? `<tr><td colspan="2" style="padding-bottom: 5px;">${valesDetails}</td></tr>` : ''}
+
+               <tr>
+                 <td style="padding: 4px 0; border-bottom: 1px solid #eee;">Desembolsos:</td>
+                 <td class="text-end fw-bold" style="padding: 4px 0; border-bottom: 1px solid #eee;">${desembolsosTotal}€</td>
+               </tr>
+               ${desembolsoDetails ? `<tr><td colspan="2" style="padding-bottom: 5px;">${desembolsoDetails}</td></tr>` : ''}
+
+               <tr>
+                 <td style="padding: 4px 0; border-bottom: 1px solid #eee;">Suma Sellos:</td>
+                 <td class="text-end fw-bold" style="padding: 4px 0; border-bottom: 1px solid #eee;">${sellosTotal}</td>
+               </tr>
+               <tr>
+                 <td style="padding: 4px 0; border-bottom: 1px solid #eee;">Safe:</td>
+                 <td class="text-end fw-bold" style="padding: 4px 0; border-bottom: 1px solid #eee;">${Utils.formatCurrency(safeTotal)}</td>
+               </tr>
+               <tr>
+                 <td style="padding: 4px 0; border-bottom: 1px solid #eee;">Extra / Otros:</td>
+                 <td class="text-end fw-bold" style="padding: 4px 0; border-bottom: 1px solid #eee;">${Utils.formatCurrency(extraTotal)}</td>
+               </tr>
+               <tr>
+                 <td style="padding: 6px 0; font-weight: bold; color: #555;">Fondo de Caja:</td>
+                 <td class="text-end fw-bold" style="padding: 6px 0; color: #555;">${fondoTotal}</td>
+               </tr>
+               ${dynamicHTML}
+            </table>
+
+          </td>
+          
+          <!-- DERECHA -->
+          <td style="width: 40%; vertical-align: top; padding-left: 20px;">
+             
+             <div class="box-tesoreria">
+                <div style="font-size: 10pt; font-weight: bold; color: #004085; text-transform: uppercase;">TOTAL TESORERÍA</div>
+                <div style="font-size: 22pt; font-weight: 800; color: #000; margin: 10px 0;">${totalCaja}</div>
+                
+                <table style="font-size: 9pt; margin-top: 10px;">
+                    <tr><td>Efectivo:</td><td class="text-end">${totalEfectivo}</td></tr>
+                    <tr><td>Otros:</td><td class="text-end">${subtotalOtros}</td></tr>
+                </table>
+
+                <div class="box-produccion">
+                    <div style="font-size: 8pt; font-weight: bold; color: #155724;">PRODUCCIÓN (VENTA)</div>
+                    <div style="font-size: 16pt; font-weight: 800; color: #155724;">${recaudacion}</div>
+                </div>
+             </div>
+
+             <div style="font-weight: bold; font-size: 9pt; margin-bottom: 5px;">OBSERVACIONES:</div>
+             <div class="comments-box">${comentarios}</div>
+
+          </td>
+        </tr>
+      </table>
+
+      <!-- FIRMAS -->
+      <table style="margin-top: 50px;">
+         <tr>
+             <td style="text-align: center;">
+                 <div style="border-top: 1px solid #000; width: 60%; margin: 0 auto; padding-top: 5px; font-size: 9pt;">Firma Recepcionista</div>
+             </td>
+             <td style="text-align: center;">
+                 <div style="border-top: 1px solid #000; width: 60%; margin: 0 auto; padding-top: 5px; font-size: 9pt;">Firma Intervención</div>
+             </td>
+         </tr>
+      </table>
+
+    </body>
+    </html>
+  `;
 }
 
 function imprimirCierreCaja() {
-  if (!sincronizarMetadatosReporte()) {
-    Ui.showToast("⚠️ No hay usuario seleccionado. Selecciona tu nombre en el menú superior.", "warning");
+  const user = sessionService.getUser();
+  if (!user) {
+    Ui.showToast("⚠️ No hay usuario seleccionado.", "warning");
     return;
   }
-
-  // Lógica de Impresión Simplificada y Robusta
-  // Confiamos en las clases CSS d-print-none y d-print-block que ya están en el HTML.
-  // No tocamos el DOM activo para evitar "apretrujamientos" o reflows raros.
   
-  // Solo aseguramos que el reporte tenga los datos frescos (ya hecho en sincronizarMetadatosReporte)
-  window.print();
+  // 1. Asegurar cálculos
+  calcularCaja();
+
+  // 2. Generar el documento HTML completo
+  const docContent = generarDocumentoImpresion();
+
+  // 4. Usar Servicio Centralizado de Impresión
+  // Esto invoca la estrategia de Iframe Aislado definida en assets/js/core/PrintService.js
+  if (window.PrintService) {
+      PrintService.printHTML(docContent);
+  } else {
+      console.error("PrintService no encontrado. Fallback manual...");
+      // Fallback por si acaso (aunque no debería ocurrir)
+      const win = window.open('', '_blank');
+      win.document.write(docContent);
+      win.document.close();
+      win.print();
+  }
+
 }
 
 /**
  * EXPORTAR PDF (PdfService)
- * Genera un informe profesional de arqueo de caja utilizando el servicio centralizado.
+ * Genera un informe profesional de arqueo de caja utilizando la misma lógica limpia que la impresión.
  */
 async function guardarCajaPDF() {
   const user = sessionService.getUser();
@@ -835,71 +1069,51 @@ async function guardarCajaPDF() {
   const fechaFormateada = fechaPartes.length === 3 ? `${fechaPartes[2]}-${fechaPartes[1]}-${fechaPartes[0]}` : fechaVal;
   const filename = `ARQUEO_${fechaFormateada}_${turnoVal}.pdf`.replace(/[^a-z0-9._-]/gi, '_');
 
-  // Obtener el HTML de la vista de impresión
-  const sourceView = document.getElementById("caja-print-report-view");
-  if (!sourceView) {
-      Ui.showToast("Error: No se encontró la vista de impresión.", "danger");
-      return;
+  // Obtener el HTML limpio del documento de impresión
+  // Nota: generarDocumentoImpresion devuelve un <html> completo. 
+  // Para html2pdf, a veces es mejor pasarle un elemento del DOM o un string.
+  // Vamos a crear un elemento temporal invisible.
+  const docContent = generarDocumentoImpresion();
+  
+  // Crear contenedor temporal fuera de la vista
+  const tempContainer = document.createElement('div');
+  tempContainer.style.position = 'absolute';
+  tempContainer.style.left = '-9999px';
+  tempContainer.style.width = '210mm'; // Ancho A4 para PDF
+  tempContainer.innerHTML = docContent;
+  
+  // Extraer solo el BODY para html2pdf, ya que html2pdf suele preferir nodos
+  // O mejor, instanciamos un nodo con el contenido del body del string generado.
+  const bodyContentStart = docContent.indexOf('<body');
+  const bodyContentEnd = docContent.indexOf('</body>');
+  if (bodyContentStart > -1 && bodyContentEnd > -1) {
+      const bodyInner = docContent.substring(docContent.indexOf('>', bodyContentStart) + 1, bodyContentEnd);
+      tempContainer.innerHTML = bodyInner;
   }
+  
+  document.body.appendChild(tempContainer);
 
-  // Preparar contenido para el servicio de PDF
-  const htmlContent = `
-    <style>
-        .pdf-content { font-size: 10pt; line-height: 1.4; font-family: Arial, sans-serif; color: #000; }
-        .pdf-section { margin-bottom: 20px; border: 1px solid #eee; padding: 10px; border-radius: 5px; }
-        .pdf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .pdf-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        .pdf-table td { padding: 4px; border-bottom: 1px solid #f0f0f0; }
-        .pdf-total-row { font-weight: bold; background: #f8f9fa; }
-        .text-success { color: #155724 !important; }
-        .text-danger { color: #721c24 !important; }
-        h2, h4, h5, h6 { color: #000; margin: 0; }
-    </style>
-    <div class="pdf-content">
-        ${sourceView.innerHTML}
-    </div>
-  `;
-
-  // Notificar inicio
-  Ui.showToast("Generando reporte PDF profesional...", "info");
+  const opt = {
+    margin:       10, // mm
+    filename:     filename,
+    image:        { type: 'jpeg', quality: 0.98 },
+    html2canvas:  { scale: 2, useCORS: true },
+    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
 
   try {
-      // 1. Generar Base64 para subir al servidor
-      const pdfBase64 = await PdfService.generateReport({
-          title: "ARQUEO DE CAJA - CIERRE DE TURNO",
-          author: user,
-          htmlContent: htmlContent,
-          filename: filename,
-          metadata: {
-              "Turno": turnoVal,
-              "Fecha": fechaFormateada
-          },
-          outputType: 'base64'
-      });
-
-      if (pdfBase64) {
-          // 2. Subir al servidor (Misma ruta que cierre de caja)
-          await import('../core/Api.js').then(async ({ Api }) => {
-              await Api.post('storage/upload', {
-                  fileName: filename,
-                  fileData: pdfBase64,
-                  folder: 'caja_cierres'
-              });
-          });
-
-          // 3. Trigger manual download (para el usuario)
-          const link = document.createElement('a');
-          link.href = `data:application/pdf;base64,${pdfBase64}`;
-          link.download = filename;
-          link.click();
-
-          Ui.showToast("Reporte guardado y archivado en servidor.", "success");
-      }
-  } catch (err) {
-      console.error("Error al exportar/archivar PDF:", err);
+      await html2pdf().set(opt).from(tempContainer).save();
+      Ui.showToast(`PDF guardado: ${filename}`, "success");
+  } catch (error) {
+      console.error("Error al generar PDF:", error);
       Ui.showToast("Error al generar el PDF.", "danger");
+  } finally {
+      if (document.body.contains(tempContainer)) {
+          document.body.removeChild(tempContainer);
+      }
   }
 }
+
 
 /**
  * REPORTE EMAIL (HTML Rico)

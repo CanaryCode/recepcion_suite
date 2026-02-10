@@ -92,12 +92,22 @@ export const Ui = {
      * @param {boolean} append - Si es true, añade los datos al final sin borrar lo existente
      */
     renderTable: (tbodyId, data, rowRenderer, emptyMessage = 'No hay registros.', append = false) => {
-        const tbody = document.getElementById(tbodyId);
-        if (!tbody) return;
+        const container = document.getElementById(tbodyId);
+        if (!container) {
+            console.warn(`[Ui] renderTable: Container '${tbodyId}' not found.`);
+            return;
+        }
+
+        // Detectar si es una tabla para usar TR/TD o DIV
+        const isTable = container.tagName === 'TBODY' || container.tagName === 'TABLE';
 
         // Si no estamos añadiendo y no hay datos, mostramos mensaje
         if (!append && (!data || data.length === 0)) {
-            tbody.innerHTML = `<tr><td colspan="100%" class="text-center py-4 text-muted">${emptyMessage}</td></tr>`;
+            if (isTable) {
+                container.innerHTML = `<tr><td colspan="100%" class="text-center py-4 text-muted">${emptyMessage}</td></tr>`;
+            } else {
+                container.innerHTML = `<div class="text-center py-3 text-muted w-100 small"><em>${emptyMessage}</em></div>`;
+            }
             return;
         }
 
@@ -108,11 +118,11 @@ export const Ui = {
         
         if (append) {
             // Eliminar sentinels viejos antes de añadir
-            const oldLoader = tbody.querySelector('[id^="sentinel-"]');
+            const oldLoader = container.querySelector('[id^="sentinel-"]');
             if (oldLoader) oldLoader.remove();
-            tbody.insertAdjacentHTML('beforeend', html);
+            container.insertAdjacentHTML('beforeend', html);
         } else {
-            tbody.innerHTML = html;
+            container.innerHTML = html;
         }
     },
 
@@ -169,24 +179,70 @@ export const Ui = {
      * @param {string} config.activeClass - Clase para el botón activo (default 'active')
      */
     setupViewToggle: ({ buttons, activeClass = 'active' }) => {
+        // 0. Determinar cuál debe ser el botón activo inicialmente
+        // Prioridad: 1. El que ya tenga la clase active en el HTML, 2. El primero de la lista
+        const activeButton = buttons.find(b => document.getElementById(b.id)?.classList.contains(activeClass)) || buttons[0];
+
         buttons.forEach(btnConfig => {
             const btn = document.getElementById(btnConfig.id);
             if (!btn) return;
 
+            // 1. SINCRONIZACIÓN INICIAL: Aseguramos que el DOM refleje el estado lógico
+            const view = document.getElementById(btnConfig.viewId);
+            if (view) {
+                if (btnConfig.id === activeButton.id) {
+                    view.classList.remove('d-none');
+                    btn.classList.add(activeClass);
+                    // Ejecutar el onShow inicial si existe (ej para renderizar el rack)
+                    if (btnConfig.onShow) btnConfig.onShow();
+                } else {
+                    view.classList.add('d-none');
+                    btn.classList.remove(activeClass);
+                }
+            }
+
             btn.addEventListener('click', () => {
-                // Desactivar todos los botones y ocultar vistas
+                // 1. LIMPIEZA GLOBAL DE TOOLTIPS (Evita tooltips "pegados" al cambiar de sección)
+                if (window.hideAllTooltips) window.hideAllTooltips();
+
+                // 2. Desactivar todos los botones y ocultar vistas
                 buttons.forEach(b => {
                     document.getElementById(b.id)?.classList.remove(activeClass);
                     document.getElementById(b.viewId)?.classList.add('d-none');
                 });
 
-                // Activar actual
+                // 3. Activar actual
                 btn.classList.add(activeClass);
-                const view = document.getElementById(btnConfig.viewId);
-                if (view) view.classList.remove('d-none');
+                const currentView = document.getElementById(btnConfig.viewId);
+                if (currentView) {
+                    currentView.classList.remove('d-none');
+                    // Forzar limpieza de tooltips que puedan haber quedado huerfanos en este contenedor
+                    currentView.querySelectorAll('.tooltip').forEach(t => t.remove());
+                }
 
-                // Callback opcional
+                // 4. Callback opcional (Ej: renderizar el rack)
                 if (btnConfig.onShow) btnConfig.onShow();
+            });
+        });
+    },
+
+    /**
+     * INICIALIZAR TODOS LOS TOOLTIPS DE UN CONTENEDOR
+     * @param {string|HTMLElement} container - Selector o elemento padre
+     */
+    initTooltips: (container = document) => {
+        const parent = typeof container === 'string' ? document.querySelector(container) : container;
+        if (!parent || !window.bootstrap?.Tooltip) return;
+
+        const tooltips = parent.querySelectorAll('[data-bs-toggle="tooltip"]');
+        tooltips.forEach(el => {
+            // Limpiar instancia previa si existe
+            const old = bootstrap.Tooltip.getInstance(el);
+            if (old) old.dispose();
+            
+            new bootstrap.Tooltip(el, {
+                trigger: 'hover',
+                boundary: 'window'
             });
         });
     },
@@ -375,6 +431,43 @@ export const Ui = {
             return await window.showConfirm(message);
         }
         return confirm(message);
+    },
+
+    /**
+     * OCULTAR TODOS LOS TOOLTIPS
+     * Útil antes de imprimir o abrir modales para evitar que se queden "pegados".
+     */
+    /**
+     * OCULTAR TODOS LOS TOOLTIPS
+     * Útil antes de imprimir o abrir modales para evitar que se queden "pegados".
+     */
+    hideAllTooltips: () => {
+        try {
+            // 1. Eliminar elementos visuales del DOM (Tooltips huérfanos)
+            const tooltips = document.querySelectorAll('.tooltip');
+            tooltips.forEach(t => t.remove()); 
+            
+            // 2. Cerrar instancias de Bootstrap
+            const triggers = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+            triggers.forEach(trigger => {
+                try {
+                    if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+                        const instance = bootstrap.Tooltip.getInstance(trigger);
+                        if (instance) instance.hide();
+                    }
+                } catch (e) { /* Ignore individual tooltip errors */ }
+            });
+        } catch (err) {
+            console.error("Error hiding tooltips:", err);
+        }
+    },
+
+    /**
+     * CHECK IF CONFIRM IS AVAILABLE
+     * Helper to check if showConfirm is globally available
+     */
+    hasConfirm: () => {
+        return typeof window.showConfirm === 'function';
     },
 
     /**

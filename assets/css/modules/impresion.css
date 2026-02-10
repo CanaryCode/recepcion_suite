@@ -87,15 +87,28 @@
         margin: 0 !important;
     }
 
-    /* MATAMOS LA VISIBILIDAD DE TODO EL BODY EXCEPTO NUESTRO NODO */
-    body {
+    /* OCULTAR TODO EL LAYOUT DE LA APP */
+    #app-layout, .sidebar, .header, .footer, .btn-print-wrapper, .module-title-discrete {
+        display: none !important;
         visibility: hidden !important;
-        background: none !important;
     }
 
-    #impresion-v112-root,
-    #impresion-v112-root * {
+    /* EXCEPCIÓN: Mostrar específicamente los contenedores de reporte cuando estén activos */
+    .report-header-print, 
+    #rack-grid-container,
+    #grid-notas,
+    #caja-web-interactive-view .report-header-print,
+    .print-content {
+        display: block !important;
         visibility: visible !important;
+    }
+
+    /* Asegurar que el rack se vea en grid también aquí como respaldo */
+    #rack-grid-container {
+        display: grid !important;
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)) !important;
+        gap: 10px !important;
+        width: 100% !important;
     }
 
     /* FORZAMOS QUE EL CONTENEDOR SEA ABSOLUTO PARA ANULAR print.css */

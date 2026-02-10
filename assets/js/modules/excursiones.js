@@ -1,6 +1,6 @@
 import { Utils } from "../core/Utils.js";
 import { Ui } from "../core/Ui.js";
-import { APP_CONFIG } from "../core/Config.js";
+import { APP_CONFIG } from "../core/Config.js?v=V144_FIX_FINAL";
 import { excursionService } from "../services/ExcursionService.js";
 
 /**
@@ -356,22 +356,18 @@ export const Excursiones = {
      * IMPRESIÓN DE REPORTE (Listado)
      */
     imprimirReporte() {
-        const user = Utils.validateUser();
-        if (!user) return;
-
-        Ui.preparePrintReport({
-            dateId: 'print-date-excursiones',
-            memberId: 'print-repc-nombre-excursiones',
-            memberName: user
-        });
-
-        // Ocultar ticket individual si está presente
-        const ticket = document.getElementById('ticket-excursion-print');
-        if (ticket) ticket.classList.add('d-print-none');
-
-        window.print();
-
-        if (ticket) ticket.classList.remove('d-print-none');
+        if (window.PrintService) {
+            PrintService.printElement('table-excursiones-ventas', `Reporte de Excursiones - ${Utils.getTodayISO()}`);
+        } else {
+            const user = Utils.validateUser();
+            if (!user) return;
+            Ui.preparePrintReport({
+                dateId: 'print-date-excursiones',
+                memberId: 'print-repc-nombre-excursiones',
+                memberName: user
+            });
+            window.print();
+        }
     },
 
     /**
@@ -416,94 +412,64 @@ export const Excursiones = {
         const catalogo = APP_CONFIG.EXCURSIONES_CATALOGO || [];
         const producto = catalogo.find(c => c.id === venta.tipoId) || { nombre: 'DESCONOCIDO', operador: '---' };
 
-        // Llenar campos del ticket oculto con textContent
-        document.getElementById('tk_id').textContent = venta.id || '---';
-        
-        const fVenta = venta.fechaVenta ? new Date(venta.fechaVenta) : new Date();
-        document.getElementById('tk_fecha_v').textContent = fVenta.toLocaleString();
-        
-        document.getElementById('tk_vendedor').textContent = venta.vendedor || '---';
-        document.getElementById('tk_producto').textContent = producto.nombre;
-        document.getElementById('tk_operador').textContent = producto.operador;
-        document.getElementById('tk_huesped').textContent = venta.huesped;
-        document.getElementById('tk_habitacion').textContent = venta.habitacion;
-        document.getElementById('tk_fecha_a').textContent = venta.fechaExcursion;
-        document.getElementById('tk_adultos').textContent = venta.adultos;
-        
-        const ninosRow = document.getElementById('tk_ninos_row');
-        if (ninosRow) {
-            if (venta.niños > 0) {
-                ninosRow.style.display = 'table-row';
-                document.getElementById('tk_ninos').textContent = venta.niños;
-            } else {
-                ninosRow.style.display = 'none';
-            }
-        }
-        
-        const totalNum = parseFloat(venta.total) || 0;
-        document.getElementById('tk_total').textContent = `${totalNum.toFixed(2)}€`;
-        document.getElementById('tk_estado').textContent = (venta.estado || 'COBRADO').toUpperCase();
+        const ticketHTML = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Ticket Excursión #${venta.id}</title>
+                <style>
+                    @page { size: 80mm auto; margin: 0; }
+                    body { font-family: 'Courier New', monospace; width: 100%; margin: 0; padding: 10px; box-sizing: border-box; font-size: 13px; }
+                    .header { text-align: center; border-bottom: 2px dashed #000; padding-bottom: 10px; margin-bottom: 10px; }
+                    .title { font-size: 1.1em; font-weight: bold; margin: 5px 0; }
+                    .info-row { display: flex; justify-content: space-between; margin-bottom: 5px; }
+                    .label { font-weight: bold; }
+                    .total { font-size: 1.5em; font-weight: bold; text-align: right; margin-top: 10px; border-top: 2px solid #000; padding-top: 5px; }
+                    .footer { text-align: center; margin-top: 20px; font-size: 0.8em; font-style: italic; }
+                    .status { text-align: center; font-weight: bold; margin: 10px 0; border: 1px solid #000; padding: 2px; }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <div>HOTEL GAROÉ</div>
+                    <div class="title">TICKET EXCURSIÓN</div>
+                    <div>${new Date().toLocaleString()}</div>
+                </div>
 
-        const gruposRow = document.getElementById('tk_grupos_row');
-        if (gruposRow) {
-            if (venta.grupos > 0) {
-                gruposRow.style.display = 'table-row';
-                document.getElementById('tk_grupos').textContent = venta.grupos;
-            } else {
-                gruposRow.style.display = 'none';
-            }
-        }
+                <div class="info-row"><span class="label">ID:</span> <span>${venta.id}</span></div>
+                <div class="info-row"><span class="label">Vendedor:</span> <span>${venta.vendedor}</span></div>
+                <hr style="border-top: 1px dashed #000;">
+                
+                <div style="font-weight:bold; font-size:1.1em; margin-bottom:5px;">${producto.nombre}</div>
+                <div class="info-row"><span class="label">Operador:</span> <span>${producto.operador}</span></div>
+                <div class="info-row"><span class="label">Fecha Act:</span> <span>${venta.fechaExcursion}</span></div>
+                <div class="info-row"><span class="label">Huésped:</span> <span style="text-align:right">${venta.huesped}</span></div>
+                <div class="info-row"><span class="label">Hab:</span> <span>${venta.habitacion}</span></div>
 
-        const commentsWrap = document.getElementById('tk_comments_wrap');
-        const commentsText = document.getElementById('tk_comments');
-        if (commentsWrap && commentsText) {
-            if (venta.comments && venta.comments.trim() !== "") {
-                commentsWrap.classList.remove('d-none');
-                commentsText.textContent = venta.comments;
-            } else {
-                commentsWrap.classList.add('d-none');
-            }
-        }
+                <hr style="border-top: 1px dashed #000;">
+                
+                <div class="info-row"><span class="label">Adultos:</span> <span>${venta.adultos}</span></div>
+                ${venta.niños > 0 ? `<div class="info-row"><span class="label">Niños:</span> <span>${venta.niños}</span></div>` : ''}
+                ${venta.grupos > 0 ? `<div class="info-row"><span class="label">Grupos:</span> <span>${venta.grupos}</span></div>` : ''}
 
-        // Lógica de Impresión Atómica - ESTABILIZACIÓN NUCLEAR V2
-        const appLayout = document.getElementById('app-layout');
-        const navbar = document.getElementById('navbar-container');
-        const ticketContent = document.getElementById('ticket-excursion-print');
-        const listHeader = document.querySelector('.report-header-print');
-        
-        // 1. Ocultar el layout principal y cabecera de reporte
-        if (appLayout) appLayout.classList.add('d-none', 'd-print-none');
-        if (navbar) navbar.classList.add('d-none', 'd-print-none');
-        if (listHeader) listHeader.classList.add('d-none', 'd-print-none');
-        
-        // 2. Forzar que el ticket sea lo ÚNICO en la página
-        if (ticketContent) {
-            ticketContent.classList.remove('d-none');
-            ticketContent.classList.add('d-print-block');
-            ticketContent.style.setProperty('display', 'block', 'important');
-            ticketContent.style.setProperty('visibility', 'visible', 'important');
-            ticketContent.style.setProperty('position', 'absolute', 'important');
-            ticketContent.style.setProperty('top', '0', 'important');
-            ticketContent.style.setProperty('left', '0', 'important');
-            ticketContent.style.setProperty('width', '100%', 'important');
-        }
+                <div class="total">${parseFloat(venta.total).toFixed(2)}€</div>
+                
+                <div class="status">${(venta.estado || 'COBRADO').toUpperCase()}</div>
 
-        window.print();
+                ${venta.comments ? `<div style="margin-top:10px; font-style:italic;">Nota: ${venta.comments}</div>` : ''}
 
-        // Restaurar para visualización en pantalla
-        if (appLayout) appLayout.classList.remove('d-none', 'd-print-none');
-        if (navbar) navbar.classList.remove('d-none', 'd-print-none');
-        if (listHeader) listHeader.classList.remove('d-none', 'd-print-none');
-        
-        if (ticketContent) {
-            ticketContent.classList.add('d-none');
-            ticketContent.classList.remove('d-print-block');
-            ticketContent.style.display = '';
-            ticketContent.style.visibility = '';
-            ticketContent.style.position = '';
-            ticketContent.style.top = '';
-            ticketContent.style.left = '';
-            ticketContent.style.width = '';
+                <div class="footer">
+                    <p>Gracias por su compra.<br>Reception Suite</p>
+                </div>
+            </body>
+            </html>
+        `;
+
+        if (window.PrintService) {
+            PrintService.printHTML(ticketHTML);
+        } else {
+            console.warn("PrintService no disponible.");
+            alert("No se puede imprimir el ticket.");
         }
     },
 

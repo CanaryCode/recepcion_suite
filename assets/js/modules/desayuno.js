@@ -1,5 +1,5 @@
 import { Utils } from '../core/Utils.js';
-import { APP_CONFIG } from '../core/Config.js';
+import { APP_CONFIG } from "../core/Config.js?v=V144_FIX_FINAL";
 import { Ui } from '../core/Ui.js';
 import { desayunoService } from '../services/DesayunoService.js';
 
@@ -207,7 +207,32 @@ window.limpiarDesayunos = async () => {
 };
 
 window.imprimirDesayunos = () => {
-    const user = Utils.validateUser();
-    if (!user) return;
-    Utils.printSection('print-date-desayuno', 'print-repc-nombre-desayuno', user);
+    // Check view context
+    const isRack = document.getElementById('btnVistaRackDesayuno')?.classList.contains('active');
+    
+    if (window.PrintService) {
+        if (isRack) {
+            // Print Rack View (Tipo Foto)
+            PrintService.printElementAsImage('rack-desayuno-habitaciones', `Rack de Desayunos - ${Utils.getTodayISO()}`);
+        } else {
+            // Print Work View
+            PrintService.printElement('desayuno-trabajo', `Lista de Desayunos - ${Utils.getTodayISO()}`);
+        }
+    } else {
+        const user = Utils.validateUser();
+        if (!user) return;
+        
+        // Legacy Support with Context (basic toggle)
+        if (isRack) {
+             const work = document.getElementById('desayuno-trabajo');
+             const rack = document.getElementById('rack-desayuno-habitaciones');
+             if(work) work.classList.add('d-print-none');
+             if(rack) rack.classList.remove('d-print-none');
+             window.print();
+             if(work) work.classList.remove('d-print-none');
+             if(rack) rack.classList.add('d-print-none'); // Restore usually hidden state if needed
+        } else {
+             Utils.printSection('print-date-desayuno', 'print-repc-nombre-desayuno', user);
+        }
+    }
 };

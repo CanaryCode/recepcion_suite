@@ -85,7 +85,7 @@ export const Router = {
     if (selector === "#gallery-content") {
       if (window.Gallery) window.Gallery.loadImages(true);
     } else if (selector === "#impresion-content") {
-      import("../modules/Impresion.js?v=V140_MODS").then((m) => {
+      import("../modules/Impresion.js?v=V144_FIX_FINAL").then((m) => {
         if (m.inicializarImpresion) m.inicializarImpresion();
       });
     } else if (selector === "#vales-content") {

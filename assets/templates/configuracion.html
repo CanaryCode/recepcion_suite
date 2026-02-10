@@ -103,17 +103,28 @@
       </div>
       <div class="card-body">
         <p class="small text-muted mb-3">
-          Configura una Playlist o Canción para que aparezca siempre en el menú lateral.
+          Configura tus listas de reproducción favoritas (propias o de amigos) para que aparezcan en el reproductor inferior.
         </p>
-        <div class="row g-2 align-items-end">
-            <div class="col-md-8">
-                <label class="form-label small fw-bold">Enlace de Spotify</label>
-                <input type="text" id="configSpotifyUrl" class="form-control form-control-sm" placeholder="Ej: https://open.spotify.com/playlist/...">
-            </div>
-            <div class="col-md-4">
-                <p class="small text-muted mb-0 mt-2" style="font-size: 0.7rem;">
-                    * El reproductor aparecerá en la parte inferior del menú lateral.
-                </p>
+        
+        <!-- Lista de Playlists -->
+        <div id="config-spotify-playlists-list" class="row g-2 mb-3"></div>
+
+        <!-- Formulario para añadir -->
+        <div class="p-3 bg-light rounded border">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label small fw-bold">Nombre de la Lista</label>
+                    <input type="text" id="newSpotifyLabel" class="form-control form-control-sm" placeholder="Ej: Música Relax">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label small fw-bold">Enlace de Spotify (Playlist / Album)</label>
+                    <input type="text" id="newSpotifyUrl" class="form-control form-control-sm" placeholder="https://open.spotify.com/playlist/...">
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-success btn-sm w-100 fw-bold" type="button" onclick="Configurator.addSpotifyPlaylist()">
+                        <i class="bi bi-plus-lg"></i> Añadir
+                    </button>
+                </div>
             </div>
         </div>
       </div>
@@ -539,6 +550,7 @@
                 type="password"
                 id="conf_admin_pass"
                 class="form-control"
+                autocomplete="current-password"
                 placeholder="Dejar en blanco para desactivar"
               />
               <button
@@ -633,7 +645,7 @@
                 </div>
             </div>
             <div class="d-flex justify-content-end">
-                <button class="btn btn-primary btn-sm fw-bold" onclick="addCocktailLugar()">
+                <button class="btn btn-primary btn-sm fw-bold" type="button" onclick="addCocktailLugar()">
                     <i class="bi bi-plus-lg me-1"></i>Añadir Lugar
                 </button>
             </div>

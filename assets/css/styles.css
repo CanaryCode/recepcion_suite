@@ -40,10 +40,12 @@
 @media (min-width: 1200px) { #app-layout { max-width: 1140px !important; } }
 @media (min-width: 1400px) { #app-layout { max-width: 1320px !important; } }
 
-/* FIX: Navbar Layout with Stacking Context */
-#navbar-container {
-    position: relative;
-    z-index: 1000 !important; /* Stand behind modales (10500+) */
+@media screen {
+    /* FIX: Navbar Layout with Stacking Context */
+    #navbar-container {
+        position: relative;
+        z-index: 5000 !important; /* Stand above module content but behind modales (10500+) */
+    }
 }
 
 .nav-search-wrapper {

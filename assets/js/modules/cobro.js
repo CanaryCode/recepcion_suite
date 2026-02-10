@@ -7,7 +7,8 @@
  */
 
 import { Utils } from '../core/Utils.js';
-import { APP_CONFIG } from '../core/Config.js';
+import { APP_CONFIG } from "../core/Config.js?v=V144_FIX_FINAL";
+import { Ui } from '../core/Ui.js?v=V144_FIX_FINAL';
 
 export function inicializarCobro() {
     const valores = APP_CONFIG.COBRO.VALORES;
@@ -34,9 +35,9 @@ export function inicializarCobro() {
         // pero manteniendo las clases originales para no romper calcularCobro()
         
         const inputHtml = (prefix) => `
-            <div class="input-group input-group-sm mb-1">
-                <span class="input-group-text ${styleClass} px-1 fw-bold" style="min-width: 50px; font-size: 0.75rem;"><i class="bi ${iconClass} me-1"></i>${valLabel(v)}</span>
-                <input type="text" class="form-control input-cobro-${prefix} p-1 text-center fw-bold" style="font-size: 0.8rem;" data-val="${v}" placeholder="0">
+            <div class="input-group mb-2">
+                <span class="input-group-text ${styleClass} px-2 fw-bold" style="min-width: 60px; font-size: 1rem;"><i class="bi ${iconClass} me-2"></i>${valLabel(v)}</span>
+                <input type="text" class="form-control input-cobro-${prefix} p-2 text-center fw-bold" style="font-size: 1.1rem;" data-val="${v}" placeholder="0">
             </div>`;
 
         function valLabel(num) {
@@ -169,3 +170,86 @@ async function resetearCobro() {
 
 window.resetearCobro = resetearCobro;
 window.calcularCobro = calcularCobro;
+
+window.imprimirCobro = () => {
+    // 1. Limpiar tooltips
+    if (Ui.hideAllTooltips) Ui.hideAllTooltips();
+
+    // 2. Definir contenido a imprimir
+    // Como el cobro es dinámico (inputs), PrintService.printElement podría no capturar los valores de los inputs.
+    // Generaremos un reporte HTML estático basado en los valores actuales.
+    
+    const totalCobrar = document.getElementById('cobro_total_a_cobrar')?.value || "0";
+    const totalRecibido = document.getElementById('cobro_total_recibido')?.innerText || "0";
+    const totalEntregado = document.getElementById('cobro_total_entregado')?.innerText || "0";
+    const cambio = document.getElementById('cobro_cambio_deber')?.innerText || "0";
+    const diferencia = document.getElementById('cobro_diferencia_final')?.innerText || "0";
+
+    const receivedBills = Array.from(document.querySelectorAll('.input-cobro-recibido')).filter(i => i.value > 0).map(i => `${i.value}x ${i.dataset.val}€`).join(', ');
+    const givenBills = Array.from(document.querySelectorAll('.input-cobro-entregado')).filter(i => i.value > 0).map(i => `${i.value}x ${i.dataset.val}€`).join(', ');
+
+    const htmlContent = `
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+            <meta charset="UTF-8">
+            <title>Recibo de Cobro</title>
+            <link href="assets/vendor/bootstrap.min.css" rel="stylesheet" />
+            <link rel="stylesheet" href="assets/css/styles.css" />
+            <style>
+                body { padding: 40px; background: white; font-family: 'Segoe UI', sans-serif; }
+                .recibo-container { max-width: 600px; margin: 0 auto; border: 2px solid #000; padding: 20px; }
+                h1 { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
+                .row { display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px dashed #ccc; padding-bottom: 5px; }
+                .label { font-weight: bold; }
+                .value { font-size: 1.2em; }
+                .total-row { border-top: 2px solid #000; border-bottom: none; margin-top: 20px; padding-top: 10px; font-size: 1.5em; }
+                .footer { text-align: center; margin-top: 30px; font-size: 0.8em; color: #555; }
+            </style>
+        </head>
+        <body>
+            <div class="recibo-container">
+                <h1>RECIBO DE COBRO</h1>
+                
+                <div class="row">
+                    <span class="label">Total a Cobrar:</span>
+                    <span class="value">${Utils.formatCurrency(parseFloat(totalCobrar))}</span>
+                </div>
+                
+                <div class="row">
+                    <span class="label">Total Recibido:</span>
+                    <span class="value">${totalRecibido}</span>
+                </div>
+                <div style="font-size: 0.9em; color: #666; margin-bottom: 15px; padding-left: 10px;">
+                    Desglose: ${receivedBills || 'Sin detalle'}
+                </div>
+
+                <div class="row">
+                    <span class="label">Total Entregado:</span>
+                    <span class="value">${totalEntregado}</span>
+                </div>
+                <div style="font-size: 0.9em; color: #666; margin-bottom: 15px; padding-left: 10px;">
+                    Desglose: ${givenBills || 'Sin detalle'}
+                </div>
+
+                <div class="row total-row">
+                    <span class="label">CAMBIO A DEVOLVER:</span>
+                    <span class="value fw-bold">${cambio}</span>
+                </div>
+
+                <div class="footer">
+                    <div>Emisión: ${new Date().toLocaleString()}</div>
+                    <div>Hotel Garoé - Recepción</div>
+                </div>
+            </div>
+        </body>
+        </html>
+    `;
+
+    // Usar PrintService para imprimir este contenido generado
+    if (window.PrintService) {
+        PrintService.printHTML(htmlContent);
+    } else {
+        window.print();
+    }
+};

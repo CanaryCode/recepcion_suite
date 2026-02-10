@@ -1,91 +1,131 @@
 /* LAYOUT FIX - FORCE MARGINS */
 /* Se aplica SOLO a pantalla para no romper la impresión absoluta */
 @media screen {
+  #app-layout {
+    width: 100% !important;
+    margin-right: auto !important;
+    margin-left: auto !important;
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+    overflow: visible !important; /* VITAL for Dropdowns */
+  }
 
+  /* Force Bootstrap container max-widths */
+  @media (min-width: 576px) {
     #app-layout {
-        width: 100% !important;
-        margin-right: auto !important;
-        margin-left: auto !important;
-        padding-left: 0.75rem !important;
-        padding-right: 0.75rem !important;
-        overflow: visible !important; /* VITAL for Dropdowns */
+      max-width: 540px !important;
     }
-
-    /* Force Bootstrap container max-widths */
-    @media (min-width: 576px) { #app-layout { max-width: 540px !important; } }
-    @media (min-width: 768px) { #app-layout { max-width: 720px !important; } }
-    @media (min-width: 992px) { #app-layout { max-width: 960px !important; } }
-    @media (min-width: 1200px) { #app-layout { max-width: 1140px !important; } }
-    @media (min-width: 1400px) { #app-layout { max-width: 1320px !important; } }
-
-    /* Ensure children don't overflow */
-    .tab-content, .tab-pane {
-        max-width: 100% !important;
-        width: 100% !important;
-        position: relative !important; /* Reset potential absolute positioning */
-        left: auto !important;
-        right: auto !important;
-        margin: 0 !important;
-        padding: 0 !important;
+  }
+  @media (min-width: 768px) {
+    #app-layout {
+      max-width: 720px !important;
     }
+  }
+  @media (min-width: 992px) {
+    #app-layout {
+      max-width: 960px !important;
+    }
+  }
+  @media (min-width: 1200px) {
+    #app-layout {
+      max-width: 1140px !important;
+    }
+  }
+  @media (min-width: 1400px) {
+    #app-layout {
+      max-width: 1320px !important;
+    }
+  }
 
-    /* FIX: Prevent tab-pane from breaking out (High Specificity) */
-    #app-layout .tab-content .tab-pane.active,
+  /* Ensure children don't overflow */
+  .tab-content,
+  .tab-pane {
+    max-width: 100% !important;
+    width: 100% !important;
+    position: relative !important; /* Reset potential absolute positioning */
+    left: auto !important;
+    right: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* FIX: Prevent tab-pane from breaking out (High Specificity) */
+  #app-layout .tab-content .tab-pane.active,
+  .tab-pane.active {
+    display: block !important;
+    visibility: visible !important;
+    position: relative !important; /* CRITICAL: Override print.css absolute */
+    top: auto !important;
+    left: auto !important;
+
+    /* FORCE CONTAINER BEHAVIOR ON MODULES INDEPENDENT OF PARENT */
+    width: 100% !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+
+  /* Force Bootstrap container max-widths ON THE TABS THEMSELVES */
+  @media (min-width: 576px) {
     .tab-pane.active {
-        display: block !important;
-        visibility: visible !important;
-        position: relative !important; /* CRITICAL: Override print.css absolute */
-        top: auto !important;
-        left: auto !important;
-        
-        /* FORCE CONTAINER BEHAVIOR ON MODULES INDEPENDENT OF PARENT */
-        width: 100% !important;
-        margin-left: auto !important;
-        margin-right: auto !important;
-        padding-left: 0.75rem !important;
-        padding-right: 0.75rem !important;
+      max-width: 540px !important;
     }
-
-    /* Force Bootstrap container max-widths ON THE TABS THEMSELVES */
-    @media (min-width: 576px) { .tab-pane.active { max-width: 540px !important; } }
-    @media (min-width: 768px) { .tab-pane.active { max-width: 720px !important; } }
-    @media (min-width: 992px) { .tab-pane.active { max-width: 960px !important; } }
-    @media (min-width: 1200px) { .tab-pane.active { max-width: 1140px !important; } }
-    @media (min-width: 1400px) { .tab-pane.active { max-width: 1320px !important; } }
-
-    /* SPECIAL: Ensure rows inside tabs don't cause overflow */
-    .tab-pane .row {
-        margin-left: -0.75rem; /* Bootstrap default, compatible with container padding */
-        margin-right: -0.75rem;
-        width: auto !important;
+  }
+  @media (min-width: 768px) {
+    .tab-pane.active {
+      max-width: 720px !important;
     }
+  }
+  @media (min-width: 992px) {
+    .tab-pane.active {
+      max-width: 960px !important;
+    }
+  }
+  @media (min-width: 1200px) {
+    .tab-pane.active {
+      max-width: 1140px !important;
+    }
+  }
+  @media (min-width: 1400px) {
+    .tab-pane.active {
+      max-width: 1320px !important;
+    }
+  }
 
-    /* ==========================================================================
+  /* SPECIAL: Ensure rows inside tabs don't cause overflow */
+  .tab-pane .row {
+    margin-left: -0.75rem; /* Bootstrap default, compatible with container padding */
+    margin-right: -0.75rem;
+    width: auto !important;
+  }
+
+  /* ==========================================================================
        FIX UNIVERSAL MODAL RACK
        Asegura que el modal de habitación siempre esté visible y por encima de todo
        ========================================================================== */
-    .modal-backdrop {
-        z-index: 10500 !important;
-    }
+  .modal-backdrop {
+    z-index: 10500 !important;
+  }
 
-    .modal {
-        z-index: 10600 !important;
-    }
+  .modal {
+    z-index: 10600 !important;
+  }
 
-    .modal.show {
-        display: block !important;
-        opacity: 1 !important;
-        visibility: visible !important;
-    }
+  .modal.show {
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
 
-    /* SEGURIDAD: Ocultar navbar cuando hay un modal abierto para evitar solapamientos */
-    body.modal-open #navbar-container {
-        opacity: 0 !important;
-        pointer-events: none !important;
-        transition: opacity 0.2s ease;
-    }
+  /* SEGURIDAD: Ocultar navbar cuando hay un modal abierto para evitar solapamientos */
+  body.modal-open #navbar-container {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition: opacity 0.2s ease;
+  }
 
-    /* SPOTIFY FOOTER PLAYER */
+    /* SPOTIFY FOOTER PLAYER - DRAWER MODE */
     .spotify-footer-player {
         position: fixed !important;
         bottom: 0 !important;
@@ -94,47 +134,68 @@
         z-index: 99999 !important;
         background: #191414 !important;
         border-top: 1px solid #1DB954 !important;
-        box-shadow: 0 -4px 12px rgba(0,0,0,0.5) !important;
-        display: block !important;
-        /* Removed transform transition */
+        box-shadow: 0 -8px 24px rgba(0,0,0,0.6) !important;
+        display: flex !important;
+        flex-direction: column !important;
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    .spotify-footer-player.minimized .spotify-player-body {
-        height: 0 !important;
-        padding: 0 !important;
-    }
-
+    /* HANDLE AT THE TOP */
     .spotify-footer-toggle {
         width: 100%;
         background: #1DB954;
         color: white;
         border: none;
-        padding: 1px 12px;
-        font-size: 0.6rem;
-        font-weight: bold;
+        padding: 5px 12px;
+        font-size: 0.7rem;
+        font-weight: 900;
+        letter-spacing: 1px;
         display: flex;
         align-items: center;
+        justify-content: center;
         cursor: pointer;
+        text-transform: uppercase;
     }
 
     .spotify-footer-toggle:hover {
         background: #1ed760;
     }
 
-    .spotify-player-body {
-        height: 152px;
-        background: transparent !important;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 0 !important;
-        overflow: hidden;
-        transition: height 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+    /* SWITCHER BELOW HANDLE */
+    #spotify-playlist-switcher {
+        background: #191414 !important;
+        padding: 8px 12px !important;
+        border-bottom: 1px solid #282828 !important;
+        display: flex !important;
+        gap: 8px;
+        overflow-x: auto;
     }
 
-    /* Ajuste para que el app-layout no quede tapado por el footer (solo barra) */
+    /* BODY AT THE BOTTOM */
+    .spotify-player-body {
+        height: 152px;
+        background: #121212 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        overflow: hidden;
+        transition: height 0.3s ease;
+    }
+
+    #spotify-footer-iframe {
+        flex: 1;
+        width: 100% !important;
+        height: 100% !important;
+        border: none !important;
+    }
+
+    /* MINIMIZED STATE */
+    .spotify-footer-player.minimized .spotify-player-body,
+    .spotify-footer-player.minimized #spotify-playlist-switcher {
+        display: none !important;
+    }
+
+    /* SAFETY PADDING FOR MAIN CONTENT */
     body {
-        padding-bottom: 22px; 
+        padding-bottom: 35px; /* Minimal height of the collapsed drawer */
     }
 }

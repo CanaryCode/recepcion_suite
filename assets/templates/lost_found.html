@@ -17,9 +17,9 @@
     </div>
 
     <div class="btn-print-wrapper">
-        <button class="btn btn-primary btn-sm fw-bold shadow-sm" onclick="window.print()">
-            <i class="bi bi-printer me-2"></i>Imprimir Reporte
-        </button>
+                <button class="btn btn-primary btn-sm fw-bold shadow-sm" onclick="lostFoundModule.printReport()">
+                    <i class="bi bi-printer me-1"></i> Imprimir Reporte
+                </button>
     </div>
 </div>
 
@@ -51,7 +51,7 @@
                     <div class="mb-3">
                         <label class="form-label small fw-bold">Lugar del Hallazgo *</label>
                         <input type="text" id="lost_found_lugar" class="form-control form-control-sm" 
-                            placeholder="Ej: Hab 204, Piscina, Lobby..." required id="lost_found_lugar_input">
+                            placeholder="Ej: Hab 204, Piscina, Lobby..." required>
                     </div>
 
                     <div class="mb-3">
@@ -133,6 +133,7 @@
                                 <th>Objeto</th>
                                 <th>Lugar</th>
                                 <th>Estado</th>
+                                <th class="no-print"></th>
                             </tr>
                         </thead>
                         <tbody id="lostFoundRecentBody">

@@ -34,16 +34,25 @@
       }
     </style>
     <link rel="stylesheet" href="assets/css/styles.css?v=FINAL_FIX_V2" />
-    <!-- CARGA DIRECTA DE ESTILOS DE IMPRESIÓN (SIN CACHÉ) -->
-    <link rel="stylesheet" href="assets/css/print.css" media="print" />
     <!-- FIX FINAL LAYOUT: Carga forzada al final -->
     <link rel="stylesheet" href="assets/css/layout_fix.css?v=FINAL_FIX_V2" />
+
     <!-- MÓDULO DE IMPRESIÓN -->
     <link rel="stylesheet" href="assets/css/modules/impresion.css?v=V125_FIX" />
+    
+    <!-- CARGA FINAL DE ESTILOS DE IMPRESIÓN (PRIORIDAD MÁXIMA) -->
+    <link
+      rel="stylesheet"
+      href="assets/css/print.css?v=V144_FINAL_BOSS"
+      media="print"
+    />
+    
     <script></script>
     <script src="assets/vendor/chart.min.js"></script>
     <!-- Librería para generar PDF directamente -->
     <script src="assets/vendor/html2pdf.bundle.min.js"></script>
+    <!-- FIX: Captura de imágenes para impresión de alta fidelidad -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   </head>
 
   <body data-new-gr-c-s-check-loaded="14.1209.0" data-gr-ext-installed="">
@@ -667,12 +676,12 @@
             <div class="col-6 col-md">
               <a
                 href="#"
-                onclick="navegarA('#configuracion-content')"
+                onclick="openLaunchPad()"
                 class="btn-shortcut shortcut-dark"
                 data-bs-toggle="tooltip"
                 data-bs-title="Herramientas y Configuración"
               >
-                <i class="bi bi-gear-fill"></i>
+                <i class="bi bi-grid-3x3-gap-fill"></i>
                 <span>Apps & Herramientas</span>
               </a>
             </div>
@@ -1085,7 +1094,7 @@
               <div class="btn-print-wrapper">
                 <button
                   class="btn btn-primary btn-sm fw-bold shadow-sm"
-                  onclick="window.print()"
+                  onclick="imprimirAgenda()"
                   data-bs-toggle="tooltip"
                   data-bs-title="Imprimir Agenda"
                 >
@@ -1773,353 +1782,7 @@
               </div>
             </div>
 
-            <!-- VISTA DE IMPRESIÓN (HARDCODED TABLE - Solo se ve al imprimir) -->
-            <div
-              class="d-none d-print-block"
-              id="caja-print-report-view"
-              style="font-family: Arial, sans-serif"
-            >
-              <div
-                class="report-header-print mb-4"
-                style="
-                  border-bottom: 2px solid #333;
-                  padding-bottom: 10px;
-                  display: flex;
-                  justify-content: space-between;
-                "
-              >
-                <div>
-                  <h2 style="margin: 0; color: #0d6efd">CIERRE DE CAJA</h2>
-                  <p style="margin: 0; color: #666">
-                    Hotel Garoé - Módulo de Recepción
-                  </p>
-                </div>
-                <div style="text-align: right; font-size: 10pt">
-                  <div>
-                    <strong>Fecha:</strong> <span id="print-date-caja"></span>
-                  </div>
-                  <div>
-                    <strong>Turno:</strong> <span id="print-turno-label"></span>
-                  </div>
-                  <div>
-                    <strong>Recepcionista:</strong>
-                    <span id="print-repc-nombre-caja"></span>
-                  </div>
-                </div>
-              </div>
-
-              <table
-                style="
-                  width: 100%;
-                  border-collapse: collapse;
-                  table-layout: fixed;
-                "
-              >
-                <tr>
-                  <!-- COLUMNA IZQUIERDA (Datos Detallados) -->
-                  <td
-                    style="width: 65%; vertical-align: top; padding-right: 20px"
-                  >
-                    <h5
-                      style="
-                        background: #f8f9fa;
-                        padding: 5px;
-                        border-bottom: 1px solid #ccc;
-                        margin-top: 0;
-                      "
-                    >
-                      <i class="bi bi-calculator me-2"></i>DETALLE DE EFECTIVO
-                    </h5>
-                    <div style="display: flex">
-                      <div
-                        style="flex: 1; padding-right: 10px"
-                        id="print-billetes-summary"
-                      >
-                        <h6
-                          style="
-                            font-size: 9pt;
-                            margin-bottom: 5px;
-                            color: #555;
-                          "
-                        >
-                          <i class="bi bi-cash me-2"></i>BILLETES
-                        </h6>
-                        <!-- JS inyectará aquí el desglose completo -->
-                      </div>
-                      <div style="flex: 1" id="print-monedas-summary">
-                        <h6
-                          style="
-                            font-size: 9pt;
-                            margin-bottom: 5px;
-                            color: #555;
-                          "
-                        >
-                          <i class="bi bi-coin me-2"></i>MONEDAS
-                        </h6>
-                        <!-- JS inyectará aquí el desglose completo -->
-                      </div>
-                    </div>
-
-                    <h5
-                      style="
-                        background: #f8f9fa;
-                        padding: 5px;
-                        border-bottom: 1px solid #ccc;
-                        margin-top: 20px;
-                      "
-                    >
-                      <i class="bi bi-sliders me-2"></i>OTROS CONCEPTOS
-                    </h5>
-                    <table style="width: 100%; font-size: 10pt">
-                      <!-- VALES -->
-                      <tr>
-                        <td style="padding: 4px 0">
-                          <i class="bi bi-ticket-perforated me-2"></i>Vales
-                          Registrados:
-                        </td>
-                        <td
-                          style="text-align: right; font-weight: bold"
-                          id="print_vales_total"
-                        >
-                          0.00€
-                        </td>
-                      </tr>
-                      <tr>
-                        <td colspan="2">
-                          <div
-                            id="print-vales-details"
-                            style="margin-bottom: 5px; padding-left: 15px"
-                          ></div>
-                        </td>
-                      </tr>
-
-                      <!-- DESEMBOLSOS -->
-                      <tr>
-                        <td style="padding: 4px 0">
-                          <i class="bi bi-dash-circle me-2"></i>Desembolsos:
-                        </td>
-                        <td
-                          style="text-align: right; font-weight: bold"
-                          id="print_desembolsos_total"
-                        >
-                          0.00€
-                        </td>
-                      </tr>
-                      <tr>
-                        <td colspan="2">
-                          <div
-                            id="print-desembolsos-details"
-                            style="margin-bottom: 5px; padding-left: 15px"
-                          ></div>
-                        </td>
-                      </tr>
-
-                      <!-- SELLOS -->
-                      <tr>
-                        <td style="padding: 4px 0">
-                          <i class="bi bi-postage me-2"></i>Suma Sellos:
-                        </td>
-                        <td
-                          style="text-align: right; font-weight: bold"
-                          id="print_sellos_total"
-                        >
-                          0.00€
-                        </td>
-                      </tr>
-
-                      <!-- SAFE -->
-                      <tr>
-                        <td style="padding: 4px 0">
-                          <i class="bi bi-safe me-2"></i>Safe:
-                        </td>
-                        <td
-                          style="text-align: right; font-weight: bold"
-                          id="print_safe_total"
-                        >
-                          0.00€
-                        </td>
-                      </tr>
-
-                      <!-- EXTRA -->
-                      <tr>
-                        <td style="padding: 4px 0">
-                          <i class="bi bi-plus-circle me-2"></i>Extra / Otros:
-                        </td>
-                        <td
-                          style="text-align: right; font-weight: bold"
-                          id="print_monedas_extra_total"
-                        >
-                          0.00€
-                        </td>
-                      </tr>
-
-                      <!-- FONDO (AL FINAL) -->
-                      <tr>
-                        <td style="padding: 4px 0">
-                          <i class="bi bi-bank me-2"></i>Fondo de Caja:
-                        </td>
-                        <td
-                          style="text-align: right; font-weight: bold"
-                          id="print_fondo_total"
-                        >
-                          -2000.00€
-                        </td>
-                      </tr>
-                    </table>
-
-                    <div
-                      id="print-dynamic-concepts"
-                      style="margin-top: 10px; font-size: 10pt"
-                    ></div>
-                  </td>
-
-                  <!-- COLUMNA DERECHA (Totales y Comentarios) -->
-                  <td
-                    style="
-                      width: 35%;
-                      vertical-align: top;
-                      border-left: 2px solid #eee;
-                      padding-left: 20px;
-                    "
-                  >
-                    <div
-                      style="
-                        background: #f1f8ff;
-                        padding: 15px;
-                        border-radius: 8px;
-                        border: 1px solid #cfe2ff;
-                        text-align: center;
-                      "
-                    >
-                      <h4 style="margin: 0; color: #004085; font-size: 11pt">
-                        <i class="bi bi-wallet2 me-2"></i>TOTAL TESORERÍA
-                      </h4>
-                      <div
-                        style="
-                          font-size: 24pt;
-                          font-weight: bold;
-                          margin: 10px 0;
-                        "
-                        id="print_total_caja_main"
-                      >
-                        0.00€
-                      </div>
-                      <hr style="border: 0; border-top: 1px solid #ccc" />
-                      <div
-                        style="
-                          display: flex;
-                          justify-content: space-between;
-                          font-size: 9pt;
-                          margin-bottom: 4px;
-                        "
-                      >
-                        <span>Subtotal Efectivo:</span
-                        ><span id="print_total_efectivo">0.00€</span>
-                      </div>
-                      <div
-                        style="
-                          display: flex;
-                          justify-content: space-between;
-                          font-size: 9pt;
-                        "
-                      >
-                        <span>Subtotal Otros:</span
-                        ><span id="print_subtotal_otros">0.00€</span>
-                      </div>
-
-                      <div
-                        style="
-                          margin-top: 20px;
-                          padding: 10px;
-                          background: #e2f3e5;
-                          border-radius: 5px;
-                        "
-                      >
-                        <div
-                          style="
-                            font-size: 8pt;
-                            font-weight: bold;
-                            color: #155724;
-                          "
-                        >
-                          <i class="bi bi-graph-up-arrow me-1"></i>PRODUCCIÓN
-                          (VENTA)
-                        </div>
-                        <div
-                          style="
-                            font-size: 16pt;
-                            font-weight: bold;
-                            color: #155724;
-                          "
-                          id="print_recaudacion_final"
-                        >
-                          0.00€
-                        </div>
-                      </div>
-                    </div>
-
-                    <div style="margin-top: 25px">
-                      <label
-                        style="
-                          font-size: 8pt;
-                          font-weight: bold;
-                          color: #666;
-                          display: block;
-                          margin-bottom: 5px;
-                        "
-                        ><i class="bi bi-chat-left-text me-2"></i>OBSERVACIONES
-                        / COMENTARIOS</label
-                      >
-                      <div
-                        id="print-comentarios-caja"
-                        style="
-                          font-size: 9pt;
-                          line-height: 1.4;
-                          border: 1px solid #eee;
-                          padding: 10px;
-                          min-height: 150px;
-                          background: #fff;
-                          white-space: pre-wrap;
-                          word-wrap: break-word;
-                          overflow-wrap: break-word;
-                        "
-                      ></div>
-                    </div>
-                  </td>
-                </tr>
-              </table>
-
-              <div
-                class="signature-area"
-                style="
-                  margin-top: 50px;
-                  display: flex;
-                  justify-content: space-around;
-                  font-size: 9pt;
-                "
-              >
-                <div
-                  style="
-                    border-top: 1px solid #000;
-                    width: 150px;
-                    text-align: center;
-                    padding-top: 5px;
-                  "
-                >
-                  Firma Recepcionista
-                </div>
-                <div
-                  style="
-                    border-top: 1px solid #000;
-                    width: 150px;
-                    text-align: center;
-                    padding-top: 5px;
-                  "
-                >
-                  Firma Intervención
-                </div>
-              </div>
-            </div>
+            <!-- ESPACIO LIBERADO (Vista de impresión movida al final del body) -->
 
             <!-- MODAL GESTIÓN DE VALES -->
             <div
@@ -2937,10 +2600,17 @@
               </button>
             </div>
 
-            <div class="btn-print-wrapper">
-              <!-- Selector eliminado: Se usa usuario global -->
+            <div class="btn-print-wrapper d-flex gap-2">
               <button
-                class="btn btn-primary btn-sm fw-bold"
+                class="btn btn-outline-info btn-sm fw-bold shadow-sm bg-white"
+                onclick="imprimirGraficasEstancia()"
+                data-bs-toggle="tooltip"
+                data-bs-title="Imprimir Gráficas y Estadísticas"
+              >
+                <i class="bi bi-camera me-2"></i>Imprimir Gráficas
+              </button>
+              <button
+                class="btn btn-primary btn-sm fw-bold shadow-sm"
                 onclick="imprimirEstancia()"
                 data-bs-toggle="tooltip"
                 data-bs-title="Imprimir Listado Mensual"
@@ -4125,7 +3795,7 @@
             <div class="btn-print-wrapper">
               <button
                 class="btn btn-primary btn-sm fw-bold shadow-sm"
-                onclick="window.print()"
+                onclick="window.imprimirNotas()"
                 data-bs-toggle="tooltip"
                 data-bs-title="Imprimir Tablón"
               >
@@ -4489,14 +4159,23 @@
                   </button>
                 </div>
 
-                <!-- Refresh -->
-                <button
-                  class="btn btn-outline-primary btn-sm fw-bold shadow-sm border-0 bg-white ms-auto"
-                  onclick="Gallery.loadImages(true)"
-                  title="Sincronizar carpetas"
-                >
-                  <i class="bi bi-arrow-clockwise me-1"></i>Sincronizar
-                </button>
+                <!-- Refresh and Global Print -->
+                <div class="d-flex gap-2 ms-auto">
+                  <button
+                    class="btn btn-outline-info btn-sm fw-bold shadow-sm border-0 bg-white"
+                    onclick="Gallery.printGrid()"
+                    title="Imprimir cuadrícula actual"
+                  >
+                    <i class="bi bi-camera me-1"></i>Imprimir Cuadrícula
+                  </button>
+                  <button
+                    class="btn btn-outline-primary btn-sm fw-bold shadow-sm border-0 bg-white"
+                    onclick="Gallery.loadImages(true)"
+                    title="Sincronizar carpetas"
+                  >
+                    <i class="bi bi-arrow-clockwise me-1"></i>Sincronizar
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -4944,7 +4623,7 @@
             <div class="btn-print-wrapper">
               <button
                 class="btn btn-primary btn-sm fw-bold shadow-sm"
-                onclick="window.print()"
+                onclick="window.imprimirCobro()"
                 data-bs-toggle="tooltip"
                 data-bs-title="Imprimir Alertas"
               >
@@ -5597,7 +5276,7 @@
           <div class="btn-print-wrapper gap-2">
             <button
               class="btn btn-primary btn-sm fw-bold"
-              onclick="window.print()"
+              onclick="window.imprimirRack()"
               data-bs-toggle="tooltip"
               data-bs-title="Imprimir Rack"
             >
@@ -5974,528 +5653,10 @@
         </div>
       </div>
       <div class="tab-pane fade" id="configuracion-content" role="tabpanel">
-        <div class="d-none d-print-block report-header-print">
-          <div class="report-info-left">
-            <h2>Configuración del Sistema</h2>
-            <p>Hotel Garoé • Recepción Suite</p>
-          </div>
-          <div class="report-info-right">
-            <div>
-              <strong>Fecha:</strong> <span id="print-date-config"></span>
-            </div>
-            <div>
-              <strong>Generado por:</strong>
-              <span id="print-repc-nombre-config"></span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Encabezado del Módulo (Título Dinámico) -->
-        <h4 class="module-title-discrete">
-          <i class="bi bi-gear-fill"></i> CONFIGURACIÓN
-        </h4>
-
-        <!-- Barra de Herramientas -->
-        <div class="module-toolbar no-print">
-          <div class="btn-group" role="group">
-            <button
-              class="btn btn-outline-primary active"
-              id="btnConfigMain"
-              data-bs-toggle="tooltip"
-              data-bs-title="Editar Configuración"
-            >
-              <i class="bi bi-sliders me-2"></i>General
-            </button>
-            <button
-              class="btn btn-outline-danger"
-              onclick="resetConfigToDefault()"
-              data-bs-toggle="tooltip"
-              data-bs-title="Restaurar valores de fábrica"
-            >
-              <i class="bi bi-arrow-counterclockwise me-2"></i>Reset
-            </button>
-          </div>
-
-          <div class="btn-print-wrapper gap-2">
-            <button
-              class="btn btn-success btn-sm fw-bold shadow-sm"
-              onclick="exportConfig()"
-              data-bs-toggle="tooltip"
-              data-bs-title="Descargar archivo JSON para guardar cambios permanentemente"
-            >
-              <i class="bi bi-download me-2"></i>Descargar config.json
-            </button>
-            <button
-              class="btn btn-primary btn-sm fw-bold shadow-sm"
-              onclick="saveConfigLocal()"
-              data-bs-toggle="tooltip"
-              data-bs-title="Aplicar cambios en este navegador"
-            >
-              <i class="bi bi-save-fill me-2"></i>Aplicar Cambios
-            </button>
-          </div>
-        </div>
-
-        <!-- Contenedor Principal -->
-        <div
-          id="configuracion-content-wrapper"
-          class="content-panel animate-fade-in"
-        >
-          <form
-            id="formConfig"
-            onsubmit="
-              event.preventDefault();
-              saveConfigLocal();
-            "
-          >
-            <!-- 1. Recepcionistas -->
-            <div class="card mb-4 shadow-sm border-0">
-              <div class="card-header py-3 bg-white">
-                <h6 class="mb-0 fw-bold text-primary">
-                  <i class="bi bi-people-fill me-2"></i>Equipo de Recepción
-                </h6>
-              </div>
-              <div class="card-body">
-                <p class="small text-muted mb-3">
-                  Nombres que aparecerán en los selectores de usuario y firmas.
-                </p>
-                <div
-                  id="config-recepcionistas-list"
-                  class="d-flex flex-wrap gap-2 mb-3"
-                ></div>
-
-                <div
-                  class="input-group input-group-sm"
-                  style="max-width: 400px"
-                >
-                  <input
-                    type="text"
-                    id="newRecepcionista"
-                    class="form-control"
-                    placeholder="Nuevo nombre..."
-                  />
-                  <button
-                    class="btn btn-outline-primary"
-                    type="button"
-                    onclick="addRecepcionista()"
-                  >
-                    <i class="bi bi-plus-lg"></i> Añadir
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <!-- 1.1 Transfers & Destinos -->
-            <div class="card mb-4 shadow-sm border-0">
-              <div class="card-header py-3 bg-white">
-                <h6 class="mb-0 fw-bold text-primary">
-                  <i class="bi bi-airplane-engines-fill me-2"></i>Transfers &
-                  Destinos
-                </h6>
-              </div>
-              <div class="card-body">
-                <p class="small text-muted mb-3">
-                  Destinos habituales para mostrar en las opciones de
-                  "Transfers".
-                </p>
-                <div
-                  id="list-destinos-transfers"
-                  class="d-flex flex-wrap gap-2 mb-3"
-                ></div>
-
-                <div
-                  class="input-group input-group-sm"
-                  style="max-width: 400px"
-                >
-                  <input
-                    type="text"
-                    id="newDestinoTransfer"
-                    class="form-control"
-                    placeholder="Nuevo destino (ej: Aeropuerto)..."
-                  />
-                  <button
-                    class="btn btn-outline-primary"
-                    type="button"
-                    onclick="addDestinoTransfer()"
-                  >
-                    <i class="bi bi-plus-lg"></i> Añadir
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <!-- 1.2 Ejecutables / Apps Externas -->
-            <div class="card mb-4 shadow-sm border-0">
-              <div class="card-header py-3 bg-white">
-                <h6 class="mb-0 fw-bold text-primary">
-                  <i class="bi bi-app-indicator me-2"></i>Accesos Rápidos (Apps)
-                </h6>
-              </div>
-              <div class="card-body">
-                <p class="small text-muted mb-3">
-                  Botones para lanzar aplicaciones externas desde el dashboard.
-                  (Requiere servidor Node.js local).
-                </p>
-
-                <div id="list-app-launchers" class="row g-2 mb-3"></div>
-
-                <div
-                  class="row g-2 align-items-end p-3 bg-light rounded border"
-                >
-                  <div class="col-md-3">
-                    <label class="form-label small fw-bold">Nombre Botón</label>
-                    <input
-                      type="text"
-                      id="newLauncherLabel"
-                      class="form-control form-control-sm"
-                      placeholder="Ej: Word"
-                    />
-                  </div>
-                  <div class="col-md-5">
-                    <label class="form-label small fw-bold"
-                      >Ruta Ejecutable (.exe)</label
-                    >
-                    <div class="input-group input-group-sm">
-                      <input
-                        type="text"
-                        id="newLauncherPath"
-                        class="form-control"
-                        placeholder="Ej: C:\Windows\System32\notepad.exe"
-                      />
-                      <button
-                        class="btn btn-outline-secondary"
-                        type="button"
-                        onclick="pickLauncherFile()"
-                      >
-                        <i class="bi bi-folder2-open"></i>
-                      </button>
-                    </div>
-                  </div>
-                  <div class="col-md-2">
-                    <label class="form-label small fw-bold">Icono</label>
-                    <div
-                      class="input-group input-group-sm shadow-sm border rounded overflow-hidden"
-                    >
-                      <button
-                        class="btn btn-light bg-white border-0 px-2"
-                        type="button"
-                        onclick="IconSelector.open('newLauncherIcon')"
-                        style="min-width: 45px"
-                      >
-                        <span id="preview-newLauncherIcon"
-                          ><i class="bi bi-palette text-primary"></i
-                        ></span>
-                      </button>
-                      <input type="hidden" id="newLauncherIcon" value="" />
-                      <input
-                        type="text"
-                        id="newLauncherIcon_display"
-                        class="form-control border-0 bg-transparent"
-                        placeholder="Icono..."
-                        readonly
-                        onclick="IconSelector.open('newLauncherIcon')"
-                        style="cursor: pointer"
-                      />
-                    </div>
-                  </div>
-                  <div class="col-md-2">
-                    <button
-                      class="btn btn-primary btn-sm w-100 fw-bold"
-                      type="button"
-                      onclick="addAppLauncher()"
-                    >
-                      <i class="bi bi-plus-lg"></i> Añadir
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- 2. Hotel & Sistema -->
-            <div class="card mb-4 shadow-sm border-0">
-              <div class="card-header py-3 bg-white">
-                <h6 class="mb-0 fw-bold text-primary">
-                  <i class="bi bi-building me-2"></i>Hotel y Sistema
-                </h6>
-              </div>
-              <div class="card-body">
-                <div class="row g-3">
-                  <div class="col-md-6">
-                    <label class="form-label small fw-bold"
-                      >Nombre del Hotel</label
-                    >
-                    <input
-                      type="text"
-                      id="conf_hotel_nombre"
-                      class="form-control"
-                    />
-                  </div>
-                  <div class="col-md-6">
-                    <label class="form-label small fw-bold"
-                      >URL Servidor API</label
-                    >
-                    <input type="text" id="conf_api_url" class="form-control" />
-                  </div>
-                  <div class="col-md-4">
-                    <label class="form-label small fw-bold"
-                      >Precio Safe (€/día)</label
-                    >
-                    <input
-                      type="number"
-                      step="0.01"
-                      id="conf_safe_precio"
-                      class="form-control"
-                    />
-                  </div>
-                  <div class="col-md-4">
-                    <label class="form-label small fw-bold"
-                      >Fondo de Caja (€)</label
-                    >
-                    <input
-                      type="number"
-                      step="0.01"
-                      id="conf_caja_fondo"
-                      class="form-control"
-                      placeholder="2000.00"
-                    />
-                  </div>
-                </div>
-                <div class="row g-3 mt-1">
-                  <div class="col-md-6">
-                    <label class="form-label small fw-bold"
-                      >Contraseña Admin (Opcional)</label
-                    >
-                    <div class="input-group input-group-sm">
-                      <input
-                        type="password"
-                        id="conf_admin_pass"
-                        class="form-control"
-                        placeholder="Dejar en blanco para desactivar"
-                        autocomplete="current-password"
-                      />
-                      <button
-                        class="btn btn-outline-secondary"
-                        type="button"
-                        onclick="Utils.togglePassword('conf_admin_pass')"
-                      >
-                        <i class="bi bi-eye"></i>
-                      </button>
-                    </div>
-                    <div
-                      class="form-text text-muted"
-                      style="font-size: 0.75rem"
-                    >
-                      Para funciones sensibles como editar configuracion o
-                      borrar datos.
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- 3. Configuración de Habitaciones -->
-            <div class="card mb-4 shadow-sm border-0">
-              <div class="card-header py-3 bg-white">
-                <h6 class="mb-0 fw-bold text-primary">
-                  <i class="bi bi-door-open-fill me-2"></i>Gestión de
-                  Habitaciones
-                </h6>
-              </div>
-              <div class="card-body">
-                <!-- A. RANGOS -->
-                <div class="mb-4">
-                  <div
-                    class="d-flex justify-content-between align-items-center mb-2"
-                  >
-                    <label class="form-label small fw-bold mb-0"
-                      >Rangos de Habitaciones</label
-                    >
-                    <span class="badge bg-secondary"
-                      >Total: <span id="total-rooms-count">0</span> habs.</span
-                    >
-                  </div>
-
-                  <div class="table-responsive border rounded mb-2">
-                    <table
-                      class="table table-sm table-striped mb-0 text-center align-middle"
-                    >
-                      <thead class="table-light">
-                        <tr>
-                          <th style="width: 20%">Planta</th>
-                          <th style="width: 30%">Desde</th>
-                          <th style="width: 30%">Hasta</th>
-                          <th style="width: 20%"></th>
-                        </tr>
-                      </thead>
-                      <tbody id="config-rangos-table"></tbody>
-                    </table>
-                  </div>
-
-                  <!-- Input Add Range -->
-                  <div class="input-group input-group-sm">
-                    <input
-                      type="number"
-                      id="newRangePlanta"
-                      class="form-control"
-                      placeholder="Planta"
-                    />
-                    <input
-                      type="number"
-                      id="newRangeMin"
-                      class="form-control"
-                      placeholder="Min (ej: 101)"
-                    />
-                    <input
-                      type="number"
-                      id="newRangeMax"
-                      class="form-control"
-                      placeholder="Max (ej: 120)"
-                    />
-                    <button
-                      class="btn btn-outline-primary"
-                      type="button"
-                      onclick="addRango()"
-                    >
-                      <i class="bi bi-plus-lg"></i>
-                    </button>
-                  </div>
-                </div>
-
-                <hr class="text-muted opacity-25" />
-
-                <!-- B. FILTROS -->
-                <div class="row g-3">
-                  <!-- Tipos -->
-                  <div class="col-md-4">
-                    <label class="form-label small fw-bold"
-                      >Tipos (Suites, Doble...)</label
-                    >
-                    <div
-                      id="list-filtros-tipos"
-                      class="d-flex flex-wrap gap-1 mb-2"
-                    ></div>
-                    <div
-                      class="input-group input-group-sm shadow-sm border rounded overflow-hidden"
-                    >
-                      <button
-                        class="btn btn-light border-0 px-3 bg-white"
-                        type="button"
-                        onclick="IconSelector.open('newFiltroTipoEmoji')"
-                        title="Elegir Icono"
-                        style="min-width: 60px"
-                      >
-                        <span id="preview-newFiltroTipoEmoji"
-                          ><i class="bi bi-palette text-primary fs-5"></i
-                        ></span>
-                        <input type="hidden" id="newFiltroTipoEmoji" value="" />
-                      </button>
-                      <input
-                        type="text"
-                        id="newFiltroTipo"
-                        class="form-control border-0 py-2 fw-bold"
-                        placeholder="Nombre..."
-                      />
-                      <button
-                        class="btn btn-primary px-3"
-                        type="button"
-                        onclick="addFilter('TIPOS')"
-                      >
-                        <i class="bi bi-plus-lg"></i>
-                      </button>
-                    </div>
-                  </div>
-
-                  <!-- Vistas -->
-                  <div class="col-md-4">
-                    <label class="form-label small fw-bold"
-                      >Vistas (Mar, Calle...)</label
-                    >
-                    <div
-                      id="list-filtros-vistas"
-                      class="d-flex flex-wrap gap-1 mb-2"
-                    ></div>
-                    <div
-                      class="input-group input-group-sm shadow-sm border rounded overflow-hidden"
-                    >
-                      <button
-                        class="btn btn-light border-0 px-3 bg-white"
-                        type="button"
-                        onclick="IconSelector.open('newFiltroVistaEmoji')"
-                        title="Elegir Icono"
-                        style="min-width: 60px"
-                      >
-                        <span id="preview-newFiltroVistaEmoji"
-                          ><i class="bi bi-palette text-primary fs-5"></i
-                        ></span>
-                        <input
-                          type="hidden"
-                          id="newFiltroVistaEmoji"
-                          value=""
-                        />
-                      </button>
-                      <input
-                        type="text"
-                        id="newFiltroVista"
-                        class="form-control border-0 py-2 fw-bold"
-                        placeholder="Nombre..."
-                      />
-                      <button
-                        class="btn btn-primary px-3"
-                        type="button"
-                        onclick="addFilter('VISTAS')"
-                      >
-                        <i class="bi bi-plus-lg"></i>
-                      </button>
-                    </div>
-                  </div>
-
-                  <!-- Características -->
-                  <div class="col-md-4">
-                    <label class="form-label small fw-bold"
-                      >Características (Jacuzzi...)</label
-                    >
-                    <div
-                      id="list-filtros-carac"
-                      class="d-flex flex-wrap gap-1 mb-2"
-                    ></div>
-                    <div
-                      class="input-group input-group-sm shadow-sm border rounded overflow-hidden"
-                    >
-                      <button
-                        class="btn btn-light border-0 px-3 bg-white"
-                        type="button"
-                        onclick="IconSelector.open('newFiltroCaracEmoji')"
-                        title="Elegir Icono"
-                        style="min-width: 60px"
-                      >
-                        <span id="preview-newFiltroCaracEmoji"
-                          ><i class="bi bi-palette text-primary fs-5"></i
-                        ></span>
-                        <input
-                          type="hidden"
-                          id="newFiltroCaracEmoji"
-                          value=""
-                        />
-                      </button>
-                      <input
-                        type="text"
-                        id="newFiltroCarac"
-                        class="form-control border-0 py-2 fw-bold"
-                        placeholder="Nombre..."
-                      />
-                      <button
-                        class="btn btn-primary px-3"
-                        type="button"
-                        onclick="addFilter('CARACTERISTICAS')"
-                      >
-                        <i class="bi bi-plus-lg"></i>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </form>
+        <!-- Loaded via CompLoader from assets/templates/configuracion.html -->
+        <div class="text-center p-5">
+          <div class="spinner-border text-primary" role="status"></div>
+          <p class="mt-2 text-muted">Cargando Configuración...</p>
         </div>
       </div>
     </div>
@@ -6769,6 +5930,8 @@
     <script src="assets/vendor/bootstrap.bundle.min.js?v=2"></script>
     <script src="assets/vendor/chart.min.js?v=2"></script>
     <script src="assets/vendor/html2pdf.bundle.min.js?v=2"></script>
+    <!-- CORE (Servicios fundamentales - Cargados como módulos vía main.js) -->
+    <script src="assets/js/core/PrintService.js"></script>
     <script>
       window.onerror = function (msg, url, lineNo, columnNo, error) {
         // Ignorar errores no cr\u00EDticos de ResizeObserver
@@ -6880,16 +6043,27 @@
       </div>
     </div>
 
-    <script
-      type="module"
-      src="assets/js/main.js?v=V140_ISOLATED_WINDOW"
-    ></script>
+    <script type="module" src="assets/js/main.js?v=V144_FIX_FINAL"></script>
 
     <!-- Spotify Footer Player (Minimizable) -->
     <div
       id="spotify-footer-player"
       class="spotify-footer-player no-print minimized"
     >
+      <button class="spotify-footer-toggle" onclick="toggleSpotifyFooter()">
+        <i class="bi bi-spotify me-2"></i>
+        <span>SPOTIFY</span>
+        <i id="spotify-toggle-icon" class="bi bi-chevron-up ms-auto"></i>
+      </button>
+
+      <div
+        id="spotify-playlist-switcher"
+        class="px-2 py-1 d-flex gap-2 overflow-auto d-none"
+        style="white-space: nowrap; scrollbar-width: none; background: #191414"
+      >
+        <!-- Buttons rendered via JavaScript -->
+      </div>
+
       <div class="spotify-player-body">
         <iframe
           id="spotify-footer-iframe"
@@ -6897,22 +6071,11 @@
           width="100%"
           height="152"
           frameborder="0"
-          allow="
-            autoplay;
-            clipboard-write;
-            encrypted-media;
-            fullscreen;
-            picture-in-picture;
-          "
+          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture;"
           loading="lazy"
-          style="border-radius: 12px"
         ></iframe>
       </div>
-      <button class="spotify-footer-toggle" onclick="toggleSpotifyFooter()">
-        <i class="bi bi-spotify me-2"></i>
-        <span id="spotify-toggle-text">Spotify</span>
-        <i class="bi bi-chevron-up ms-auto" id="spotify-toggle-icon"></i>
-      </button>
     </div>
+
   </body>
 </html>

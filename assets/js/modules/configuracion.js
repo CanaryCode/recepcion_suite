@@ -1,11 +1,11 @@
-import { APP_CONFIG } from '../core/Config.js';
-import { Utils } from '../core/Utils.js';
-import { Ui } from '../core/Ui.js';
+import { APP_CONFIG } from '../core/Config.js?v=V144_FIX_FINAL';
+import { Utils } from '../core/Utils.js?v=V144_FIX_FINAL';
+import { Ui } from '../core/Ui.js?v=V144_FIX_FINAL';
 
-import { IconSelector } from '../core/IconSelector.js';
-import { MediaPicker } from '../core/MediaPicker.js';
-import { Api } from '../core/Api.js';
-import { configService } from '../services/ConfigService.js';
+import { IconSelector } from '../core/IconSelector.js?v=V144_FIX_FINAL';
+import { MediaPicker } from '../core/MediaPicker.js?v=V144_FIX_FINAL';
+import { Api } from '../core/Api.js?v=V144_FIX_FINAL';
+import { configService } from '../services/ConfigService.js?v=V144_FIX_FINAL';
 
 let moduloInicializado = false;
 let tempConfig = null; 
@@ -18,6 +18,8 @@ export const Configurator = {
      * INICIALIZACIÓN
      */
     async inicializar() {
+        console.log("Configurator.inicializar() CALLED");
+        console.log("APP_CONFIG at inicializar:", JSON.parse(JSON.stringify(APP_CONFIG)));
         this.renderInterfaz();
         if (moduloInicializado) return;
         this.configurarEventos();
@@ -28,61 +30,83 @@ export const Configurator = {
      * RENDERIZADO DE LA INTERFAZ
      */
     renderInterfaz() {
+        console.log("Configurator.renderInterfaz started");
+        console.log("APP_CONFIG before clone:", JSON.parse(JSON.stringify(APP_CONFIG)));
         try {
-            tempConfig = JSON.parse(JSON.stringify(APP_CONFIG));
-        } catch (e) {
-            tempConfig = {}; 
+            try {
+                tempConfig = JSON.parse(JSON.stringify(APP_CONFIG));
+                console.log("tempConfig after clone:", tempConfig);
+            } catch (e) {
+                console.error("Error cloning config:", e);
+                tempConfig = {}; 
+            }
+
+            // CRITICAL SANITY CHECKS: Prevent crash if properties are wrong types (e.g. strings instead of objects)
+            if (!tempConfig || typeof tempConfig !== 'object') tempConfig = {};
+            if (tempConfig.HOTEL && typeof tempConfig.HOTEL !== 'object') tempConfig.HOTEL = {};
+            if (tempConfig.SYSTEM && typeof tempConfig.SYSTEM !== 'object') tempConfig.SYSTEM = {};
+            if (tempConfig.NOVEDADES && typeof tempConfig.NOVEDADES !== 'object') tempConfig.NOVEDADES = {};
+            if (tempConfig.TRANSFERS && typeof tempConfig.TRANSFERS !== 'object') tempConfig.TRANSFERS = {};
+
+            this.verificarEstructuras();
+
+            // Campos básicos
+            Utils.setVal('conf_hotel_nombre', tempConfig.HOTEL?.NOMBRE || '');
+            Utils.setVal('conf_api_url', tempConfig.SYSTEM?.API_URL || '');
+            Utils.setVal('conf_admin_pass', tempConfig.SYSTEM?.ADMIN_PASSWORD || '');
+            Utils.setVal('conf_safe_precio', tempConfig.SAFE?.PRECIO_DIARIO || 2.00);
+            Utils.setVal('conf_caja_fondo', tempConfig.CAJA?.FONDO !== undefined ? tempConfig.CAJA.FONDO : -2000.00);
+            Utils.setVal('conf_gallery_path', tempConfig.SYSTEM?.GALLERY_PATH || 'assets/gallery');
+            Utils.setVal('conf_sync_interval', tempConfig.SYSTEM?.SYNC_INTERVAL || 10000);
+            // spotifyUrl is managed via renderSpotifyPlaylists()
+            Utils.setVal('conf_cocktail_dia', tempConfig.HOTEL?.COCKTAIL_CONFIG?.DIA !== undefined ? tempConfig.HOTEL.COCKTAIL_CONFIG.DIA : 5);
+            Utils.setVal('conf_cocktail_hora', tempConfig.HOTEL?.COCKTAIL_CONFIG?.HORA || '19:00');
+
+            // Listas dinámicas
+            this.renderCocktailLugares();
+            this.renderRecepcionistas();
+            this.renderDestinosTransfers();
+            this.renderDepartamentosGlobal();
+            this.renderAppLaunchers();
+            this.renderGalleryFolders();
+            this.renderRangos();
+            this.renderFiltros('TIPOS', 'list-filtros-tipos');
+            this.renderFiltros('VISTAS', 'list-filtros-vistas');
+            this.renderFiltros('CARACTERISTICAS', 'list-filtros-carac');
+            this.renderExcursionesCatalogo();
+            this.renderInstalaciones();
+            this.renderTourOperators();
+            this.renderSpotifyPlaylists();
+        } catch (err) {
+            console.error("FATAL ERROR in Configurator.renderInterfaz:", err);
+            Ui.showToast("Error crítico cargando configuración: " + err.message, "danger");
+            // Attempt to recover by clearing local override if suspected
+            if (confirm("Error cargando configuración. ¿Desea resetear la configuración local para intentar arreglarlo?")) {
+                localStorage.removeItem('app_config_override');
+                location.reload();
+            }
         }
-
-        this.verificarEstructuras();
-
-        // Campos básicos
-        Utils.setVal('conf_hotel_nombre', tempConfig.HOTEL?.NOMBRE || '');
-        Utils.setVal('conf_api_url', tempConfig.SYSTEM?.API_URL || '');
-        Utils.setVal('conf_admin_pass', tempConfig.SYSTEM?.ADMIN_PASSWORD || '');
-        Utils.setVal('conf_safe_precio', tempConfig.SAFE?.PRECIO_DIARIO || 2.00);
-        Utils.setVal('conf_caja_fondo', tempConfig.CAJA?.FONDO !== undefined ? tempConfig.CAJA.FONDO : -2000.00);
-        Utils.setVal('conf_gallery_path', tempConfig.SYSTEM?.GALLERY_PATH || 'assets/gallery');
-        Utils.setVal('conf_sync_interval', tempConfig.SYSTEM?.SYNC_INTERVAL || 10000);
-        Utils.setVal('configSpotifyUrl', tempConfig.HOTEL?.SPOTIFY_URL || '');
-        Utils.setVal('conf_cocktail_dia', tempConfig.HOTEL?.COCKTAIL_CONFIG?.DIA !== undefined ? tempConfig.HOTEL.COCKTAIL_CONFIG.DIA : 5);
-        Utils.setVal('conf_cocktail_hora', tempConfig.HOTEL?.COCKTAIL_CONFIG?.HORA || '19:00');
-
-        // Listas dinámicas
-        this.renderCocktailLugares();
-        this.renderRecepcionistas();
-        this.renderDestinosTransfers();
-        this.renderDepartamentosGlobal();
-        this.renderAppLaunchers();
-        this.renderGalleryFolders();
-        this.renderRangos();
-        this.renderFiltros('TIPOS', 'list-filtros-tipos');
-        this.renderFiltros('VISTAS', 'list-filtros-vistas');
-        this.renderFiltros('CARACTERISTICAS', 'list-filtros-carac');
-        this.renderExcursionesCatalogo();
-        this.renderInstalaciones();
-        this.renderTourOperators();
     },
 
     verificarEstructuras() {
         if (!tempConfig.HOTEL) tempConfig.HOTEL = { RECEPCIONISTAS: [] };
         if (!tempConfig.HOTEL.RECEPCIONISTAS) tempConfig.HOTEL.RECEPCIONISTAS = [];
-        if (!tempConfig.CAJA) tempConfig.CAJA = { FONDO: -2000 };
+        if (!tempConfig.CAJA) tempConfig.CAJA = { BILLETES: [], MONEDAS: [], FONDO: -2000 };
         if (!tempConfig.TRANSFERS) tempConfig.TRANSFERS = { DESTINOS: [] };
         if (!tempConfig.NOVEDADES) tempConfig.NOVEDADES = { DEPARTAMENTOS: [] };
         if (!tempConfig.NOVEDADES.DEPARTAMENTOS) tempConfig.NOVEDADES.DEPARTAMENTOS = [];
-        if (!tempConfig.SYSTEM) tempConfig.SYSTEM = { LAUNCHERS: [] };
+        if (!tempConfig.SYSTEM) tempConfig.SYSTEM = { API_URL: '/api' };
         if (!tempConfig.HOTEL.STATS_CONFIG) tempConfig.HOTEL.STATS_CONFIG = { RANGOS: [], FILTROS: {} };
         if (!tempConfig.HOTEL.STATS_CONFIG.FILTROS) tempConfig.HOTEL.STATS_CONFIG.FILTROS = { TIPOS: [], VISTAS: [], CARACTERISTICAS: [] };
         if (!tempConfig.EXCURSIONES_CATALOGO) tempConfig.EXCURSIONES_CATALOGO = [];
         if (!tempConfig.HOTEL.INSTALACIONES) tempConfig.HOTEL.INSTALACIONES = [];
         if (!tempConfig.HOTEL.ALARMAS_SISTEMA) tempConfig.HOTEL.ALARMAS_SISTEMA = [];
         if (!tempConfig.AGENDA) tempConfig.AGENDA = { PAISES: [] };
-        if (!tempConfig.CAJA) tempConfig.CAJA = { BILLETES: [], MONEDAS: [], FONDO: -2000 };
         if (!tempConfig.COBRO) tempConfig.COBRO = { VALORES: [] };
         if (!tempConfig.HOTEL.COCKTAIL_CONFIG) tempConfig.HOTEL.COCKTAIL_CONFIG = { DIA: 5, HORA: '19:00' };
-        
         if (!tempConfig.HOTEL.TO_LISTS) tempConfig.HOTEL.TO_LISTS = { ES: [], DE: [], FR: [], UK: [] };
+        if (!tempConfig.HOTEL.SPOTIFY_PLAYLISTS) tempConfig.HOTEL.SPOTIFY_PLAYLISTS = [];
+        if (!tempConfig.HOTEL.COCKTAIL_LUGARES) tempConfig.HOTEL.COCKTAIL_LUGARES = [];
     },
 
     // --- RENDERERS ---
@@ -317,28 +341,31 @@ export const Configurator = {
         `);
     },
 
+    renderSpotifyPlaylists() {
+        const list = tempConfig.HOTEL.SPOTIFY_PLAYLISTS || [];
+        Ui.renderTable('config-spotify-playlists-list', list, (item, index) => `
+            <div class="col-md-6 mb-2">
+                <div class="border rounded p-2 d-flex align-items-center justify-content-between bg-white shadow-sm">
+                    <div class="d-flex align-items-center text-truncate">
+                        <i class="bi bi-spotify fs-4 text-success me-2"></i>
+                        <div class="text-truncate">
+                            <div class="fw-bold small text-truncate">${item.label}</div>
+                            <div class="text-muted text-truncate" style="font-size: 0.6rem;">${item.url}</div>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-1">
+                        <button type="button" class="btn btn-sm btn-outline-primary border-0" onclick="Configurator.editSpotifyPlaylist(${index})" title="Editar"><i class="bi bi-pencil-square"></i></button>
+                        <button type="button" class="btn btn-sm btn-outline-danger border-0" onclick="Configurator.removeSpotifyPlaylist(${index})" title="Eliminar"><i class="bi bi-trash"></i></button>
+                    </div>
+                </div>
+            </div>
+        `);
+    },
+
     // --- EVENTOS ---
 
     configurarEventos() {
-        // Enlazar métodos a window para que los onclicks funcionen (temporalmente)
-        window.Configurator = this;
-
-        window.addRecepcionista = () => this.addRecepcionista();
-        window.saveConfigLocal = () => this.saveConfigLocal();
-        window.exportConfig = () => this.exportConfig();
-        window.resetConfigToDefault = () => this.resetConfigToDefault();
-        window.pickLauncherFile = () => this.pickLauncherFile();
-        window.addAppLauncher = () => this.addAppLauncher();
-        window.addDestinoTransfer = () => this.addDestinoTransfer();
-        window.addDepartamentoGlobal = () => this.addDepartamentoGlobal();
-        window.addRango = () => this.addRango();
-        window.addFilter = (type) => this.addFilter(type);
-        window.addInstalacion = () => this.addInstalacion();
-        window.addGalleryFolder = () => this.addGalleryFolder();
-        window.pickNewGalleryFolder = () => this.pickNewGalleryFolder();
-        window.pickGalleryFolder = () => this.pickGalleryFolder();
-        window.addTourOperator = (nac) => this.addTourOperator(nac);
-        window.addCocktailLugar = () => this.addCocktailLugar();
+        // Los eventos globales se manejan al final del archivo (proxis en window)
     },
 
     pickGalleryFolder() {
@@ -674,6 +701,32 @@ export const Configurator = {
         document.getElementById('newLugarFR').value = '';
     },
 
+    addSpotifyPlaylist() {
+        const labelFn = document.getElementById('newSpotifyLabel');
+        const urlFn = document.getElementById('newSpotifyUrl');
+        const label = labelFn.value.trim();
+        const url = urlFn.value.trim();
+
+        if (!label || !url) {
+            Ui.showToast("Nombre y enlace son obligatorios.", "warning");
+            return;
+        }
+
+        if (!tempConfig.HOTEL.SPOTIFY_PLAYLISTS) tempConfig.HOTEL.SPOTIFY_PLAYLISTS = [];
+        tempConfig.HOTEL.SPOTIFY_PLAYLISTS.push({ label, url });
+        this.renderSpotifyPlaylists();
+
+        labelFn.value = '';
+        urlFn.value = '';
+    },
+
+    async removeSpotifyPlaylist(index) {
+        if (await Ui.showConfirm("¿Eliminar esta lista de Spotify?")) {
+            tempConfig.HOTEL.SPOTIFY_PLAYLISTS.splice(index, 1);
+            this.renderSpotifyPlaylists();
+        }
+    },
+
     async removeCocktailLugar(index) {
         const item = tempConfig.HOTEL.COCKTAIL_LUGARES[index];
         if (await Ui.showConfirm(`¿Eliminar el lugar "${item.es}"?`)) {
@@ -800,9 +853,21 @@ export const Configurator = {
         }
     },
 
+    async editSpotifyPlaylist(index) {
+        const item = tempConfig.HOTEL.SPOTIFY_PLAYLISTS[index];
+        if (!await Ui.showConfirm(`¿Editar lista "${item.label}"?`)) return;
+
+        tempConfig.HOTEL.SPOTIFY_PLAYLISTS.splice(index, 1);
+        this.renderSpotifyPlaylists();
+
+        document.getElementById('newSpotifyLabel').value = item.label || '';
+        document.getElementById('newSpotifyUrl').value = item.url || '';
+        document.getElementById('newSpotifyLabel').focus();
+    },
+
     async editInstalacion(index) {
         const item = tempConfig.HOTEL.INSTALACIONES[index];
-        if (!await Ui.showConfirm(`¿Editar ${item.nombre}?`)) return;
+        if (!await Ui.showConfirm(`¿Editar instalación "${item.nombre}"?`)) return;
 
         tempConfig.HOTEL.INSTALACIONES.splice(index, 1);
         this.renderInstalaciones();
@@ -811,6 +876,7 @@ export const Configurator = {
         Utils.setVal('newInst_apertura', item.apertura);
         Utils.setVal('newInst_cierre', item.cierre);
         Utils.setVal('newInst_icono', item.icono || '');
+        document.getElementById('newInst_nombre').focus();
     },
 
 
@@ -828,7 +894,7 @@ export const Configurator = {
             tempConfig.SYSTEM.GALLERY_PATH = document.getElementById('conf_gallery_path').value || 'assets/gallery';
             // Note: GALLERY_FOLDERS is already managed in tempConfig by its add/remove methods
             tempConfig.SYSTEM.SYNC_INTERVAL = parseInt(document.getElementById('conf_sync_interval').value) || 10000;
-            tempConfig.HOTEL.SPOTIFY_URL = document.getElementById('configSpotifyUrl').value;
+            // tempConfig.HOTEL.SPOTIFY_PLAYLISTS is managed by add/remove methods
             
             if (!tempConfig.HOTEL.COCKTAIL_CONFIG) tempConfig.HOTEL.COCKTAIL_CONFIG = {};
             tempConfig.HOTEL.COCKTAIL_CONFIG.DIA = parseInt(document.getElementById('conf_cocktail_dia').value);
@@ -864,20 +930,28 @@ export function inicializarConfiguracion() {
 }
 
 
-/* EXPORTED GLOBAL */
-window.pickGalleryFolder = () => {
-    const current = document.getElementById('conf_gallery_path').value;
-    MediaPicker.pickFile({
-        startPath: current && current.includes(':') ? current : 'C:\\',
-        fileType: 'folder',
-        onSelect: (path) => {
-            document.getElementById('conf_gallery_path').value = path;
-        }
-    });
-};
+/* EXPORTADO AUTOMÁTICAMENTE A WINDOW */
 
 window.Configurator = Configurator;
 window.saveConfigLocal = () => Configurator.saveConfigLocal();
 window.exportConfig = () => Configurator.exportConfig();
 window.resetConfigToDefault = () => console.warn("Feature disabled");
+
+// Proxis para handlers onclick (Global Scope)
+window.addRecepcionista = () => Configurator.addRecepcionista();
+window.addDestinoTransfer = () => Configurator.addDestinoTransfer();
+window.addDepartamentoGlobal = () => Configurator.addDepartamentoGlobal();
+window.addAppLauncher = () => Configurator.addAppLauncher();
+window.pickLauncherFile = () => Configurator.pickLauncherFile();
+window.addRango = () => Configurator.addRango();
+window.addFilter = (type) => Configurator.addFilter(type);
+window.addGalleryFolder = () => Configurator.addGalleryFolder();
+window.pickNewGalleryFolder = () => Configurator.pickNewGalleryFolder();
+window.pickGalleryFolder = () => Configurator.pickGalleryFolder();
+window.addTourOperator = (nac) => Configurator.addTourOperator(nac);
+window.addInstalacion = () => Configurator.addInstalacion();
+window.addCocktailLugar = () => Configurator.addCocktailLugar();
+window.addSpotifyPlaylist = () => Configurator.addSpotifyPlaylist();
+window.addExcursionAlCatalogo = () => Configurator.addExcursionAlCatalogo();
+window.removeSpotifyPlaylist = (index) => Configurator.removeSpotifyPlaylist(index);
 

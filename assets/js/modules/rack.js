@@ -1,7 +1,7 @@
-import { rackService } from '../services/RackService.js';
-import { APP_CONFIG } from '../core/Config.js';
-import { Ui } from '../core/Ui.js';
-import { RackView } from '../core/RackView.js';
+import { rackService } from '../services/RackService.js?v=V144_FIX_FINAL';
+import { APP_CONFIG } from '../core/Config.js?v=V144_FIX_FINAL';
+import { Ui } from '../core/Ui.js?v=V144_FIX_FINAL';
+import { RackView } from '../core/RackView.js?v=V144_FIX_FINAL';
 
 /**
  * MÓDULO DE RACK INTERACTIVO (rack.js)
@@ -48,6 +48,33 @@ export async function inicializarRack() {
 
 // Expose for global refreshes
 window.renderRack = renderRack;
+window.imprimirRack = async () => {
+    if (Ui.hideAllTooltips) Ui.hideAllTooltips();
+    if (window.PrintService) {
+        await imprimirRackPaginado();
+    } else {
+        window.print();
+    }
+};
+
+async function imprimirRackPaginado() {
+    const floorContainers = document.querySelectorAll('.rack-floor-container');
+    if (floorContainers.length === 0) return;
+
+    Ui.showToast("Generando reporte por plantas...", "info");
+    
+    const images = [];
+    for (const container of floorContainers) {
+        const img = await PrintService.captureElement(container);
+        if (img) images.push(img);
+    }
+
+    if (images.length > 0) {
+        PrintService.printMultiImage(images, `Rack de Habitaciones - ${Utils.getTodayISO()}`);
+    } else {
+        Ui.showToast("No se pudo capturar el rack", "danger");
+    }
+}
 
 // GLOBAL LISTENER - ATTACH IMMEDIATELY (Ensure it runs even if init fails)
 
@@ -141,6 +168,9 @@ window.toggleFilter = (category, value) => {
 
 function renderRack() {
     const container = document.getElementById('rack-grid-container');
+    if (container) {
+        container.className = 'row g-3 row-cols-auto justify-content-center';
+    }
     const countDisplay = document.getElementById('rack-count-display');
     const printDate = document.getElementById('print-date-rack');
     
@@ -172,10 +202,23 @@ function renderRack() {
     if (countDisplay) countDisplay.innerText = filteredRooms.length;
 
     if (filteredRooms.length === 0) {
+        // DEBUG: Mostrar por qué no hay habitaciones
+        console.warn("Rack Debug: No rooms found.", {
+            allRoomsCount: allRooms.length,
+            filters: currentFilters,
+            configRangos: APP_CONFIG.HOTEL?.STATS_CONFIG?.RANGOS
+        });
+
         container.innerHTML = `
             <div class="text-center text-muted py-5">
                 <i class="bi bi-search display-1 opacity-25"></i>
                 <p class="mt-3 fs-5">No se encontraron habitaciones con estos filtros.</p>
+                <div class="alert alert-warning d-inline-block text-start mt-3">
+                    <small><strong>Debug Info:</strong><br>
+                    Total Habitaciones: ${allRooms.length}<br>
+                    Filtros Activos: ${currentFilters.searchTerm || 'Ninguno'}<br>
+                    Rangos Configurados: ${APP_CONFIG.HOTEL?.STATS_CONFIG?.RANGOS ? APP_CONFIG.HOTEL.STATS_CONFIG.RANGOS.length : 'No definidos'}</small>
+                </div>
             </div>`;
         return;
     }

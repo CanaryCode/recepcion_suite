@@ -1,5 +1,5 @@
-import { Utils } from '../core/Utils.js';
-import { BaseService } from './BaseService.js';
+import { Utils } from '../core/Utils.js?v=V144_FIX_FINAL';
+import { BaseService } from './BaseService.js?v=V144_FIX_FINAL';
 
 /**
  * SERVICIO DE RACK (RackService)

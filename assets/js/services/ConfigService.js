@@ -1,6 +1,6 @@
-import { BaseService } from './BaseService.js';
-import { Api } from '../core/Api.js';
-import { APP_CONFIG } from '../core/Config.js';
+import { BaseService } from './BaseService.js?v=V144_FIX_FINAL';
+import { Api } from '../core/Api.js?v=V144_FIX_FINAL';
+import { APP_CONFIG } from '../core/Config.js?v=V144_FIX_FINAL';
 
 /**
  * SERVICIO DE CONFIGURACIÓN (ConfigService)

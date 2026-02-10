@@ -165,6 +165,9 @@ function renderGuia() {
         container.innerHTML += itemHtml;
     });
 
+    // Inicializar tooltips (si hubiera alguno dinámico)
+    Ui.initTooltips(container);
+
     actualizarUIEdicion(formAgregar, infoFooter, btnEdicion, iconEdicion);
 }
 
@@ -317,9 +320,60 @@ export function insertarIcono(tipo) {
 }
 
 function imprimirGuia() {
+    // 1. Obtener datos actuales
+    const lista = ayudaService.getGuia(turnoActual, []);
     const user = Utils.validateUser();
     if (!user) return;
-    Utils.printSection('print-date-ayuda', 'print-repc-nombre-ayuda', user);
+
+    // 2. Construir HTML limpio para impresión (Tabla profesional)
+    let html = `
+        <div style="font-family: Arial, sans-serif; padding: 20px;">
+            <div style="border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin: 0; color: #333;">CHECKLIST: TURNO DE ${turnoActual.toUpperCase()}</h3>
+                <div style="text-align: right; font-size: 12px; color: #666;">
+                    <b>Fecha:</b> ${Utils.getTodayISO()}<br>
+                    <b>Recepcionista:</b> ${user}
+                </div>
+            </div>
+            
+            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                <thead>
+                    <tr style="background-color: #f2f2f2;">
+                        <th style="border: 1px solid #ddd; padding: 12px; text-align: center; width: 80px;">ESTADO</th>
+                        <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">TAREA / PROCEDIMIENTO</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+
+    lista.forEach((p) => {
+        const checkMark = p.hecho ? '<b style="color: #198754;">[X] HECHO</b>' : '<b style="color: #dee2e6;">[ ] PENDIENTE</b>';
+        const textStyle = p.hecho ? 'text-decoration: line-through; color: #666;' : 'font-weight: bold; color: #000;';
+        
+        html += `
+            <tr>
+                <td style="border: 1px solid #ddd; padding: 10px; text-align: center; font-family: monospace;">${checkMark}</td>
+                <td style="border: 1px solid #ddd; padding: 10px; ${textStyle}">${p.texto}</td>
+            </tr>
+        `;
+    });
+
+    html += `
+                </tbody>
+            </table>
+            
+            <div style="margin-top: 40px; border-top: 1px solid #eee; padding-top: 10px; font-size: 10px; color: #aaa; text-align: center;">
+                Reception Suite v2 - Sistema de Gestión Hotelera
+            </div>
+        </div>
+    `;
+
+    // 3. Enviar al servicio de impresión
+    if (window.PrintService) {
+        PrintService.printHTML(html);
+    } else {
+        window.print();
+    }
 }
 
 // --- DRAG AND DROP ---

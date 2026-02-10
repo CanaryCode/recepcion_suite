@@ -1,6 +1,6 @@
-import { APP_CONFIG } from '../core/Config.js';
-import { Ui } from '../core/Ui.js';
-import { Api } from '../core/Api.js';
+import { APP_CONFIG } from '../core/Config.js?v=V144_FIX_FINAL';
+import { Ui } from '../core/Ui.js?v=V144_FIX_FINAL';
+import { Api } from '../core/Api.js?v=V144_FIX_FINAL';
 
 let moduloInicializado = false;
 let currentScale = 1;
@@ -197,6 +197,12 @@ export const Gallery = {
         this.printUrls([item.url]);
     },
 
+    printGrid() {
+        if (window.PrintService) {
+            PrintService.printElementAsImage('gallery-grid', 'Galaría de Información (Grid)');
+        }
+    },
+
     async printSelected() {
         if (selectedItems.length === 0) {
             Ui.showToast("No hay elementos seleccionados", "warning");
@@ -206,48 +212,37 @@ export const Gallery = {
     },
 
     printUrls(urls) {
-        Ui.showToast("Preparando impresi\u00f3n...", "info");
-        
-        // Crear un frame oculto para imprimir
-        const iframe = document.createElement('iframe');
-        iframe.style.position = 'fixed';
-        iframe.style.right = '0';
-        iframe.style.bottom = '0';
-        iframe.style.width = '0';
-        iframe.style.height = '0';
-        iframe.style.border = '0';
-        document.body.appendChild(iframe);
+        if (!window.PrintService) {
+            Ui.showToast("Servicio de impresión no disponible", "warning");
+            return;
+        }
 
-        const doc = iframe.contentWindow.document;
-        doc.open();
+        Ui.showToast("Preparando impresión...", "info");
         
-        let content = '<html><head><title>Imprimir Galer\u00eda</title><style>';
-        content += 'body { margin: 0; padding: 0; text-align: center; }';
-        content += 'img, canvas { max-width: 100%; max-height: 100vh; page-break-after: always; display: block; margin: 0 auto; object-fit: contain; }';
-        content += '@media print { body { margin: 0; } img { width: 100%; height: auto; } }';
-        content += '</style></head><body>';
-
-        urls.forEach(url => {
+        const items = urls.map(url => {
             if (url.toLowerCase().endsWith('.pdf')) {
-                // Para PDFs, mostramos un aviso de que deben imprimirse desde el visor de PDF
-                content += `<div style="padding: 50px; border: 1px solid #ccc; margin: 20px;">
-                    <h3>Documento PDF: ${url.split('/').pop()}</h3>
-                    <p>Los PDFs deben imprimirse individualmente desde el visualizador para mantener su formato original.</p>
-                </div>`;
+                 const fileName = url.split('/').pop();
+                 return {
+                     type: 'html',
+                     content: `
+                        <div style="text-align: center; padding: 40px; border: 2px dashed #ccc; border-radius: 10px; max-width: 600px;">
+                            <i class="bi bi-file-earmark-pdf" style="font-size: 4rem; color: #dc3545;"></i>
+                            <h3 style="margin-top: 20px; color: #333;">Documento PDF: ${fileName}</h3>
+                            <p style="color: #666; font-size: 1.1rem; margin-top: 10px;">
+                                Los documentos PDF deben imprimirse individualmente desde su visor nativo para mantener el formato original.
+                            </p>
+                            <div style="margin-top: 20px; font-size: 0.9rem; color: #999;">
+                                ${url}
+                            </div>
+                        </div>
+                     `
+                 };
             } else {
-                content += `<img src="${url}">`;
+                return { type: 'image', src: url };
             }
         });
 
-        content += '</body></html>';
-        doc.write(content);
-        doc.close();
-
-        iframe.contentWindow.focus();
-        setTimeout(() => {
-            iframe.contentWindow.print();
-            setTimeout(() => document.body.removeChild(iframe), 1000);
-        }, 500);
+        PrintService.printMultiImage(items, "Galería de Imágenes");
     },
 
     toggleFullscreen() {

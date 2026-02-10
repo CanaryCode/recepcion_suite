@@ -1,5 +1,5 @@
-import { BaseService } from './BaseService.js';
-import { APP_CONFIG } from '../core/Config.js';
+import { BaseService } from './BaseService.js?v=V144_FIX_FINAL';
+import { APP_CONFIG } from '../core/Config.js?v=V144_FIX_FINAL';
 
 /**
  * SERVICIO DE ALARMAS DEL SISTEMA (SystemAlarmsService)

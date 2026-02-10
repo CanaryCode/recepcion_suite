@@ -1,4 +1,5 @@
 import { BaseService } from './BaseService.js';
+import { LocalStorage } from '../core/LocalStorage.js';
 
 /**
  * SERVICIO DE NOTAS PERMANENTES (NotasService)
@@ -15,13 +16,35 @@ class NotasService extends BaseService {
             titulo: 'string',
             contenido: 'string',
             color: 'string',
-            fecha: 'string'
+            fecha: 'string',
+            protegida: 'boolean',
+            favorito: 'boolean',
+            modifiedAt: 'number'
         };
     }
 
     async init() {
         await this.syncWithServer();
-        return this.getAll();
+        const notas = this.getAll();
+        
+        // NORMALIZACIÓN: Asegurar que notas antiguas tengan los campos nuevos
+        // Esto evita errores de validación en BaseService
+        let changed = false;
+        notas.forEach(nota => {
+            if (nota.protegida === undefined) { nota.protegida = false; changed = true; }
+            if (nota.favorito === undefined) { nota.favorito = false; changed = true; }
+            if (nota.modifiedAt === undefined) { nota.modifiedAt = nota.id || Date.now(); changed = true; }
+        });
+
+        if (changed) {
+            console.log(`[NotasService] Normalizadas ${notas.length} notas con nuevos campos.`);
+            this.cache = notas;
+            LocalStorage.set(this.endpoint, notas); // Guardamos sin pasar por validate() si fuera necesario, o usamos save()
+            // Usamos LocalStorage directo para evitar el bucle de validación si save() fallara, 
+            // aunque al estar ya normalizadas save() debería funcionar.
+        }
+
+        return notas;
     }
 
     /**

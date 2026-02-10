@@ -256,3 +256,16 @@ function updateBadge() {
         bellBtn.classList.add('text-secondary');
     }
 }
+
+/**
+ * IMPRESIÓN DE ALARMAS
+ */
+export function imprimirSystemAlarms() {
+    if (window.PrintService) {
+        window.PrintService.printElement('table-system-alarms', 'Alertas del Sistema - Configuración');
+    } else {
+        window.print();
+    }
+}
+
+window.imprimirSystemAlarms = imprimirSystemAlarms;

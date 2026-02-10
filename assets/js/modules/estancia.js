@@ -1,4 +1,4 @@
-import { APP_CONFIG } from '../core/Config.js';
+import { APP_CONFIG } from "../core/Config.js?v=V144_FIX_FINAL";
 import { Utils } from '../core/Utils.js';
 import { estanciaService } from '../services/EstanciaService.js';
 import { sessionService } from '../services/SessionService.js';
@@ -74,6 +74,13 @@ export function inicializarEstancia() {
     monthSelect?.addEventListener('change', mostrarEstancia);
 
     mostrarEstancia();
+
+    // Set default date to today
+    const fechaInput = document.getElementById('estancia_fecha');
+    if (fechaInput) {
+        fechaInput.value = Utils.getTodayISO();
+        fechaInput.setAttribute('readonly', true);
+    }
 }
 
 /**
@@ -261,46 +268,69 @@ function renderStatsAnual(year, promMes, totalPernoctaciones, dias) {
  * Usa Chart.js para mostrar una línea con la ocupación del mes seleccionado.
  */
 function renderGraficaEstancia() {
-    const ctx = document.getElementById('chartEstanciaEvolucion')?.getContext('2d');
-    if (!ctx) return;
+    // Retardo para asegurar que el contenedor (tab-pane) es visible antes de renderizar
+    setTimeout(() => {
+        const canvas = document.getElementById('chartEstanciaEvolucion');
+        if (!canvas) return;
+        
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
 
-    const year = document.getElementById('filtroYearEstancia').value;
-    const month = document.getElementById('filtroMonthEstancia').value;
+        const year = document.getElementById('filtroYearEstancia').value;
+        const month = document.getElementById('filtroMonthEstancia').value;
 
-    const monthRegistros = estanciaService.getByMonth(year, month);
-    const dataByDay = {};
-    monthRegistros.forEach(r => {
-        const d = parseInt(r.fecha.split('-')[2]);
-        dataByDay[d] = r;
-    });
+        const monthRegistros = estanciaService.getByMonth(year, month);
+        const dataByDay = {};
+        monthRegistros.forEach(r => {
+            const d = parseInt(r.fecha.split('-')[2]);
+            dataByDay[d] = r;
+        });
 
-    const labels = [];
-    const dataPoints = [];
-    const diasEnMes = new Date(year, parseInt(month) + 1, 0).getDate();
+        const labels = [];
+        const dataPoints = [];
+        const diasEnMes = new Date(year, parseInt(month) + 1, 0).getDate();
 
-    for (let d = 1; d <= diasEnMes; d++) {
-        labels.push(d);
-        const dData = dataByDay[d];
-        dataPoints.push(dData ? ((dData.ocupadas / dData.totalHab) * 100).toFixed(1) : null);
-    }
+        for (let d = 1; d <= diasEnMes; d++) {
+            labels.push(d);
+            const dData = dataByDay[d];
+            dataPoints.push(dData ? ((dData.ocupadas / dData.totalHab) * 100).toFixed(1) : null);
+        }
 
-    if (chartEstancia) chartEstancia.destroy();
-    chartEstancia = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Ocupación %',
-                data: dataPoints,
-                borderColor: '#0d6efd',
-                backgroundColor: 'rgba(13, 110, 253, 0.1)',
-                fill: true,
-                tension: 0.3,
-                spanGaps: true
-            }]
-        },
-        options: { maintainAspectRatio: false, plugins: { legend: { display: false } } }
-    });
+        if (chartEstancia) {
+            chartEstancia.destroy();
+            chartEstancia = null;
+        }
+
+        // Check if Chart is loaded
+        if (typeof Chart === 'undefined') {
+            console.error("Chart.js no está cargado");
+            return;
+        }
+
+        chartEstancia = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Ocupación %',
+                    data: dataPoints,
+                    borderColor: '#0d6efd',
+                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                    fill: true,
+                    tension: 0.3,
+                    spanGaps: true
+                }]
+            },
+            options: { 
+                maintainAspectRatio: false, 
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, max: 100 }
+                }
+            }
+        });
+    }, 100); // 100ms delay
 }
 
 // ============================================================================
@@ -342,15 +372,33 @@ export function exportarEstanciaExcel() {
 }
 
 function imprimirEstancia() {
-    const user = Utils.validateUser();
-    if (!user) return;
-    Utils.printSection('print-date-estancia', 'print-repc-nombre-estancia', user);
+    const divGraficas = document.getElementById('estancia-graficas');
+    const isGraficasVisible = divGraficas && !divGraficas.classList.contains('d-none');
+
+    if (window.PrintService) {
+        if (isGraficasVisible) {
+             PrintService.printElementAsImage('estancia-graficas', 'Estadísticas de Ocupación');
+        } else {
+             PrintService.printElement('estancia-trabajo', `Control de Estancia - ${Utils.getTodayISO()}`);
+        }
+    } else {
+        const user = Utils.validateUser();
+        if (!user) return;
+        Utils.printSection('print-date-estancia', 'print-repc-nombre-estancia', user);
+    }
 }
 
 window.eliminarDiaEstancia = async (fecha) => {
     if (await Ui.showConfirm(`¿Eliminar el registro de fecha ${fecha}?`)) {
         await estanciaService.removeRegistro(fecha);
         mostrarEstancia();
+    }
+};
+
+window.imprimirGraficasEstancia = function() {
+    if (window.PrintService) {
+        // Imprimimos el contenedor de gráficas
+        PrintService.printElementAsImage('estancia-graficas', 'Estadísticas de Ocupación');
     }
 };
 

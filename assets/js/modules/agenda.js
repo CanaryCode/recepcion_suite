@@ -618,7 +618,8 @@ window.imprimirAgenda = function() {
     if (!user) return;
 
     if (window.PrintService) {
-        const isRackActive = !document.getElementById('agenda-grid-view').classList.contains('d-none');
+        const rackEl = document.getElementById('agenda-grid-view');
+        const isRackActive = rackEl && !rackEl.classList.contains('d-none');
         const now = new Date();
         const dateStr = now.toLocaleDateString();
 

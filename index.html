@@ -135,18 +135,20 @@
             </button>
           </li>
 
+          <!-- 1. SERVICIOS (Atención al Huésped) -->
           <li class="nav-item dropdown">
             <button
               class="nav-link dropdown-toggle btn btn-link"
+              id="navServiciosDropdown"
               data-bs-toggle="dropdown"
               type="button"
             >
               <span
                 data-tooltip="true"
                 data-bs-placement="bottom"
-                data-bs-title="Módulos Operativos"
+                data-bs-title="Atención y Servicios al Cliente"
               >
-                <i class="bi bi-person-walking me-1"></i> Operaciones
+                <i class="bi bi-person-walking me-1"></i> Servicios
               </span>
             </button>
             <ul class="dropdown-menu shadow border-0">
@@ -202,7 +204,7 @@
                     data-tooltip="true"
                     data-bs-placement="right"
                     data-bs-title="Gestión de detalles y cortesías"
-                    ><i class="bi bi-gift me-2"></i>Atenciones</span
+                    ><i class="bi bi-gift me-2"></i>Atenciones VIP</span
                   >
                 </button>
               </li>
@@ -218,20 +220,6 @@
                     data-bs-title="Reservas de taxi y traslados"
                     ><i class="bi bi-taxi-front me-2"></i>Taxis &
                     Transfers</span
-                  >
-                </button>
-              </li>
-              <li>
-                <button
-                  class="dropdown-item"
-                  data-bs-toggle="tab"
-                  data-bs-target="#lost-found-content"
-                >
-                  <span
-                    data-tooltip="true"
-                    data-bs-placement="right"
-                    data-bs-title="Gestión de objetos perdidos"
-                    ><i class="bi bi-box-seam me-2"></i>Objetos Perdidos</span
                   >
                 </button>
               </li>
@@ -265,11 +253,57 @@
                   >
                 </button>
               </li>
-              <!-- Nuevo Módulo Impresión -->
+            </ul>
+          </li>
+
+          <!-- 2. GESTIÓN (Logística de Recepción) -->
+          <li class="nav-item dropdown">
+            <button
+              class="nav-link dropdown-toggle btn btn-link"
+              id="navGestionDropdown"
+              data-bs-toggle="dropdown"
+              type="button"
+            >
+              <span
+                data-tooltip="true"
+                data-bs-placement="bottom"
+                data-bs-title="Logística y Registros Operativos"
+              >
+                <i class="bi bi-journal-text me-1"></i> Gestión
+              </span>
+            </button>
+            <ul class="dropdown-menu shadow border-0">
               <li>
                 <button
                   class="dropdown-item"
-                  id="nav-impresion-tab"
+                  data-bs-toggle="tab"
+                  data-bs-target="#novedades-content"
+                >
+                  <span
+                    data-tooltip="true"
+                    data-bs-placement="right"
+                    data-bs-title="Libro de Novedades del Hotel"
+                    ><i class="bi bi-journal-text me-2"></i>Libro de Novedades</span
+                  >
+                </button>
+              </li>
+              <li>
+                <button
+                  class="dropdown-item"
+                  data-bs-toggle="tab"
+                  data-bs-target="#lost-found-content"
+                >
+                  <span
+                    data-tooltip="true"
+                    data-bs-placement="right"
+                    data-bs-title="Gestión de objetos perdidos"
+                    ><i class="bi bi-box-seam me-2"></i>Objetos Perdidos</span
+                  >
+                </button>
+              </li>
+              <li>
+                <button
+                  class="dropdown-item"
                   data-bs-toggle="tab"
                   data-bs-target="#impresion-content"
                   onclick="
@@ -281,79 +315,9 @@
                   <span
                     data-tooltip="true"
                     data-bs-placement="right"
-                    data-bs-title="Impresión de documentos operativos (Tarjetero, etc.)"
+                    data-bs-title="Impresión de documentos operativos"
                     ><i class="bi bi-printer me-2"></i>Impresión
                     Documentos</span
-                  >
-                </button>
-              </li>
-              <!-- Nuevo Módulo Vales -->
-              <li>
-                <button
-                  class="dropdown-item"
-                  id="nav-vales-tab"
-                  data-bs-toggle="tab"
-                  data-bs-target="#vales-content"
-                  onclick="
-                    import('./assets/js/modules/vales.js').then((m) =>
-                      m.initVales(),
-                    )
-                  "
-                >
-                  <span
-                    data-tooltip="true"
-                    data-bs-placement="right"
-                    data-bs-title="Gestión y emisión de vales de caja"
-                    ><i class="bi bi-receipt me-2"></i>Control de Vales</span
-                  >
-                </button>
-              </li>
-              <!-- Movido desde Administración -->
-              <li><hr class="dropdown-divider" /></li>
-              <li>
-                <button
-                  class="dropdown-item"
-                  data-bs-toggle="tab"
-                  data-bs-target="#safe-content"
-                >
-                  <span
-                    data-tooltip="true"
-                    data-bs-placement="right"
-                    data-bs-title="Alquiler y control de cajas fuertes"
-                    ><i class="bi bi-safe2 me-2"></i>Control de Safe</span
-                  >
-                </button>
-              </li>
-            </ul>
-          </li>
-
-          <li class="nav-item dropdown">
-            <button
-              class="nav-link dropdown-toggle btn btn-link"
-              data-bs-toggle="dropdown"
-              type="button"
-            >
-              <span
-                data-tooltip="true"
-                data-bs-placement="bottom"
-                data-bs-title="Gestión de Huéspedes"
-              >
-                <i class="bi bi-graph-up-arrow me-1"></i> Gestión
-              </span>
-            </button>
-            <ul class="dropdown-menu shadow border-0">
-              <li>
-                <button
-                  class="dropdown-item"
-                  data-bs-toggle="tab"
-                  data-bs-target="#riu-content"
-                >
-                  <span
-                    data-tooltip="true"
-                    data-bs-placement="right"
-                    data-bs-title="Fidelización y tarjetas RIU Class"
-                    ><i class="bi bi-credit-card-2-front me-2"></i>Gestión RIU
-                    Class</span
                   >
                 </button>
               </li>
@@ -372,8 +336,26 @@
                   >
                 </button>
               </li>
-              <!-- Movido desde Administración -->
-              <li><hr class="dropdown-divider" /></li>
+            </ul>
+          </li>
+
+          <!-- 3. ADMINISTRACIÓN (Caja y Auditoría) -->
+          <li class="nav-item dropdown">
+            <button
+              class="nav-link dropdown-toggle btn btn-link"
+              id="navAdminDropdown"
+              data-bs-toggle="dropdown"
+              type="button"
+            >
+              <span
+                data-tooltip="true"
+                data-bs-placement="bottom"
+                data-bs-title="Caja, Vales y Auditoría"
+              >
+                <i class="bi bi-cash-stack me-1"></i> Admin
+              </span>
+            </button>
+            <ul class="dropdown-menu shadow border-0">
               <li>
                 <button class="dropdown-item" onclick="abrirCaja()">
                   <span
@@ -384,21 +366,70 @@
                   >
                 </button>
               </li>
+              <li>
+                <button
+                  class="dropdown-item"
+                  data-bs-toggle="tab"
+                  data-bs-target="#vales-content"
+                  onclick="
+                    import('./assets/js/modules/vales.js').then((m) =>
+                      m.initVales(),
+                    )
+                  "
+                >
+                  <span
+                    data-tooltip="true"
+                    data-bs-placement="right"
+                    data-bs-title="Gestión y emisión de vales de caja"
+                    ><i class="bi bi-receipt me-2"></i>Control de Vales</span
+                  >
+                </button>
+              </li>
+              <li>
+                <button
+                  class="dropdown-item"
+                  data-bs-toggle="tab"
+                  data-bs-target="#safe-content"
+                >
+                  <span
+                    data-tooltip="true"
+                    data-bs-placement="right"
+                    data-bs-title="Alquiler y control de cajas fuertes"
+                    ><i class="bi bi-safe2 me-2"></i>Control de Safe</span
+                  >
+                </button>
+              </li>
+              <li>
+                <button
+                  class="dropdown-item"
+                  data-bs-toggle="tab"
+                  data-bs-target="#riu-content"
+                >
+                  <span
+                    data-tooltip="true"
+                    data-bs-placement="right"
+                    data-bs-title="Fidelización y tarjetas RIU Class"
+                    ><i class="bi bi-credit-card-2-front me-2"></i>Gestión RIU Class</span
+                  >
+                </button>
+              </li>
             </ul>
           </li>
 
+          <!-- 4. CONSULTAS (Información Estática) -->
           <li class="nav-item dropdown">
             <button
               class="nav-link dropdown-toggle btn btn-link"
+              id="navConsultasDropdown"
               data-bs-toggle="dropdown"
               type="button"
             >
               <span
                 data-tooltip="true"
                 data-bs-placement="bottom"
-                data-bs-title="Consultas"
+                data-bs-title="Información y Consultas Rápidas"
               >
-                <i class="bi bi-life-preserver me-2"></i> Consultas
+                <i class="bi bi-info-circle me-1"></i> Consultas
               </span>
             </button>
             <ul class="dropdown-menu shadow border-0">
@@ -431,37 +462,23 @@
                   >
                 </button>
               </li>
-              <li><hr class="dropdown-divider" /></li>
-              <li>
-                <button
-                  class="dropdown-item"
-                  data-bs-toggle="tab"
-                  data-bs-target="#rack-content"
-                >
-                  <span
-                    data-tooltip="true"
-                    data-bs-placement="right"
-                    data-bs-title="Vista visual del estado de las habitaciones"
-                    ><i class="bi bi-grid-3x3-gap-fill me-2"></i>Rack de
-                    Habitaciones</span
-                  >
-                </button>
-              </li>
             </ul>
           </li>
 
+          <!-- 5. SISTEMA (Mantenimiento) -->
           <li class="nav-item dropdown">
             <button
               class="nav-link dropdown-toggle btn btn-link"
+              id="navSistemaDropdown"
               data-bs-toggle="dropdown"
               type="button"
             >
               <span
                 data-tooltip="true"
                 data-bs-placement="bottom"
-                data-bs-title="Herramientas del Sistema"
+                data-bs-title="Mantenimiento y Configuración"
               >
-                <i class="bi bi-hdd-network me-2"></i> Sistema
+                <i class="bi bi-hdd-network me-1"></i> Sistema
               </span>
             </button>
             <ul class="dropdown-menu shadow border-0">
@@ -490,9 +507,8 @@
                     data-tooltip="true"
                     data-bs-placement="left"
                     data-bs-container="body"
-                    data-bs-title="Añadir contactos originales que falten"
-                    ><i class="bi bi-bandaid mb-1 me-2"></i>Recuperar Contactos
-                    Base</span
+                    data-bs-title="Añadir contactos originales"
+                    ><i class="bi bi-bandaid mb-1 me-2"></i>Recuperar Contactos</span
                   >
                 </button>
               </li>
@@ -516,10 +532,8 @@
             </ul>
           </li>
 
-          <!-- Buscador y Controles - Separados para mejor alineación -->
-
-          <!-- 1. Alarma (Empuja a la derecha con ms-auto) -->
-          <li class="nav-item ms-auto d-flex align-items-center">
+          <!-- Utilidades (Alarma, Usuario, Buscador) -->
+          <li class="nav-item d-flex align-items-center ms-auto">
             <button
               class="btn btn-link text-secondary position-relative p-0 mx-2"
               id="btnSystemAlarms"
@@ -574,9 +588,8 @@
             </div>
           </li>
 
-          <!-- 3. Buscador Global -->
           <li class="nav-item d-flex align-items-center">
-            <div class="nav-search-wrapper mx-1">
+            <div class="nav-search-wrapper ms-1">
               <div class="input-group shadow-sm">
                 <span class="input-group-text bg-white border-end-0 p-2"
                   ><i class="bi bi-search text-muted"></i
@@ -613,7 +626,7 @@
             <!-- Static Shortcuts (Fallback if JS fails) -->
             <div class="col-6 col-md">
               <a
-                href="#"
+                href="javascript:void(0)"
                 onclick="navegarA('#cobro-content')"
                 class="btn-shortcut shortcut-success"
                 data-bs-toggle="tooltip"
@@ -625,7 +638,7 @@
             </div>
             <div class="col-6 col-md">
               <a
-                href="#"
+                href="javascript:void(0)"
                 onclick="navegarA('#novedades-content')"
                 class="btn-shortcut shortcut-info"
                 data-bs-toggle="tooltip"
@@ -637,7 +650,7 @@
             </div>
             <div class="col-6 col-md">
               <a
-                href="#"
+                href="javascript:void(0)"
                 onclick="navegarA('#agenda-content')"
                 class="btn-shortcut shortcut-primary"
                 data-bs-toggle="tooltip"
@@ -649,7 +662,7 @@
             </div>
             <div class="col-6 col-md">
               <a
-                href="#"
+                href="javascript:void(0)"
                 onclick="navegarA('#notas-content')"
                 class="btn-shortcut shortcut-warning"
                 data-bs-toggle="tooltip"
@@ -662,7 +675,7 @@
 
             <div class="col-6 col-md">
               <a
-                href="#"
+                href="javascript:void(0)"
                 onclick="navegarA('#gallery-content')"
                 class="btn-shortcut shortcut-purple"
                 data-bs-toggle="tooltip"
@@ -675,7 +688,7 @@
 
             <div class="col-6 col-md">
               <a
-                href="#"
+                href="javascript:void(0)"
                 onclick="openLaunchPad()"
                 class="btn-shortcut shortcut-dark"
                 data-bs-toggle="tooltip"
@@ -5824,7 +5837,7 @@
       tabindex="-1"
       aria-hidden="true"
     >
-      <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-dialog modal-lg">
         <div class="modal-content border-0 shadow-lg">
           <div class="modal-header bg-dark text-white border-0 py-2">
             <h6 class="modal-title fw-bold">
@@ -5868,7 +5881,7 @@
                     id="btnFilterLaunchAll"
                     onclick="window.filterLaunchPad('all')"
                   >
-                    Todos los Accesos
+                    Todas
                   </button>
                   <button
                     type="button"
@@ -5876,7 +5889,7 @@
                     id="btnFilterLaunchApps"
                     onclick="window.filterLaunchPad('app')"
                   >
-                    Aplicaciones
+                    Apps
                   </button>
                   <button
                     type="button"
@@ -5884,7 +5897,7 @@
                     id="btnFilterLaunchFolders"
                     onclick="window.filterLaunchPad('folder')"
                   >
-                    Carpetas Locales
+                    Carpetas
                   </button>
                   <button
                     type="button"
@@ -5900,7 +5913,15 @@
                     id="btnFilterLaunchUrls"
                     onclick="window.filterLaunchPad('url')"
                   >
-                    Recursos Web
+                    Webs
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-white border px-3"
+                    id="btnFilterLaunchMaps"
+                    onclick="window.filterLaunchPad('maps')"
+                  >
+                    Mapas
                   </button>
                 </div>
               </div>

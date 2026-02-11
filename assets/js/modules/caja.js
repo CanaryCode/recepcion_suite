@@ -636,26 +636,49 @@ function updateUIValue(id, val) {
 
 async function resetearCaja(silent = false) {
   if (silent || await Ui.showConfirm("¿Estás seguro de borrar todos los datos de la caja?")) {
-    const inputs = document.querySelectorAll("#caja-content input");
-    inputs.forEach((i) => {
-      if (i.type === "number" || i.type === "text") i.value = "";
+    
+    // 1. Limpiar inputs de efectivo (billetes y monedas con clase específica)
+    document.querySelectorAll(".input-caja").forEach(i => i.value = "");
+    
+    // 2. Limpiar inputs manuales (Safe, Sellos Cantidad, Extra)
+    const manualInputs = ["caja_sellos_cant", "caja_safe", "caja_monedas_extra"];
+    manualInputs.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = "";
     });
 
+    // 3. Limpiar conceptos dinámicos
     document.querySelectorAll(".dynamic-concept").forEach((el) => el.remove());
 
-    listaVales = [];
+    // 4. Limpiar Comentarios DE FORMA EXPLÍCITA por ID
+    const comentariosInput = document.getElementById("caja_comentarios_cierre");
+    if (comentariosInput) comentariosInput.value = "";
+
+    // 5. Preservar vales, limpiar desembolsos
     listaDesembolsos = [];
-    cajaService.reset();
+    // listaVales se mantiene intacta
     
+    // 6. Sincronizar persistencia (Solo desembolsos y comentarios se resetean)
+    const currentData = cajaService.getAll();
+    await cajaService.save({
+      ...currentData,
+      desembolsos: [],
+      comentarios: ""
+    });
+    
+    // 7. Actualizar UI
     renderVales();
     renderDesembolsos();
-
     actualizarDatosAutomaticosCaja();
+    
+    // Restaurar precios por defecto de configuración
     const sellosPrecio = APP_CONFIG.CAJA?.SELLOS_PRECIO || "2.00";
     Utils.setVal("caja_sellos_precio", sellosPrecio);
-    Utils.setVal("input_fondo_arqueo", "-2000.00");
+    
+    // Recalcular todo (Esto pondrá de nuevo el total de vales en su input)
     calcularCaja();
-    if (!silent) Ui.showToast("Caja reiniciada.", "info");
+    
+    if (!silent) Ui.showToast("Caja reiniciada (Vales conservados).", "info");
   }
 }
 
@@ -1070,47 +1093,34 @@ async function guardarCajaPDF() {
   const filename = `ARQUEO_${fechaFormateada}_${turnoVal}.pdf`.replace(/[^a-z0-9._-]/gi, '_');
 
   // Obtener el HTML limpio del documento de impresión
-  // Nota: generarDocumentoImpresion devuelve un <html> completo. 
-  // Para html2pdf, a veces es mejor pasarle un elemento del DOM o un string.
-  // Vamos a crear un elemento temporal invisible.
   const docContent = generarDocumentoImpresion();
   
-  // Crear contenedor temporal fuera de la vista
-  const tempContainer = document.createElement('div');
-  tempContainer.style.position = 'absolute';
-  tempContainer.style.left = '-9999px';
-  tempContainer.style.width = '210mm'; // Ancho A4 para PDF
-  tempContainer.innerHTML = docContent;
+  // Extraer Estilos y Cuerpo (PdfService los unificará)
+  const styleStart = docContent.indexOf('<style>');
+  const styleEnd = docContent.indexOf('</style>');
+  const styles = (styleStart > -1 && styleEnd > -1) ? docContent.substring(styleStart, styleEnd + 8) : "";
   
-  // Extraer solo el BODY para html2pdf, ya que html2pdf suele preferir nodos
-  // O mejor, instanciamos un nodo con el contenido del body del string generado.
-  const bodyContentStart = docContent.indexOf('<body');
-  const bodyContentEnd = docContent.indexOf('</body>');
-  if (bodyContentStart > -1 && bodyContentEnd > -1) {
-      const bodyInner = docContent.substring(docContent.indexOf('>', bodyContentStart) + 1, bodyContentEnd);
-      tempContainer.innerHTML = bodyInner;
+  const bodyStart = docContent.indexOf('<body');
+  const bodyEnd = docContent.indexOf('</body>');
+  let bodyContent = docContent;
+  if (bodyStart > -1 && bodyEnd > -1) {
+      bodyContent = docContent.substring(docContent.indexOf('>', bodyStart) + 1, bodyEnd);
   }
-  
-  document.body.appendChild(tempContainer);
-
-  const opt = {
-    margin:       10, // mm
-    filename:     filename,
-    image:        { type: 'jpeg', quality: 0.98 },
-    html2canvas:  { scale: 2, useCORS: true },
-    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-  };
 
   try {
-      await html2pdf().set(opt).from(tempContainer).save();
-      Ui.showToast(`PDF guardado: ${filename}`, "success");
+      Ui.showToast("Generando reporte PDF...", "info");
+      
+      // Usar el servicio centralizado que es más robusto
+      await PdfService.generateReport({
+          title: `Cierre de Caja - ${fechaFormateada}`,
+          author: user.nombre || 'Recepción',
+          htmlContent: styles + bodyContent,
+          filename: filename
+      });
+      
   } catch (error) {
       console.error("Error al generar PDF:", error);
       Ui.showToast("Error al generar el PDF.", "danger");
-  } finally {
-      if (document.body.contains(tempContainer)) {
-          document.body.removeChild(tempContainer);
-      }
   }
 }
 

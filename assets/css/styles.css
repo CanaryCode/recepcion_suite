@@ -48,10 +48,6 @@
     }
 }
 
-.nav-search-wrapper {
-    width: 250px;
-    transition: width 0.3s ease;
-}
 
 /* FIX: Tooltip Stacking & Styling for Nav */
 .custom-tooltip {
@@ -96,11 +92,6 @@
         padding: 0.25rem;
     }
     
-    /* Cuando se desborde, los elementos individuales deben ajustarse */
-    .nav-search-wrapper {
-        flex-grow: 1;
-        min-width: 200px;
-    }
 
     #globalUserBtn {
         flex-grow: 1;

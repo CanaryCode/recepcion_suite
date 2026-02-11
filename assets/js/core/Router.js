@@ -71,6 +71,18 @@ export const Router = {
           Router.handleModuleReload(targetId);
         }
 
+        // UPDATE URL (Catch-all for clicks on native Bootstrap tabs)
+        if (!isNavigatingHistory) {
+          const isDashboard = Router.isDashboardId(targetId);
+          const finalHash = isDashboard ? "#" : targetId;
+          
+          if (history.pushState) {
+            history.pushState(null, null, finalHash);
+          } else {
+            location.hash = finalHash;
+          }
+        }
+
         // Asegurar que la cabecera se actualice al final del evento
         Router.updateHeaderContext();
       });
@@ -173,10 +185,13 @@ export const Router = {
     }
 
     // 5. UPDATE URL (Optional, but good for back button)
+    const isDashboard = Router.isDashboardId(selector);
+    const finalHash = isDashboard ? "#" : selector;
+    
     if (history.pushState) {
-      history.pushState(null, null, selector);
+      history.pushState(null, null, finalHash);
     } else {
-      location.hash = selector;
+      location.hash = finalHash;
     }
 
     // Importante: No resetear isNavigatingHistory aquí,

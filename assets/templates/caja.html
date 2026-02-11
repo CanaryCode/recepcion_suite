@@ -47,7 +47,6 @@
           <div class="card-header d-flex justify-content-between align-items-center">
             <span><i class="bi bi-calculator me-2"></i>Efectivo (Billetes, Monedas y Varios)</span>
             <div>
-              <button class="btn btn-sm btn-success me-1 shadow-sm" onclick="agregarNuevoConcepto()"><i class="bi bi-plus-circle me-1"></i>Concepto</button>
               <button class="btn btn-sm btn-outline-danger border-0" onclick="resetearCaja()"><i class="bi bi-trash me-1"></i>Limpiar</button>
             </div>
           </div>
@@ -61,7 +60,12 @@
               </div>
             </div>
             <div class="mt-3 pt-3 border-top" id="otros-container">
-              <h6 class="text-primary fw-bold mb-3 small"><i class="bi bi-sliders me-2"></i>OTROS CONCEPTOS</h6>
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="text-primary fw-bold small mb-0"><i class="bi bi-sliders me-2"></i>OTROS CONCEPTOS</h6>
+                <button class="btn btn-sm btn-success shadow-sm" style="font-size: 0.75rem; padding: 2px 8px;" onclick="agregarNuevoConcepto()">
+                  <i class="bi bi-plus-circle me-1"></i>Añadir concepto
+                </button>
+              </div>
               <div class="row g-2 mb-2">
                   <div class="col-6">
                     <div class="input-group input-group-sm flex-nowrap">

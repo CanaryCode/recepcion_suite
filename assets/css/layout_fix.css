@@ -146,19 +146,25 @@
         background: #1DB954;
         color: white;
         border: none;
-        padding: 5px 12px;
-        font-size: 0.7rem;
-        font-weight: 900;
-        letter-spacing: 1px;
+        padding: 2px 12px;
+        font-size: 0.6rem;
+        font-weight: 950;
+        letter-spacing: 0.5px;
         display: flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
         text-transform: uppercase;
+        line-height: 1;
     }
 
     .spotify-footer-toggle:hover {
         background: #1ed760;
+    }
+
+    /* MINI ICON FIX */
+    .spotify-footer-toggle i {
+        font-size: 0.8rem;
     }
 
     /* SWITCHER BELOW HANDLE */
@@ -196,6 +202,6 @@
 
     /* SAFETY PADDING FOR MAIN CONTENT */
     body {
-        padding-bottom: 35px; /* Minimal height of the collapsed drawer */
+        padding-bottom: 22px; /* Minimal height of the collapsed drawer */
     }
 }

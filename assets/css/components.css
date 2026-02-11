@@ -199,9 +199,18 @@
 
 /* Estilos para el Buscador Global en el Menú */
 .nav-search-wrapper {
-  /* Posicionamiento relativo simple para que el dropdown de resultados se ancle bien */
   position: relative;
   width: 220px;
+}
+
+.nav-link, .dropdown-toggle.btn-link {
+  padding-left: 0.9rem !important;
+  padding-right: 0.9rem !important;
+}
+
+.nav-item .btn-link {
+  padding-left: 0.5rem !important;
+  padding-right: 0.5rem !important;
 }
 
 .search-results-dropdown {
@@ -465,11 +474,15 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
-#header-indicator-left { border-top-left-radius: 0; }
-#header-indicator-right { border-top-right-radius: 0; }
+#header-indicator-left {
+  border-top-left-radius: 0;
+}
+#header-indicator-right {
+  border-top-right-radius: 0;
+}
 
 .app-header-panel:hover #header-indicator-left:not(.d-none),
 .app-header-panel:hover #header-indicator-right:not(.d-none) {
@@ -552,4 +565,50 @@
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+/* --- ESTILOS PARA ESTABILIZAR EL LANZADOR (App Launcher) --- */
+#launchPadModal .modal-dialog {
+  margin-top: 50px; /* Posición fija desde arriba */
+  transition: none !important; /* Evitar rebotes de Bootstrap */
+}
+
+#launchPadModal .modal-content {
+  min-height: 550px; /* Altura mínima garantizada para que no se mueva al filtrar */
+  display: flex;
+  flex-direction: column;
+}
+
+#launchPadGrid {
+  min-height: 200px; /* Espacio mínimo para el grid de iconos */
+}
+
+/* Premium Styling for LaunchPad Tabs */
+#launchPadModal .btn-group {
+    background: rgba(0, 0, 0, 0.03);
+    padding: 3px;
+    border-radius: 12px;
+}
+
+#launchPadModal .btn-group .btn {
+    border: none !important;
+    border-radius: 9px !important;
+    font-size: 0.8rem;
+    font-weight: 600;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    color: #6c757d;
+    background: transparent;
+    padding: 8px 16px;
+}
+
+#launchPadModal .btn-group .btn:hover {
+    color: var(--bs-primary);
+    background: rgba(var(--bs-primary-rgb), 0.05);
+}
+
+#launchPadModal .btn-group .btn.active {
+    background: white !important;
+    color: var(--bs-primary) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+    transform: translateY(-1px);
 }
